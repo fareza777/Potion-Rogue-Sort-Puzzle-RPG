@@ -12,7 +12,9 @@ for you to finish the puzzle.
 - 🔵 Shield Potion — absorb attacks
 - 🟣 Poison Potion — damage over time
 
-**Status: Phase 1 — playable technical prototype** (one battle vs. Cave Slime).
+**Status: Phase 2+ — playable roguelike run.** Full 7-battle run (5 enemy types,
+elite Stone Golem, boss Fire Golem with armor/tube-locks/enrage), 12 data-driven
+upgrades, 4 potion combos, crystals with local save, styled dark-fantasy UI.
 See [docs/TECHNICAL_DESIGN.md](docs/TECHNICAL_DESIGN.md) for architecture and roadmap.
 
 ## Running the game
@@ -20,6 +22,15 @@ See [docs/TECHNICAL_DESIGN.md](docs/TECHNICAL_DESIGN.md) for architecture and ro
 1. Install [Godot 4.3+](https://godotengine.org/download) (standard build, not .NET).
 2. Open Godot → **Import** → select this folder's `project.godot`.
 3. Press **F5** (Run Project).
+
+## Tests
+
+Headless gameplay logic tests (battle rules, combos, armor, poison, board rules,
+upgrades):
+
+```
+godot --headless --path . res://tests/logic_test.tscn
+```
 
 ## Project layout
 

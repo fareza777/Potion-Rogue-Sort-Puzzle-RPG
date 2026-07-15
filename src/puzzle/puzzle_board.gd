@@ -7,6 +7,7 @@ signal move_made
 signal tube_completed(color: String)
 signal board_refilled
 signal invalid_move
+signal tube_locked
 
 const COLORS: Array[String] = ["red", "green", "blue", "purple"]
 const FILLED_TUBES := 4
@@ -101,8 +102,33 @@ func total_units() -> int:
 	return total
 
 
+## Locks a random tube that has liquid in it for the given number of moves
+## (Dark Mage / Fire Golem ability). Locked tubes can't be poured from or into.
+func lock_random_tube(moves: int) -> void:
+	var candidates: Array[PotionTube] = []
+	for tube in tubes:
+		if not tube.contents.is_empty() and not tube.is_locked():
+			candidates.append(tube)
+	if candidates.is_empty():
+		return
+	var target: PotionTube = candidates.pick_random()
+	target.locked_moves = moves
+	if selected_tube == target:
+		_deselect()
+	tube_locked.emit()
+
+
+func _tick_locks() -> void:
+	for tube in tubes:
+		if tube.is_locked():
+			tube.locked_moves -= 1
+
+
 func _on_tube_tapped(tube: PotionTube) -> void:
 	if not enabled:
+		return
+	if tube.is_locked():
+		invalid_move.emit()
 		return
 	if selected_tube == null:
 		if not tube.contents.is_empty():
@@ -137,6 +163,7 @@ func _try_pour(from_tube: PotionTube, to_tube: PotionTube) -> bool:
 	to_tube.queue_redraw()
 
 	_undo_stack.append({"from": from_tube, "to": to_tube, "count": count})
+	_tick_locks()
 	move_made.emit()
 
 	if to_tube.is_complete():

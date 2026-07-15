@@ -79,21 +79,28 @@ Blue +12 shield, Purple 5 dmg x 3 turns.
 
 ## Roadmap
 
-- **Phase 1 — Technical prototype (this commit):** one playable battle vs Slime;
-  4 potion effects, enemy turn cadence, undo/restart/pause, victory/defeat.
-- **Phase 2 — Core roguelike:** run structure (7 battles), 3-choice upgrade
-  screen after each battle, data-driven upgrade system, game over + crystal reward.
-- **Phase 3 — Content MVP:** 5 enemies + Fire Golem boss (armor, tube locking),
-  15 upgrades, 3 relics, combo system, permanent upgrades, tutorial, audio,
-  settings, local save (JSON in `user://` with versioning + corrupt-file fallback).
+- **Phase 1 — Technical prototype: DONE.** One playable battle; 4 potion effects,
+  enemy turn cadence, undo/restart/pause, victory/defeat.
+- **Phase 2 — Core roguelike: DONE.** 7-battle run (map screen, HP carry-over),
+  3-choice upgrade screen, data-driven upgrades (RunState.stat modifier pipeline),
+  game over with partial crystal reward, persistent crystals (user://save.json,
+  versioned, corrupt-file fallback).
+- **Phase 3 — Content MVP: PARTIAL.** Done: 6 enemies + Fire Golem boss (armor,
+  crit, player-poison, tube locking, enrage), 12 upgrades, 4 combos (Fire Burst,
+  Shield Bash, Toxic Flame, Regeneration Guard), headless logic tests
+  (tests/logic_test.tscn). Remaining: relics, permanent upgrade shop, tutorial,
+  audio, settings screen, more upgrades (12 -> 15+).
 - **Phase 4 — Polish:** real art + animations, particles, haptics, performance
   pass, Android export template, Play Store assets.
 
-Planned mechanics already accommodated by the architecture:
-- Combos: BattleManager tracks last completed color (add a `_last_potion` field).
-- Tube locking (Dark Mage/boss): add `locked` state to PotionTube.
-- Armor (Golem): extra field on enemy JSON, applied in `on_potion_completed`.
-- Upgrades: modifier pipeline over the values read from `GameState.potions`.
+Additional systems since Phase 1:
+- **RunState (autoload):** run progress, upgrade modifiers (`stat(name, base)`),
+  crystal accounting. **SaveSystem (autoload):** persistent save. **DevTools
+  (autoload):** CLI screenshot capture + battle-index override for testing.
+- **UiKit:** single source of visual truth (colors, Cinzel font, styled panels/
+  buttons/bars, floating combat text, shader background).
+- Enemy abilities are plain JSON fields: `armor`, `crit_chance`,
+  `lock_every_attacks`, `poison_player`, `enrage`.
 
 ## App identity
 

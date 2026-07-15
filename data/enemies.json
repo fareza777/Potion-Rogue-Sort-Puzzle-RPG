@@ -1,9 +1,74 @@
 {
 	"slime": {
 		"name": "Cave Slime",
+		"shape": "slime",
+		"color": "6fce4e",
 		"hp": 60,
 		"attack": 8,
 		"attack_every": 3,
-		"color": "6fce4e"
+		"crystals": 5
+	},
+	"skeleton": {
+		"name": "Skeleton",
+		"shape": "skeleton",
+		"color": "d8d2c0",
+		"hp": 70,
+		"attack": 10,
+		"attack_every": 3,
+		"crit_chance": 0.25,
+		"crystals": 7
+	},
+	"poison_beast": {
+		"name": "Poison Beast",
+		"shape": "beast",
+		"color": "8e5cd9",
+		"hp": 80,
+		"attack": 7,
+		"attack_every": 3,
+		"poison_player": {"damage": 3, "turns": 2, "every_attacks": 2},
+		"crystals": 8
+	},
+	"stone_golem": {
+		"name": "Stone Golem",
+		"shape": "golem",
+		"color": "9a938c",
+		"hp": 90,
+		"attack": 12,
+		"attack_every": 4,
+		"armor": 25,
+		"crystals": 12
+	},
+	"dark_mage": {
+		"name": "Dark Mage",
+		"shape": "mage",
+		"color": "4a3b8a",
+		"hp": 85,
+		"attack": 11,
+		"attack_every": 3,
+		"lock_every_attacks": 2,
+		"lock_moves": 2,
+		"crystals": 10
+	},
+	"blood_slime": {
+		"name": "Blood Slime",
+		"shape": "slime",
+		"color": "d94f4f",
+		"hp": 110,
+		"attack": 13,
+		"attack_every": 3,
+		"crystals": 12
+	},
+	"fire_golem": {
+		"name": "Fire Golem",
+		"shape": "fire_golem",
+		"color": "e06a3a",
+		"hp": 160,
+		"attack": 14,
+		"attack_every": 3,
+		"armor": 20,
+		"lock_every_attacks": 2,
+		"lock_moves": 2,
+		"enrage": {"threshold": 0.4, "attack_mult": 1.5},
+		"crystals": 30
 	}
 }

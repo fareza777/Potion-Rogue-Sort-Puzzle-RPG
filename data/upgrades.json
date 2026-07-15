@@ -1,0 +1,62 @@
+{
+	"flame_mastery": {
+		"name": "Flame Mastery",
+		"description": "Fire Potion deals +5 damage.",
+		"stat": "red_damage", "add": 5, "repeatable": true
+	},
+	"greater_healing": {
+		"name": "Greater Healing",
+		"description": "Healing Potion restores +5 HP.",
+		"stat": "green_heal", "add": 5, "repeatable": true
+	},
+	"reinforced_flask": {
+		"name": "Reinforced Flask",
+		"description": "Shield Potion grants +4 shield.",
+		"stat": "blue_shield", "add": 4, "repeatable": true
+	},
+	"toxic_mixture": {
+		"name": "Toxic Mixture",
+		"description": "Poison lasts 1 extra turn.",
+		"stat": "purple_turns", "add": 1, "repeatable": true
+	},
+	"venom_power": {
+		"name": "Venom Power",
+		"description": "Poison deals +2 damage per turn.",
+		"stat": "purple_damage", "add": 2, "repeatable": true
+	},
+	"quick_hands": {
+		"name": "Quick Hands",
+		"description": "Enemies need 1 extra move before attacking.",
+		"stat": "enemy_delay", "add": 1, "repeatable": false
+	},
+	"critical_brew": {
+		"name": "Critical Brew",
+		"description": "Fire Potion has +15% chance to deal double damage.",
+		"stat": "crit_chance", "add": 0.15, "repeatable": true
+	},
+	"vital_tonic": {
+		"name": "Vital Tonic",
+		"description": "+10 max HP, and heal 10 HP now.",
+		"stat": "max_hp", "add": 10, "repeatable": true, "heal_now": 10
+	},
+	"thick_hide": {
+		"name": "Thick Hide",
+		"description": "Enemy attacks deal 2 less damage.",
+		"stat": "damage_reduction", "add": 2, "repeatable": true
+	},
+	"steady_grip": {
+		"name": "Steady Grip",
+		"description": "+1 undo per battle.",
+		"stat": "extra_undos", "add": 1, "repeatable": true
+	},
+	"warding_charm": {
+		"name": "Warding Charm",
+		"description": "Start every battle with 6 shield.",
+		"stat": "start_shield", "add": 6, "repeatable": false
+	},
+	"shield_capacity": {
+		"name": "Deep Reserves",
+		"description": "Shield can stack 10 higher.",
+		"stat": "max_shield", "add": 10, "repeatable": true
+	}
+}

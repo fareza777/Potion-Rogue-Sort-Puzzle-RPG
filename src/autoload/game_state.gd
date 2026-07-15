@@ -24,12 +24,14 @@ var player: Dictionary = {}
 
 
 func _ready() -> void:
-	potions = _load_json("potions.json", DEFAULT_POTIONS)
-	enemies = _load_json("enemies.json", DEFAULT_ENEMIES)
-	player = _load_json("player.json", DEFAULT_PLAYER)
+	potions = load_data_file("potions.json", DEFAULT_POTIONS)
+	enemies = load_data_file("enemies.json", DEFAULT_ENEMIES)
+	player = load_data_file("player.json", DEFAULT_PLAYER)
 
 
-func _load_json(file_name: String, fallback: Dictionary) -> Dictionary:
+## Loads a JSON dictionary from res://data/ with a fallback on any failure.
+## Also used by other autoloads (RunState) for their own data files.
+func load_data_file(file_name: String, fallback: Dictionary) -> Dictionary:
 	var path := DATA_DIR + file_name
 	if not FileAccess.file_exists(path):
 		push_warning("Data file missing, using defaults: " + path)

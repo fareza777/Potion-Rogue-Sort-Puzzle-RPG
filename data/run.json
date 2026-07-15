@@ -1,0 +1,12 @@
+{
+	"area_name": "Shadow Crypt",
+	"battles": [
+		{"enemy": "slime", "kind": "battle"},
+		{"enemy": "skeleton", "kind": "battle"},
+		{"enemy": "poison_beast", "kind": "battle"},
+		{"enemy": "stone_golem", "kind": "elite"},
+		{"enemy": "dark_mage", "kind": "battle"},
+		{"enemy": "blood_slime", "kind": "battle"},
+		{"enemy": "fire_golem", "kind": "boss"}
+	]
+}
