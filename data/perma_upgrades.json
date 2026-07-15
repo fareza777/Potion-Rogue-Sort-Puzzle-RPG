@@ -1,0 +1,42 @@
+{
+	"tough_body": {
+		"name": "Tough Body",
+		"description": "+5 max HP per level.",
+		"stat": "max_hp", "add_per_level": 5, "base_cost": 20, "max_level": 5
+	},
+	"fire_affinity": {
+		"name": "Fire Affinity",
+		"description": "+1 Fire Potion damage per level.",
+		"stat": "red_damage", "add_per_level": 1, "base_cost": 15, "max_level": 5
+	},
+	"shield_affinity": {
+		"name": "Shield Affinity",
+		"description": "+1 Shield Potion shield per level.",
+		"stat": "blue_shield", "add_per_level": 1, "base_cost": 15, "max_level": 5
+	},
+	"heal_affinity": {
+		"name": "Healing Affinity",
+		"description": "+1 Healing Potion HP per level.",
+		"stat": "green_heal", "add_per_level": 1, "base_cost": 15, "max_level": 5
+	},
+	"venom_affinity": {
+		"name": "Venom Affinity",
+		"description": "+1 poison damage per level.",
+		"stat": "purple_damage", "add_per_level": 1, "base_cost": 15, "max_level": 3
+	},
+	"nimble_fingers": {
+		"name": "Nimble Fingers",
+		"description": "+1 undo per battle per level.",
+		"stat": "extra_undos", "add_per_level": 1, "base_cost": 30, "max_level": 2
+	},
+	"keen_eye": {
+		"name": "Keen Eye",
+		"description": "+5% Fire Potion critical chance per level.",
+		"stat": "crit_chance", "add_per_level": 0.05, "base_cost": 25, "max_level": 3
+	},
+	"treasure_hunter": {
+		"name": "Treasure Hunter",
+		"description": "+2 crystals per battle won, per level.",
+		"stat": "crystal_bonus", "add_per_level": 2, "base_cost": 25, "max_level": 3
+	}
+}

@@ -14,6 +14,7 @@ signal enemy_enraged
 signal poison_ticked(damage: int)
 signal player_poison_ticked(damage: int)
 signal tube_lock_requested(moves: int)
+signal last_remedy_triggered(heal: int)
 signal battle_won
 signal battle_lost
 
@@ -50,6 +51,7 @@ var player_poison_damage := 0
 var player_poison_turns := 0
 
 var _last_potion := ""
+var _last_remedy_used := false
 var battle_over := false
 
 
@@ -90,6 +92,7 @@ func setup(new_enemy_id: String) -> void:
 	player_poison_damage = 0
 	player_poison_turns = 0
 	_last_potion = ""
+	_last_remedy_used = false
 	battle_over = false
 	stats_changed.emit()
 
@@ -228,6 +231,7 @@ func _enemy_turn() -> void:
 			player_poison_damage = 0
 		if _check_defeat():
 			return
+		_try_last_remedy()
 
 	# The attack itself. Shield absorbs first, the rest hits HP.
 	var damage := enemy_attack
@@ -244,6 +248,7 @@ func _enemy_turn() -> void:
 
 	if _check_defeat():
 		return
+	_try_last_remedy()
 
 	# Post-attack abilities
 	if _lock_every_attacks > 0 and _attacks_done % _lock_every_attacks == 0:
@@ -254,6 +259,17 @@ func _enemy_turn() -> void:
 			player_poison_damage = int(_poison_player_cfg.get("damage", 3))
 			player_poison_turns = int(_poison_player_cfg.get("turns", 2))
 			player_poison_ticked.emit(0)
+
+
+## Last Remedy upgrade: once per battle, dropping below 20% HP auto-heals.
+func _try_last_remedy() -> void:
+	if _last_remedy_used or player_hp <= 0:
+		return
+	var heal := int(RunState.stat("last_remedy", 0.0))
+	if heal > 0 and player_hp <= int(player_max_hp * 0.2):
+		_last_remedy_used = true
+		player_hp = mini(player_hp + heal, player_max_hp)
+		last_remedy_triggered.emit(heal)
 
 
 func _check_victory() -> bool:

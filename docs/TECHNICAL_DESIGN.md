@@ -85,13 +85,18 @@ Blue +12 shield, Purple 5 dmg x 3 turns.
   3-choice upgrade screen, data-driven upgrades (RunState.stat modifier pipeline),
   game over with partial crystal reward, persistent crystals (user://save.json,
   versioned, corrupt-file fallback).
-- **Phase 3 — Content MVP: PARTIAL.** Done: 6 enemies + Fire Golem boss (armor,
-  crit, player-poison, tube locking, enrage), 12 upgrades, 4 combos (Fire Burst,
-  Shield Bash, Toxic Flame, Regeneration Guard), headless logic tests
-  (tests/logic_test.tscn). Remaining: relics, permanent upgrade shop, tutorial,
-  audio, settings screen, more upgrades (12 -> 15+).
-- **Phase 4 — Polish:** real art + animations, particles, haptics, performance
-  pass, Android export template, Play Store assets.
+- **Phase 3 — Content MVP: DONE.** 6 enemies + Fire Golem boss (armor, crit,
+  player-poison, tube locking, enrage), 15 upgrades, 3 relics (elite reward),
+  4 combos (Fire Burst, Shield Bash, Toxic Flame, Regeneration Guard), Last
+  Remedy trigger, permanent upgrade shop (8 crystal upgrades, scaling costs),
+  interactive event-driven tutorial (first battle, saved flag), synthesized
+  placeholder SFX/music (AudioManager, no asset files) with Music/SFX buses,
+  settings screen (volumes, vibration, reset progress), credits, headless logic
+  tests — 30 checks (tests/logic_test.tscn).
+- **Phase 4 — Polish: NEXT.** Real art (sprites for enemies/tubes/panels — the
+  drawing code is isolated in EnemyDisplay/PotionTube/UiKit), real audio (swap
+  streams in AudioManager._build_sounds), particles/animations, haptics tuning,
+  performance pass, Android export template + signing, Play Store assets.
 
 Additional systems since Phase 1:
 - **RunState (autoload):** run progress, upgrade modifiers (`stat(name, base)`),

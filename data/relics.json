@@ -1,0 +1,17 @@
+{
+	"molten_core": {
+		"name": "Molten Core",
+		"description": "A shard of living magma. Fire Potions deal +8 damage.",
+		"stat": "red_damage", "add": 8
+	},
+	"guardian_idol": {
+		"name": "Guardian Idol",
+		"description": "An ancient ward. Start every battle with 10 shield.",
+		"stat": "start_shield", "add": 10
+	},
+	"chrono_amulet": {
+		"name": "Chrono Amulet",
+		"description": "Time bends around you. Enemies need 1 extra move to attack.",
+		"stat": "enemy_delay", "add": 1
+	}
+}

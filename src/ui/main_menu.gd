@@ -27,9 +27,22 @@ func _ready() -> void:
 	play.pressed.connect(_on_play_pressed)
 	box.add_child(play)
 
+	box.add_child(_menu_button("Permanent Upgrades", "res://scenes/shop.tscn"))
+	box.add_child(_menu_button("Settings", "res://scenes/settings.tscn"))
+	box.add_child(_menu_button("Credits", "res://scenes/credits.tscn"))
+
 	box.add_child(UiKit.label("Crystals: %d" % SaveSystem.crystals(), 22,
 			Color("7fd4ff")))
-	box.add_child(UiKit.label("Prototype v0.2.0", 16, Color("5a5470")))
+	box.add_child(UiKit.label("Prototype v0.3.0", 16, Color("5a5470")))
+	AudioManager.play_music("dungeon")
+
+
+func _menu_button(text: String, scene_path: String) -> Button:
+	var b := UiKit.button(text, Vector2(340, 62), UiKit.COLOR_TEXT_DIM)
+	b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	b.pressed.connect(func() -> void:
+		get_tree().change_scene_to_file(scene_path))
+	return b
 
 
 ## Decorative animated flask drawn with a big PotionTube.

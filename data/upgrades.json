@@ -58,5 +58,20 @@
 		"name": "Deep Reserves",
 		"description": "Shield can stack 10 higher.",
 		"stat": "max_shield", "add": 10, "repeatable": true
+	},
+	"alchemist_greed": {
+		"name": "Alchemist's Greed",
+		"description": "+3 crystals after every battle won.",
+		"stat": "crystal_bonus", "add": 3, "repeatable": true
+	},
+	"mender": {
+		"name": "Mender",
+		"description": "Heal 5 HP after every battle.",
+		"stat": "post_battle_heal", "add": 5, "repeatable": true
+	},
+	"last_remedy": {
+		"name": "Last Remedy",
+		"description": "Once per battle: dropping below 20% HP heals 10 HP.",
+		"stat": "last_remedy", "add": 10, "repeatable": false
 	}
 }

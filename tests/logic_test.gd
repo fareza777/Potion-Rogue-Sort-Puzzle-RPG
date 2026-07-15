@@ -16,6 +16,8 @@ func _ready() -> void:
 	_test_defeat()
 	_test_board_rules()
 	_test_upgrades()
+	_test_relics_and_perma()
+	_test_last_remedy()
 	print("---")
 	print("%d checks, %d failures" % [_checks, _failures])
 	get_tree().quit(1 if _failures > 0 else 0)
@@ -145,5 +147,37 @@ func _test_upgrades() -> void:
 	b.setup("slime")
 	b.on_potion_completed("red")
 	check(b.enemy_hp == 30, "upgraded fire potion deals 30")
+	b.free()
+	RunState.start_new_run()
+
+
+func _test_relics_and_perma() -> void:
+	RunState.start_new_run()
+	RunState.pick_relic("molten_core")
+	check(int(RunState.stat("red_damage", 20)) == 28, "relic adds to stat pipeline")
+	var relic_choices := RunState.roll_relic_choices()
+	check(relic_choices.size() == 2 and not "molten_core" in relic_choices,
+			"owned relics excluded from choices")
+
+	SaveSystem.data["perma"] = {"fire_affinity": 3}
+	check(int(RunState.stat("red_damage", 20)) == 31, "perma levels stack with relic")
+	check(RunState.perma_cost("fire_affinity") == 15 * 4, "perma cost scales with level")
+	SaveSystem.data["perma"] = {}
+	RunState.start_new_run()
+
+
+func _test_last_remedy() -> void:
+	var b := _fresh_battle()
+	RunState.pick_upgrade("last_remedy")
+	var triggered := [0]
+	b.last_remedy_triggered.connect(func(heal: int) -> void: triggered[0] = heal)
+	b.player_hp = 12  # slime hits for 8 -> 4 HP = below 20% of 50
+	for i in 3:
+		b.on_move()
+	check(triggered[0] == 10 and b.player_hp == 14, "Last Remedy heals once below 20%")
+	b.player_hp = 12
+	for i in 3:
+		b.on_move()
+	check(b.player_hp == 4, "Last Remedy only fires once per battle")
 	b.free()
 	RunState.start_new_run()

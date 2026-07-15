@@ -92,6 +92,13 @@ func _make_status_panel() -> PanelContainer:
 	row.add_child(UiKit.label("Crystals  %d (+%d this run)"
 			% [SaveSystem.crystals(), RunState.run_crystals], 22, Color("7fd4ff")))
 
+	if not RunState.relic_ids.is_empty():
+		var relic_names: Array[String] = []
+		for id in RunState.relic_ids:
+			relic_names.append(RunState.relic_name(str(id)))
+		box.add_child(UiKit.label("Relics: " + ", ".join(relic_names), 19,
+				Color("c07ce8")))
+
 	if not RunState.upgrade_ids.is_empty():
 		var names: Array[String] = []
 		for id in RunState.upgrade_ids:

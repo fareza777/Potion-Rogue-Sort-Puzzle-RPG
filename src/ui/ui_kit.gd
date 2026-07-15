@@ -43,11 +43,20 @@ static func panel(border_color: Color = COLOR_PANEL_BORDER) -> PanelContainer:
 	return p
 
 
+static func _audio() -> Node:
+	var tree := Engine.get_main_loop() as SceneTree
+	return tree.root.get_node_or_null("AudioManager") if tree != null else null
+
+
 static func button(text: String, min_size := Vector2(180, 64),
 		accent := COLOR_GOLD) -> Button:
 	var b := Button.new()
 	b.text = text
 	b.custom_minimum_size = min_size
+	b.pressed.connect(func() -> void:
+		var audio := _audio()
+		if audio != null:
+			audio.play("click"))
 	b.add_theme_font_override("font", title_font())
 	b.add_theme_font_size_override("font_size", 26)
 	b.add_theme_color_override("font_color", accent)

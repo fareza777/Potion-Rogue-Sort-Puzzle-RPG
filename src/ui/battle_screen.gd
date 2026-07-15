@@ -46,11 +46,15 @@ func _ready() -> void:
 	battle.poison_ticked.connect(_on_poison_ticked)
 	battle.player_poison_ticked.connect(_on_player_poison_ticked)
 	battle.tube_lock_requested.connect(_on_tube_lock_requested)
+	battle.last_remedy_triggered.connect(_on_last_remedy)
 	battle.battle_won.connect(_on_battle_won)
 	battle.battle_lost.connect(_on_battle_lost)
 
 	board.move_made.connect(battle.on_move)
+	board.move_made.connect(func() -> void: AudioManager.play("pour"))
 	board.tube_completed.connect(battle.on_potion_completed)
+	board.tube_completed.connect(func(_c: String) -> void: AudioManager.play("complete"))
+	board.tube_locked.connect(func() -> void: AudioManager.play("lock"))
 	board.board_refilled.connect(func() -> void: _set_message("New potions brewed!"))
 
 	var entry := RunState.current_battle()
@@ -58,7 +62,20 @@ func _ready() -> void:
 	enemy_display.configure(battle.enemy_shape, battle.enemy_color)
 	undo_left = battle.undos_allowed()
 	_set_message("Sort potions of one color to unleash them!")
+
+	AudioManager.play_music("boss" if RunState.is_boss_battle() else "dungeon")
+	if not SaveSystem.is_tutorial_done() and RunState.battle_index == 0:
+		var tutorial := Tutorial.new()
+		tutorial.setup(board, battle)
+		_insert_above_board(tutorial)
 	_refresh()
+
+
+## Places a control directly above the puzzle board in the main column.
+func _insert_above_board(control: Control) -> void:
+	var parent := board.get_parent()
+	parent.add_child(control)
+	parent.move_child(control, board.get_index())
 
 
 # --- UI construction -------------------------------------------------------
@@ -277,17 +294,25 @@ func _player_bar_center() -> Vector2:
 
 func _on_potion_activated(color: String, text: String) -> void:
 	_set_message(text)
+	AudioManager.vibrate(25)
 	match color:
+		"red":
+			AudioManager.play("fire")
 		"green":
+			AudioManager.play("heal")
 			UiKit.float_text(self, _player_bar_center(), text.get_slice("  ", 1),
 					UiKit.COLOR_HP)
 		"blue":
+			AudioManager.play("shield")
 			UiKit.float_text(self, _player_bar_center(), text.get_slice("  ", 1),
 					UiKit.COLOR_SHIELD)
+		"purple":
+			AudioManager.play("poison")
 
 
 func _on_enemy_damaged(amount: int) -> void:
 	enemy_display.play_hit()
+	AudioManager.play("enemy_hit")
 	UiKit.float_text(self, _enemy_center() + Vector2(randf_range(-40, 40), -20),
 			"-%d" % amount, UiKit.COLOR_FIRE, 40)
 
@@ -308,8 +333,19 @@ func _on_enemy_attacked(damage: int, blocked: int, crit: bool) -> void:
 	else:
 		_set_message("%s%s attacks for %d damage!" % [prefix, battle.enemy_name, damage])
 	if damage > blocked:
+		AudioManager.play("player_hit")
+		AudioManager.vibrate(60)
 		UiKit.float_text(self, _player_bar_center(), "-%d" % (damage - blocked),
 				UiKit.COLOR_ENEMY_HP, 36)
+	else:
+		AudioManager.play("shield")
+
+
+func _on_last_remedy(heal: int) -> void:
+	AudioManager.play("heal")
+	_set_message("Last Remedy saves you! +%d HP" % heal)
+	UiKit.float_text(self, _player_bar_center(), "+%d Last Remedy" % heal,
+			UiKit.COLOR_HP, 30)
 
 
 func _on_enemy_enraged() -> void:
@@ -338,7 +374,10 @@ func _on_tube_lock_requested(moves: int) -> void:
 
 func _on_battle_won() -> void:
 	board.enabled = false
+	AudioManager.play("victory")
+	AudioManager.stop_music()
 	var was_last := RunState.is_last_battle()
+	var was_elite := str(RunState.current_battle().get("kind", "battle")) == "elite"
 	RunState.complete_battle(battle.player_hp, battle.crystals_reward)
 	if was_last:
 		_show_overlay("Boss Defeated!",
@@ -346,6 +385,8 @@ func _on_battle_won() -> void:
 				% [str(RunState.run_config.get("area_name", "dungeon")),
 					RunState.run_crystals, SaveSystem.crystals()],
 				[["Main Menu", _go_to_menu]])
+	elif was_elite:
+		_show_relic_choice()
 	else:
 		_show_upgrade_choice()
 
@@ -361,6 +402,26 @@ func _show_upgrade_choice() -> void:
 		overlay_choices.add_child(card)
 
 
+func _show_relic_choice() -> void:
+	var choices := RunState.roll_relic_choices()
+	if choices.is_empty():
+		_show_upgrade_choice()
+		return
+	var body := "+%d crystals\nThe elite guarded a relic. Claim one:" \
+			% battle.crystals_reward
+	_show_overlay("Elite Vanquished!", body, [])
+	for id in choices:
+		var card := UiKit.button("%s\n%s" % [RunState.relic_name(id),
+				RunState.relic_description(id)], Vector2(520, 84), Color("c07ce8"))
+		card.pressed.connect(_on_relic_picked.bind(str(id)))
+		overlay_choices.add_child(card)
+
+
+func _on_relic_picked(id: String) -> void:
+	RunState.pick_relic(id)
+	get_tree().change_scene_to_file("res://scenes/map.tscn")
+
+
 func _on_upgrade_picked(id: String) -> void:
 	RunState.pick_upgrade(id)
 	# Instant-effect extras carried by some upgrades (e.g. Vital Tonic).
@@ -373,11 +434,14 @@ func _on_upgrade_picked(id: String) -> void:
 
 func _on_battle_lost() -> void:
 	board.enabled = false
+	AudioManager.play("defeat")
+	AudioManager.stop_music()
+	AudioManager.vibrate(120)
 	var kept := RunState.fail_run()
 	_show_overlay("Defeated...",
-			"You fell in battle %d of %d.\nCrystals kept: %d\nTotal crystals: %d"
+			"You fell in battle %d of %d.\nEnemies defeated: %d\nCrystals kept: %d\nTotal crystals: %d"
 			% [RunState.battle_index + 1, RunState.battles().size(),
-				kept, SaveSystem.crystals()],
+				RunState.battle_index, kept, SaveSystem.crystals()],
 			[["New Run", _start_new_run], ["Main Menu", _go_to_menu]])
 
 

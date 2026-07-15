@@ -5,6 +5,7 @@ extends Control
 
 signal move_made
 signal tube_completed(color: String)
+signal tube_selected
 signal board_refilled
 signal invalid_move
 signal tube_locked
@@ -134,6 +135,7 @@ func _on_tube_tapped(tube: PotionTube) -> void:
 		if not tube.contents.is_empty():
 			selected_tube = tube
 			tube.selected = true
+			tube_selected.emit()
 		return
 	if selected_tube == tube:
 		_deselect()
