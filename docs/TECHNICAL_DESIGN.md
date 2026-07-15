@@ -1,0 +1,102 @@
+# Potion Rogue: Sort Puzzle RPG — Technical Design
+
+## Engine
+
+**Godot 4.3+ (GDScript, GL Compatibility renderer)**
+
+Why Godot:
+- Free, open source, no royalties — ideal for a solo dev shipping to Play Store.
+- One-click Android export, small APK (~30–40 MB), runs well on low-end devices.
+- Node/scene system fits a portrait UI-heavy game.
+- Fully offline; no backend needed.
+- JSON/Resource-based data loading fits the data-driven design (enemies, potions, upgrades).
+
+Trade-offs: smaller ads/IAP plugin ecosystem than Unity (community AdMob plugin exists;
+only relevant in the monetization phase).
+
+## Display
+
+- Base resolution 720x1280 (9:16), portrait-locked.
+- Stretch mode `canvas_items` + aspect `expand`: UI scales cleanly on any Android
+  aspect ratio; top/bottom margins keep content clear of notch and nav bar.
+- GL Compatibility renderer for maximum device coverage.
+
+## Architecture
+
+Strict separation between **logic**, **presentation**, and **data**:
+
+```
+data/ (JSON)          src/ (logic + UI)                 scenes/ (entry points)
+  potions.json   -->    autoload/game_state.gd    <--     main_menu.tscn
+  enemies.json          puzzle/potion_tube.gd             battle.tscn
+  player.json           puzzle/puzzle_board.gd
+                        battle/battle_manager.gd
+                        battle/enemy_display.gd
+                        ui/battle_screen.gd
+                        ui/main_menu.gd
+```
+
+- **GameState (autoload)** — loads all JSON data with hardcoded fallbacks (a corrupt
+  data file can never crash the game). Later: run state, crystals, permanent
+  upgrades, save/load.
+- **PuzzleBoard / PotionTube** — pure water-sort logic + procedural placeholder
+  rendering. Knows nothing about battles; communicates via signals
+  (`move_made`, `tube_completed(color)`, `board_refilled`).
+- **BattleManager** — pure battle logic (HP, shield, poison, enemy turn cadence).
+  No UI code; emits signals (`stats_changed`, `enemy_attacked`, `battle_won`, ...).
+- **BattleScreen** — the only place that wires puzzle to battle and renders both.
+  All UI is built in code for the placeholder phase; will migrate to themed
+  scenes/sprites in the polish phase without touching logic.
+
+Signal flow:
+
+```
+PuzzleBoard.move_made        -> BattleManager.on_move()        (enemy counter -1)
+PuzzleBoard.tube_completed   -> BattleManager.on_potion_completed(color)
+BattleManager.stats_changed  -> BattleScreen._refresh()
+BattleManager.battle_won/lost-> BattleScreen overlays
+```
+
+## Core rules (Phase 1)
+
+- 6 tubes: 4 filled + 2 empty; capacity 4 units; 4 colors, exactly 4 units each.
+- Pour: tap source, tap target; allowed if target is empty or top colors match;
+  moves the whole top run (as much as fits). Invalid target re-selects instead.
+- A full single-color tube = potion completed: effect fires immediately, tube
+  empties. Because each color has exactly 4 units, completing all colors empties
+  the board -> a fresh board is generated ("New potions brewed!").
+- Every pour = 1 move. Enemy attacks when its move counter hits 0, then the
+  counter resets. Poison ticks before the enemy attack (can kill first).
+- Shield absorbs damage before HP. Shield cap 30. Poison re-application
+  refreshes duration (no stacking) — MVP simplification.
+- Undo: 3 per battle, reverts the last pour and refunds the move counter.
+  History clears when a potion completes (effects can't be taken back).
+- "New Mix" reshuffles the board (free; revisit if abused).
+
+Baseline numbers (all in `data/*.json`): Player 50 HP / shield cap 30 / 3 undos.
+Slime 60 HP, 8 attack, attacks every 3 moves. Red 20 dmg, Green +15 HP,
+Blue +12 shield, Purple 5 dmg x 3 turns.
+
+## Roadmap
+
+- **Phase 1 — Technical prototype (this commit):** one playable battle vs Slime;
+  4 potion effects, enemy turn cadence, undo/restart/pause, victory/defeat.
+- **Phase 2 — Core roguelike:** run structure (7 battles), 3-choice upgrade
+  screen after each battle, data-driven upgrade system, game over + crystal reward.
+- **Phase 3 — Content MVP:** 5 enemies + Fire Golem boss (armor, tube locking),
+  15 upgrades, 3 relics, combo system, permanent upgrades, tutorial, audio,
+  settings, local save (JSON in `user://` with versioning + corrupt-file fallback).
+- **Phase 4 — Polish:** real art + animations, particles, haptics, performance
+  pass, Android export template, Play Store assets.
+
+Planned mechanics already accommodated by the architecture:
+- Combos: BattleManager tracks last completed color (add a `_last_potion` field).
+- Tube locking (Dark Mage/boss): add `locked` state to PotionTube.
+- Armor (Golem): extra field on enemy JSON, applied in `on_potion_completed`.
+- Upgrades: modifier pipeline over the values read from `GameState.potions`.
+
+## App identity
+
+- Name: Potion Rogue: Sort Puzzle RPG (short: Potion Rogue)
+- Package: `com.farezagames.potionrogue`
+- Tagline: Sort potions, cast powerful spells, and conquer the dungeon.

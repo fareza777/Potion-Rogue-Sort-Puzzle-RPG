@@ -1,0 +1,16 @@
+# Godot 4 cache and imported assets
+.godot/
+*.import
+
+# Android build artifacts
+android/
+*.apk
+*.aab
+
+# Export credentials (never commit keystores)
+*.keystore
+export_credentials.cfg
+
+# OS files
+Thumbs.db
+.DS_Store

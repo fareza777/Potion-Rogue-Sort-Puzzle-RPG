@@ -1,0 +1,5 @@
+{
+	"max_hp": 50,
+	"max_shield": 30,
+	"undos_per_battle": 3
+}

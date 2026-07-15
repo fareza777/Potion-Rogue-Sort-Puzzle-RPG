@@ -1,0 +1,23 @@
+{
+	"red": {
+		"name": "Fire Potion",
+		"description": "Deals direct damage to the enemy.",
+		"damage": 20
+	},
+	"green": {
+		"name": "Healing Potion",
+		"description": "Restores player HP (capped at max HP).",
+		"heal": 15
+	},
+	"blue": {
+		"name": "Shield Potion",
+		"description": "Grants shield that absorbs enemy attacks.",
+		"shield": 12
+	},
+	"purple": {
+		"name": "Poison Potion",
+		"description": "Poisons the enemy: damage per enemy turn.",
+		"poison_damage": 5,
+		"poison_turns": 3
+	}
+}

@@ -1,0 +1,9 @@
+{
+	"slime": {
+		"name": "Cave Slime",
+		"hp": 60,
+		"attack": 8,
+		"attack_every": 3,
+		"color": "6fce4e"
+	}
+}
