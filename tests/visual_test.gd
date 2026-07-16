@@ -79,16 +79,20 @@ func _ready() -> void:
 	check(premium_board.has_method("tube_display_size"),
 			"premium potion board exposes bottle proportion")
 	if premium_board.has_method("layout_columns"):
-		check(int(premium_board.call("layout_columns")) == 3,
-				"premium potion board uses three columns")
+		check(int(premium_board.call("layout_columns")) == 6,
+				"premium potion board uses one six-bottle row")
 	if premium_board.has_method("tube_display_size"):
 		var bottle_size: Vector2 = premium_board.call("tube_display_size")
 		var aspect := bottle_size.x / bottle_size.y
+		check(bottle_size.x >= 96.0,
+				"premium potion bottles are large touch targets")
 		check(aspect >= 0.38 and aspect <= 0.50,
 				"premium potion bottle keeps compact aspect")
 	var board_source := FileAccess.get_file_as_string("res://src/puzzle/puzzle_board.gd")
-	check(board_source.contains('name = "AlchemyTray"'),
-			"premium potion board owns an alchemy tray")
+	check(board_source.contains('name = "PotionShelf"'),
+			"premium potion board exposes a centered shelf")
+	check(not board_source.contains('name = "AlchemyTray"'),
+			"premium potion row has no boxed alchemy tray")
 	premium_board.free()
 	var fx := BattleFx.new()
 	add_child(fx)
