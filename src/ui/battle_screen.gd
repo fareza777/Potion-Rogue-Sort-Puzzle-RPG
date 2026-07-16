@@ -11,14 +11,11 @@ var _last_moves_until_attack := -1
 var battle_kind_label: Label
 var enemy_name_label: Label
 var enemy_display: EnemyDisplay
-var enemy_hp_bar: ProgressBar
-var enemy_hp_label: Label
+var enemy_hp_bar: OrnateResourceBar
 var armor_label: Label
 var poison_label: Label
 var countdown_label: Label
-var player_hp_bar: ProgressBar
-var player_hp_label: Label
-var shield_label: Label
+var player_hp_bar: OrnateResourceBar
 var player_status_label: Label
 var message_label: Label
 var undo_button: Button
@@ -163,9 +160,10 @@ func _build_enemy_panel() -> VBoxContainer:
 	enemy_name_label.custom_minimum_size = Vector2(0, 42)
 	box.add_child(enemy_name_label)
 
-	enemy_hp_bar = UiKit.bar(UiKit.COLOR_ENEMY_HP, 30.0)
+	enemy_hp_bar = OrnateResourceBar.new()
+	enemy_hp_bar.name = "EnemyVitalBar"
+	enemy_hp_bar.configure("enemy", "Enemy Vitality")
 	box.add_child(enemy_hp_bar)
-	enemy_hp_label = UiKit.bar_label(enemy_hp_bar)
 
 	enemy_display = EnemyDisplay.new()
 	enemy_display.custom_minimum_size = Vector2(0, 300 if _layout_profile.get("name") == "tall" else 330)
@@ -190,32 +188,18 @@ func _build_enemy_panel() -> VBoxContainer:
 
 
 func _build_player_panel() -> PanelContainer:
-	var panel := UiKit.textured_panel("res://assets/art/ui/battle_panel.png", 14)
-	panel.custom_minimum_size = Vector2(0, 68)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 16)
-	panel.add_child(row)
-
-	var hp_box := VBoxContainer.new()
-	hp_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hp_box.add_theme_constant_override("separation", 4)
-	row.add_child(hp_box)
-
-	var hp_title := UiKit.label("Your HP", 15, UiKit.COLOR_TEXT_DIM)
-	hp_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	hp_box.add_child(hp_title)
-
-	player_hp_bar = UiKit.bar(UiKit.COLOR_HP, 26.0)
-	hp_box.add_child(player_hp_bar)
-	player_hp_label = UiKit.bar_label(player_hp_bar)
-
-	player_status_label = UiKit.label("", 15, UiKit.COLOR_POISON)
-	player_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	hp_box.add_child(player_status_label)
-
-	shield_label = UiKit.label("", 20, UiKit.COLOR_SHIELD)
-	shield_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	row.add_child(shield_label)
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(0, 66)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 0)
+	panel.add_child(box)
+	player_hp_bar = OrnateResourceBar.new()
+	player_hp_bar.name = "PlayerVitalBar"
+	player_hp_bar.configure("player", "Adventurer Vitality")
+	box.add_child(player_hp_bar)
+	player_status_label = UiKit.label("", 13, UiKit.COLOR_POISON)
+	player_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(player_status_label)
 	return panel
 
 
@@ -337,9 +321,7 @@ func _refresh() -> void:
 
 	enemy_name_label.text = battle.enemy_name \
 			+ ("  (Enraged!)" if battle.enraged else "")
-	enemy_hp_bar.max_value = battle.enemy_max_hp
-	_animate_bar(enemy_hp_bar, battle.enemy_hp)
-	enemy_hp_label.text = "%d / %d" % [battle.enemy_hp, battle.enemy_max_hp]
+	enemy_hp_bar.set_values(battle.enemy_hp, battle.enemy_max_hp)
 	enemy_display.enraged = battle.enraged
 
 	armor_label.text = "Armor %d" % battle.enemy_armor if battle.enemy_armor > 0 else ""
@@ -356,10 +338,8 @@ func _refresh() -> void:
 	countdown_label.add_theme_color_override("font_color",
 			Color("ff5a3a") if moves <= 1 else UiKit.COLOR_FIRE)
 
-	player_hp_bar.max_value = battle.player_max_hp
-	_animate_bar(player_hp_bar, battle.player_hp)
-	player_hp_label.text = "%d / %d" % [battle.player_hp, battle.player_max_hp]
-	shield_label.text = "Shield %d" % battle.shield if battle.shield > 0 else "No Shield"
+	player_hp_bar.set_values(battle.player_hp, battle.player_max_hp)
+	player_hp_bar.set_badge("SHIELD %d" % battle.shield if battle.shield > 0 else "NO SHIELD")
 	player_status_label.text = ("Poisoned! %d dmg / %d turns"
 			% [battle.player_poison_damage, battle.player_poison_turns]) \
 			if battle.player_poison_turns > 0 else ""
@@ -375,19 +355,12 @@ func _set_message(text: String) -> void:
 	tween.tween_property(message_label, "modulate:a", 1.0, 0.16)
 
 
-func _animate_bar(bar: ProgressBar, target: float) -> void:
-	if not is_instance_valid(bar):
-		return
-	var tween := create_tween()
-	tween.tween_property(bar, "value", target, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-
-
 func _enemy_center() -> Vector2:
 	return enemy_display.global_position + enemy_display.size / 2.0
 
 
 func _player_bar_center() -> Vector2:
-	return player_hp_bar.global_position + player_hp_bar.size / 2.0
+	return player_hp_bar.center_global()
 
 
 # --- Game events ------------------------------------------------------------

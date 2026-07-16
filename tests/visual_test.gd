@@ -106,6 +106,18 @@ func _ready() -> void:
 	else:
 		check(false, "reduced effects state")
 	fx.queue_free()
+	check(ResourceLoader.exists("res://src/ui/ornate_resource_bar.gd"),
+			"ornate resource bar script exists")
+	var vital_bar := OrnateResourceBar.new()
+	check(vital_bar.has_method("configure"), "ornate bar configuration interface")
+	check(vital_bar.has_method("set_values"), "ornate bar value interface")
+	check(vital_bar.has_method("set_badge"), "ornate bar badge interface")
+	vital_bar.free()
+	var battle_source := FileAccess.get_file_as_string("res://src/ui/battle_screen.gd")
+	check(battle_source.contains('name = "EnemyVitalBar"'),
+			"battle exposes framed enemy vital bar")
+	check(battle_source.contains('name = "PlayerVitalBar"'),
+			"battle exposes framed player vital bar")
 	var textured_panel := UiKit.textured_panel(
 			"res://assets/art/ui/battle_panel.png", 26)
 	check(textured_panel.custom_minimum_size.y > 0.0,

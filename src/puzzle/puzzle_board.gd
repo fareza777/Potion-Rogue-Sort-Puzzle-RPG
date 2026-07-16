@@ -31,6 +31,7 @@ var _undo_stack: Array[Dictionary] = []
 func _ready() -> void:
 	var center := CenterContainer.new()
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.offset_bottom = -160
 	add_child(center)
 
 	_tray = PanelContainer.new()
