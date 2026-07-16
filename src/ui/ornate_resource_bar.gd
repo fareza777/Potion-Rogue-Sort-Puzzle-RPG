@@ -5,7 +5,7 @@ extends Control
 
 var _kind := "enemy"
 var _title_text := "VITALITY"
-var _progress: ProgressBar
+var _progress: TextureProgressBar
 var _title: Label
 var _value: Label
 var _marker: Label
@@ -83,12 +83,17 @@ func _ensure_built() -> void:
 	_title.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
 	add_child(_title)
 
-	_progress = ProgressBar.new()
+	_progress = TextureProgressBar.new()
 	_progress.anchor_left = 0.095
 	_progress.anchor_top = 0.40
 	_progress.anchor_right = 0.78
 	_progress.anchor_bottom = 0.82
-	_progress.show_percentage = false
+	_progress.fill_mode = TextureProgressBar.FILL_LEFT_TO_RIGHT
+	_progress.nine_patch_stretch = true
+	_progress.stretch_margin_left = 10
+	_progress.stretch_margin_right = 10
+	_progress.stretch_margin_top = 8
+	_progress.stretch_margin_bottom = 8
 	_progress.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_progress)
 
@@ -101,7 +106,7 @@ func _ensure_built() -> void:
 	_value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_value.add_theme_font_override("font", UiKit.title_font())
 	_value.add_theme_font_size_override("font_size", 18)
-	_value.add_theme_color_override("font_color", Color.WHITE)
+	_value.add_theme_color_override("font_color", Color("fff0c2"))
 	_value.add_theme_constant_override("outline_size", 5)
 	_value.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.92))
 	add_child(_value)
@@ -148,19 +153,45 @@ func _apply_palette() -> void:
 	_title.text = _title_text.to_upper()
 	_marker.text = "☠" if _kind == "enemy" else "♥"
 	var fill_color := Color("d83f46") if _kind == "enemy" else Color("39c96b")
-	var track := StyleBoxFlat.new()
-	track.bg_color = Color("0b0811")
-	track.border_color = Color("4f3e59")
-	track.set_border_width_all(1)
-	track.set_corner_radius_all(7)
-	_progress.add_theme_stylebox_override("background", track)
-	var fill := StyleBoxFlat.new()
-	fill.bg_color = fill_color
-	fill.border_color = fill_color.lightened(0.34)
-	fill.border_width_top = 2
-	fill.set_corner_radius_all(7)
-	_progress.add_theme_stylebox_override("fill", fill)
+	_progress.texture_under = _make_bar_texture(Color("100c16"), false)
+	_progress.texture_progress = _make_bar_texture(fill_color, true)
 	queue_redraw()
+
+
+func _make_bar_texture(base: Color, jewel_fill: bool) -> ImageTexture:
+	var width := 256
+	var height := 32
+	var radius := 10.0
+	var image := Image.create(width, height, false, Image.FORMAT_RGBA8)
+	for y in height:
+		for x in width:
+			var px := float(x)
+			var py := float(y)
+			var inside := true
+			if px < radius and py < radius:
+				inside = Vector2(px - radius, py - radius).length() <= radius
+			elif px > width - radius - 1 and py < radius:
+				inside = Vector2(px - (width - radius - 1), py - radius).length() <= radius
+			elif px < radius and py > height - radius - 1:
+				inside = Vector2(px - radius, py - (height - radius - 1)).length() <= radius
+			elif px > width - radius - 1 and py > height - radius - 1:
+				inside = Vector2(px - (width - radius - 1),
+						py - (height - radius - 1)).length() <= radius
+			if not inside:
+				image.set_pixel(x, y, Color.TRANSPARENT)
+				continue
+			var horizontal := float(x) / float(width - 1)
+			var vertical := float(y) / float(height - 1)
+			var color := base.darkened(0.10 + 0.10 * vertical)
+			if jewel_fill:
+				color = base.darkened(0.22).lerp(base.lightened(0.17), horizontal)
+				color = color.lightened(0.22 * maxf(0.0, 1.0 - vertical * 3.2))
+				if y >= 3 and y <= 5:
+					color = color.lightened(0.18)
+			else:
+				color = color.lerp(Color("261e2d"), 0.18 * (1.0 - vertical))
+			image.set_pixel(x, y, color)
+	return ImageTexture.create_from_image(image)
 
 
 func _draw() -> void:

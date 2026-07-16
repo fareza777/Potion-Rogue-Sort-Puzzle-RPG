@@ -114,6 +114,10 @@ func _ready() -> void:
 	check(vital_bar.has_method("set_values"), "ornate bar value interface")
 	check(vital_bar.has_method("set_badge"), "ornate bar badge interface")
 	vital_bar.free()
+	var vital_source := FileAccess.get_file_as_string(
+			"res://src/ui/ornate_resource_bar.gd")
+	check(vital_source.contains("TextureProgressBar"),
+			"ornate bar uses textured jewel fill")
 	var battle_source := FileAccess.get_file_as_string("res://src/ui/battle_screen.gd")
 	check(battle_source.contains('name = "EnemyVitalBar"'),
 			"battle exposes framed enemy vital bar")
