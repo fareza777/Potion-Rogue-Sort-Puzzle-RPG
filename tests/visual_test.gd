@@ -10,8 +10,13 @@ func _ready() -> void:
 	check(VisualRegistry.enemy("slime").get("sprite", "") != "",
 			"slime sprite mapping")
 	for enemy_id in GameState.enemies:
-		check(not VisualRegistry.enemy(str(enemy_id)).is_empty(),
-				"enemy mapping: " + str(enemy_id))
+		var enemy_style := VisualRegistry.enemy(str(enemy_id))
+		check(not enemy_style.is_empty(), "enemy mapping: " + str(enemy_id))
+		check(str(enemy_style.get("sprite", "")) != "",
+				"enemy sprite path: " + str(enemy_id))
+		check(str(enemy_style.get("motion_profile", "")) in [
+			"elastic", "brittle", "pounce", "heavy", "caster", "inferno",
+		], "enemy motion profile: " + str(enemy_id))
 	for color in GameState.potions:
 		check(not VisualRegistry.potion(str(color)).is_empty(),
 				"potion mapping: " + str(color))
@@ -44,6 +49,21 @@ func _ready() -> void:
 		check(bool(enemy_view.call("uses_sprite_art")), "slime uses registered sprite")
 	else:
 		check(false, "slime uses registered sprite")
+	var expected_profiles := {
+		"slime": "elastic",
+		"skeleton": "brittle",
+		"poison_beast": "pounce",
+		"stone_golem": "heavy",
+		"dark_mage": "caster",
+		"blood_slime": "elastic",
+		"fire_golem": "inferno",
+	}
+	check(enemy_view.has_method("motion_profile"), "enemy motion profile interface")
+	if enemy_view.has_method("motion_profile"):
+		for enemy_id in expected_profiles:
+			enemy_view.call("configure_enemy", enemy_id, enemy_id, "ffffff")
+			check(enemy_view.call("motion_profile") == expected_profiles[enemy_id],
+					"enemy display profile: " + enemy_id)
 	enemy_view.queue_free()
 	var potion_view := PotionTube.new()
 	add_child(potion_view)

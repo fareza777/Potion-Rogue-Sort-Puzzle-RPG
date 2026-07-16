@@ -22,6 +22,8 @@ var _shadow_texture: TextureRect
 var _body_texture: TextureRect
 var _sprite_material: ShaderMaterial
 var _action_tween: Tween
+var _motion_profile := "elastic"
+var _base_scale := Vector2.ONE
 
 
 func _ready() -> void:
@@ -43,7 +45,9 @@ func configure_enemy(enemy_id: String, fallback_shape: String, color_hex: String
 	_shadow_texture.texture = VisualRegistry.texture_or_null(str(config.get("shadow", "")))
 	_sprite_root.visible = _body_texture.texture != null
 	_shadow_texture.visible = _shadow_texture.texture != null
-	_sprite_root.scale = Vector2.ONE * float(config.get("scale", 1.0))
+	_motion_profile = str(config.get("motion_profile", "elastic"))
+	_base_scale = Vector2.ONE * float(config.get("scale", 1.0))
+	_sprite_root.scale = _base_scale
 	_sprite_root.modulate = Color.WHITE
 	queue_redraw()
 
@@ -51,6 +55,10 @@ func configure_enemy(enemy_id: String, fallback_shape: String, color_hex: String
 func uses_sprite_art() -> bool:
 	return _body_texture != null and _body_texture.texture != null \
 			and _sprite_root != null and _sprite_root.visible
+
+
+func motion_profile() -> String:
+	return _motion_profile
 
 
 func _ensure_sprite_nodes() -> void:
@@ -107,14 +115,25 @@ func play_intro() -> void:
 		return
 	_kill_action_tween()
 	_sprite_root.modulate.a = 0.0
-	_sprite_root.scale = Vector2(0.72, 0.62)
-	_sprite_root.position.y = 42.0
+	var intro_scale := Vector2(0.72, 0.62)
+	var intro_drop := 42.0
+	if _motion_profile in ["heavy", "inferno"]:
+		intro_scale = Vector2(0.9, 0.78)
+		intro_drop = 28.0
+	elif _motion_profile == "caster":
+		intro_scale = Vector2(0.82, 0.82)
+		intro_drop = 58.0
+	elif _motion_profile == "brittle":
+		_sprite_root.rotation = -0.08
+	_sprite_root.scale = intro_scale * _base_scale
+	_sprite_root.position.y = intro_drop
 	_action_tween = create_tween().set_parallel(true)
 	_action_tween.tween_property(_sprite_root, "modulate:a", 1.0, 0.34)
 	_action_tween.tween_property(_sprite_root, "position:y", 0.0, 0.42) \
 			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_action_tween.tween_property(_sprite_root, "scale", Vector2.ONE, 0.42) \
+	_action_tween.tween_property(_sprite_root, "scale", _base_scale, 0.42) \
 			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_action_tween.tween_property(_sprite_root, "rotation", 0.0, 0.34)
 
 
 func play_anticipate() -> void:
@@ -122,9 +141,18 @@ func play_anticipate() -> void:
 		return
 	_kill_action_tween()
 	_action_tween = create_tween()
-	_action_tween.tween_property(_sprite_root, "scale", Vector2(0.92, 1.08), 0.13) \
+	var windup := Vector2(0.92, 1.08)
+	if _motion_profile == "pounce":
+		windup = Vector2(1.1, 0.82)
+	elif _motion_profile in ["heavy", "inferno"]:
+		windup = Vector2(1.06, 0.94)
+	elif _motion_profile == "caster":
+		windup = Vector2(1.04, 1.04)
+	elif _motion_profile == "brittle":
+		windup = Vector2(0.96, 1.04)
+	_action_tween.tween_property(_sprite_root, "scale", windup * _base_scale, 0.13) \
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	_action_tween.tween_property(_sprite_root, "scale", Vector2.ONE, 0.2) \
+	_action_tween.tween_property(_sprite_root, "scale", _base_scale, 0.2) \
 			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
@@ -133,12 +161,31 @@ func play_attack() -> void:
 		return
 	_kill_action_tween()
 	_action_tween = create_tween().set_parallel(true)
-	_action_tween.tween_property(_sprite_root, "position:y", -20.0, 0.14) \
+	var lift := -20.0
+	var strike_scale := Vector2(1.11, 0.9)
+	var windup_time := 0.14
+	if _motion_profile == "pounce":
+		lift = 28.0
+		strike_scale = Vector2(1.2, 0.8)
+		windup_time = 0.1
+	elif _motion_profile in ["heavy", "inferno"]:
+		lift = -8.0
+		strike_scale = Vector2(1.08, 0.94)
+		windup_time = 0.2
+	elif _motion_profile == "caster":
+		lift = -34.0
+		strike_scale = Vector2(1.08, 1.08)
+	elif _motion_profile == "brittle":
+		lift = -14.0
+		strike_scale = Vector2(1.04, 0.96)
+		_sprite_root.rotation = -0.05
+	_action_tween.tween_property(_sprite_root, "position:y", lift, windup_time) \
 			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_action_tween.tween_property(_sprite_root, "scale", Vector2(1.11, 0.9), 0.14)
+	_action_tween.tween_property(_sprite_root, "scale", strike_scale * _base_scale, windup_time)
 	_action_tween.chain().tween_property(_sprite_root, "position:y", 0.0, 0.22) \
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	_action_tween.parallel().tween_property(_sprite_root, "scale", Vector2.ONE, 0.22)
+	_action_tween.parallel().tween_property(_sprite_root, "scale", _base_scale, 0.22)
+	_action_tween.parallel().tween_property(_sprite_root, "rotation", 0.0, 0.18)
 
 
 func play_defeat() -> void:
@@ -146,7 +193,14 @@ func play_defeat() -> void:
 		return
 	_kill_action_tween()
 	_action_tween = create_tween().set_parallel(true)
-	_action_tween.tween_property(_sprite_root, "scale", Vector2(1.24, 0.12), 0.55) \
+	var defeated_scale := Vector2(1.24, 0.12)
+	if _motion_profile == "brittle":
+		defeated_scale = Vector2(1.08, 0.06)
+	elif _motion_profile == "caster":
+		defeated_scale = Vector2(0.72, 1.18)
+	elif _motion_profile in ["heavy", "inferno"]:
+		defeated_scale = Vector2(1.18, 0.2)
+	_action_tween.tween_property(_sprite_root, "scale", defeated_scale * _base_scale, 0.55) \
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	_action_tween.tween_property(_sprite_root, "position:y", size.y * 0.34, 0.55)
 	_action_tween.tween_property(_sprite_root, "modulate:a", 0.0, 0.55).set_delay(0.18)

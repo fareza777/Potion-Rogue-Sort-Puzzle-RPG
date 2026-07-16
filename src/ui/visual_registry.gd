@@ -18,13 +18,44 @@ const ENEMIES := {
 		"scale": 1.0,
 		"hit_anchor": Vector2(0.72, 0.42),
 		"projectile_anchor": Vector2(0.5, 0.5),
+		"motion_profile": "elastic",
 	},
-	"skeleton": {"scale": 0.92},
-	"poison_beast": {"scale": 0.96},
-	"stone_golem": {"scale": 1.02},
-	"dark_mage": {"scale": 0.94},
-	"blood_slime": {"scale": 1.04},
-	"fire_golem": {"scale": 1.1},
+	"skeleton": {
+		"sprite": "res://assets/art/enemies/skeleton/skeleton.png",
+		"shadow": "res://assets/art/enemies/slime/cave_slime_shadow.png",
+		"scale": 0.92,
+		"motion_profile": "brittle",
+	},
+	"poison_beast": {
+		"sprite": "res://assets/art/enemies/poison_beast/poison_beast.png",
+		"shadow": "res://assets/art/enemies/slime/cave_slime_shadow.png",
+		"scale": 0.96,
+		"motion_profile": "pounce",
+	},
+	"stone_golem": {
+		"sprite": "res://assets/art/enemies/stone_golem/stone_golem.png",
+		"shadow": "res://assets/art/enemies/slime/cave_slime_shadow.png",
+		"scale": 1.02,
+		"motion_profile": "heavy",
+	},
+	"dark_mage": {
+		"sprite": "res://assets/art/enemies/dark_mage/dark_mage.png",
+		"shadow": "res://assets/art/enemies/slime/cave_slime_shadow.png",
+		"scale": 0.94,
+		"motion_profile": "caster",
+	},
+	"blood_slime": {
+		"sprite": "res://assets/art/enemies/blood_slime/blood_slime.png",
+		"shadow": "res://assets/art/enemies/slime/cave_slime_shadow.png",
+		"scale": 1.04,
+		"motion_profile": "elastic",
+	},
+	"fire_golem": {
+		"sprite": "res://assets/art/enemies/fire_golem/fire_golem.png",
+		"shadow": "res://assets/art/enemies/slime/cave_slime_shadow.png",
+		"scale": 1.1,
+		"motion_profile": "inferno",
+	},
 }
 
 const POTIONS := {
