@@ -12,12 +12,14 @@ for you to finish the puzzle.
 - 🔵 Shield Potion — absorb attacks
 - 🟣 Poison Potion — damage over time
 
-**Status: Phase 3 — MVP framework complete.** Full 7-battle run (6 enemy types,
+**Status: Phase 4 — visual polish in progress.** Full 7-battle run (6 enemy types,
 elite Stone Golem with relic reward, boss Fire Golem with armor/tube-locks/enrage),
 15 data-driven upgrades, 3 relics, 4 potion combos, permanent upgrade shop
 (8 crystal upgrades), interactive tutorial, synthesized placeholder audio with
 volume/vibration settings, corrupt-safe local save. Remaining before store
-release: real art & audio assets (Phase 4 polish) and the Android export config.
+release: the Cave Slime battle now establishes the production-art benchmark;
+the remaining enemy roster, meta screens, real audio, and Android export config
+are still in progress.
 See [docs/TECHNICAL_DESIGN.md](docs/TECHNICAL_DESIGN.md) for architecture and roadmap.
 
 ## Running the game

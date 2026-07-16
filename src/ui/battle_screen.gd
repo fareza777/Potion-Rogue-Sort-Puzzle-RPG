@@ -126,6 +126,8 @@ func _build_ui() -> void:
 	root.add_child(_build_button_row())
 	battle_fx = BattleFx.new()
 	add_child(battle_fx)
+	battle_fx.set_reduced_effects(bool(ProjectSettings.get_setting(
+			"potion_rogue/reduced_effects", false)))
 	_build_overlay()
 
 

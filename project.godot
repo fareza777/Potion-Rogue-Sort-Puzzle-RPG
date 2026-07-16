@@ -33,6 +33,10 @@ window/stretch/aspect="expand"
 
 pointing/emulate_touch_from_mouse=true
 
+[potion_rogue]
+
+reduced_effects=false
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"

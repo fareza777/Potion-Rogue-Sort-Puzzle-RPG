@@ -93,10 +93,11 @@ Blue +12 shield, Purple 5 dmg x 3 turns.
   placeholder SFX/music (AudioManager, no asset files) with Music/SFX buses,
   settings screen (volumes, vibration, reset progress), credits, headless logic
   tests — 30 checks (tests/logic_test.tscn).
-- **Phase 4 — Polish: NEXT.** Real art (sprites for enemies/tubes/panels — the
-  drawing code is isolated in EnemyDisplay/PotionTube/UiKit), real audio (swap
-  streams in AudioManager._build_sounds), particles/animations, haptics tuning,
-  performance pass, Android export template + signing, Play Store assets.
+- **Phase 4 — Polish: IN PROGRESS.** The Cave Slime battle benchmark now uses a
+  painted Shadow Crypt environment, sprite-backed enemy presentation, premium
+  potion vessels, illustrated controls, event-driven VFX, and reduced-effects
+  support. Remaining work: six enemy art sets, meta-screen reskin, real audio,
+  haptics tuning, Android performance/export, and honest Play Store captures.
 
 Additional systems since Phase 1:
 - **RunState (autoload):** run progress, upgrade modifiers (`stat(name, base)`),
