@@ -74,6 +74,11 @@ const UI_ICONS := {
 	"vibration": "res://assets/art/ui/controls/icon_vibration.png",
 }
 
+const BACKGROUNDS := {
+	"main_hall": "res://assets/art/backgrounds/main_hall_v2.png",
+	"battle": "res://assets/art/backgrounds/shadow_crypt_battle.png",
+}
+
 
 static func enemy(enemy_id: String) -> Dictionary:
 	var result := ENEMY_DEFAULT.duplicate(true)
@@ -93,6 +98,10 @@ static func ui_icon(icon_id: String) -> String:
 	return str(UI_ICONS.get(icon_id, ""))
 
 
+static func background(background_id: String) -> String:
+	return str(BACKGROUNDS.get(background_id, ""))
+
+
 static func texture_or_null(path: String) -> Texture2D:
 	if path.is_empty() or not ResourceLoader.exists(path):
 		return null
@@ -107,4 +116,8 @@ static func missing_runtime_assets() -> PackedStringArray:
 			var path := str(config.get(key, ""))
 			if not path.is_empty() and not ResourceLoader.exists(path):
 				result.append(path)
+	for background_id in BACKGROUNDS:
+		var path := background(str(background_id))
+		if not path.is_empty() and not ResourceLoader.exists(path):
+			result.append(path)
 	return result

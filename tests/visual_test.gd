@@ -28,6 +28,7 @@ func _ready() -> void:
 	for path in [
 		"res://assets/art/app_icon.png",
 		"res://assets/art/backgrounds/shadow_crypt_battle.png",
+		"res://assets/art/backgrounds/main_hall_v2.png",
 		"res://assets/art/potions/bottle_frame.png",
 		"res://assets/art/ui/battle_panel.png",
 		"res://assets/art/ui/banner_turn.png",
@@ -39,6 +40,15 @@ func _ready() -> void:
 		check(ResourceLoader.exists(path), "loadable art: " + path)
 	check(ProjectSettings.get_setting("application/config/icon", "") ==
 			"res://assets/art/app_icon.png", "branded application icon configured")
+	for scene_path in ["res://scenes/main_menu.tscn", "res://scenes/map.tscn",
+			"res://scenes/battle.tscn", "res://scenes/shop.tscn",
+			"res://scenes/settings.tscn", "res://scenes/credits.tscn"]:
+		var smoke_scene := load(scene_path) as PackedScene
+		check(smoke_scene != null, "scene loads: " + scene_path)
+		if smoke_scene != null:
+			var smoke_instance := smoke_scene.instantiate()
+			check(smoke_instance != null, "scene instantiates: " + scene_path)
+			smoke_instance.free()
 	var enemy_view := EnemyDisplay.new()
 	add_child(enemy_view)
 	enemy_view.custom_minimum_size = Vector2(520, 300)
@@ -166,19 +176,25 @@ func _ready() -> void:
 		check(float(tall.get("safe_horizontal", 0.0)) >= 20.0,
 				"tall profile keeps safe margins")
 	var menu_source := FileAccess.get_file_as_string("res://src/ui/main_menu.gd")
-	check(menu_source.contains('hero.name = "HeroBand"'),
-			"main menu exposes responsive hero band")
-	check(menu_source.contains('action.name = "ActionBand"'),
-			"main menu exposes responsive action band")
+	var menu_scene := load("res://scenes/main_menu.tscn") as PackedScene
+	check(menu_scene != null, "main menu scene loads")
+	if menu_scene != null:
+		var menu_instance := menu_scene.instantiate()
+		check(menu_instance != null, "main menu scene instantiates")
+		menu_instance.free()
+	check(VisualRegistry.background("main_hall") ==
+			"res://assets/art/backgrounds/main_hall_v2.png",
+			"main hall uses generated premium alchemy art")
+	for menu_component in ["HallLogo", "HeroAlchemy", "CommandStack",
+			"BottomNavigation"]:
+		check(menu_source.contains('name = "' + menu_component + '"'),
+				"main menu exposes premium " + menu_component)
 	check(ResourceLoader.exists("res://src/ui/ambient_particles.gd"),
 			"hall ambient particles script exists")
 	var ambient := AmbientParticles.new()
 	check(ambient.has_method("set_reduced_effects"),
 			"hall ambient particles reduced-effects interface")
 	ambient.free()
-	for hall_component in ["HeroHalo", "FeatureSeals", "SafeNavigation"]:
-		check(menu_source.contains('name = "' + hall_component + '"'),
-				"hall exposes premium " + hall_component)
 	var settings_source := FileAccess.get_file_as_string("res://src/ui/settings_screen.gd")
 	for row_name in ["MusicRow", "SoundRow", "VibrationRow"]:
 		check(settings_source.contains('name = "' + row_name + '"'),
@@ -196,6 +212,8 @@ func _ready() -> void:
 	check(AudioManager.has_method("crossfade_music"), "ambient crossfade interface")
 	var shop_source := FileAccess.get_file_as_string("res://src/ui/shop_screen.gd")
 	check(shop_source.contains('name = "WorkshopHeader"'), "workshop responsive header")
+	check(shop_source.contains('name = "UpgradeSigil"'),
+			"workshop upgrade rows use illustrated sigils")
 	var credits_source := FileAccess.get_file_as_string("res://src/ui/credits_screen.gd")
 	check(credits_source.contains('name = "CreditsPanel"'), "credits full-height panel")
 	textured_panel.queue_free()

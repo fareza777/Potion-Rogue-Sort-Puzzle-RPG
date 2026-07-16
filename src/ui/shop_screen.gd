@@ -70,12 +70,13 @@ func _make_row(id: String) -> PanelContainer:
 	var max_level := int(up.get("max_level", 1))
 	var maxed := level >= max_level
 
-	var panel := UiKit.panel(Color("8f713a"))
+	var panel := UiKit.textured_panel("res://assets/art/ui/battle_panel.png", 18)
 	panel.custom_minimum_size = Vector2(0, 138)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 14)
 	panel.add_child(row)
+	row.add_child(_upgrade_sigil(id))
 
 	var info := VBoxContainer.new()
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -91,7 +92,7 @@ func _make_row(id: String) -> PanelContainer:
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	info.add_child(desc)
 
-	var buy := UiKit.button("MAX" if maxed else "BUY  %d" % RunState.perma_cost(id),
+	var buy := UiKit.ornate_button("MAX" if maxed else "BUY  %d" % RunState.perma_cost(id),
 			Vector2(132, 58), UiKit.COLOR_GOLD)
 	buy.add_theme_font_size_override("font_size", 17)
 	buy.disabled = maxed or SaveSystem.crystals() < RunState.perma_cost(id)
@@ -101,3 +102,45 @@ func _make_row(id: String) -> PanelContainer:
 			_rebuild())
 	row.add_child(buy)
 	return panel
+
+
+func _upgrade_sigil(id: String) -> Control:
+	var holder := Control.new()
+	holder.name = "UpgradeSigil"
+	holder.custom_minimum_size = Vector2(84, 84)
+	holder.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var accent := _upgrade_accent(id)
+	var ring := TextureRect.new()
+	ring.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ring.texture = VisualRegistry.texture_or_null("res://assets/art/ui/button_round.png")
+	ring.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	ring.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	ring.modulate = accent
+	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(ring)
+	var bottle := TextureRect.new()
+	bottle.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bottle.offset_left = 21
+	bottle.offset_right = -21
+	bottle.offset_top = 13
+	bottle.offset_bottom = -13
+	bottle.texture = VisualRegistry.texture_or_null(
+			"res://assets/art/potions/bottle_frame.png")
+	bottle.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bottle.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	bottle.modulate = accent.lightened(0.2)
+	bottle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(bottle)
+	return holder
+
+
+func _upgrade_accent(id: String) -> Color:
+	if "fire" in id:
+		return Color("ff7446")
+	if "shield" in id or "body" in id:
+		return Color("55b8ff")
+	if "heal" in id:
+		return Color("71d65d")
+	if "venom" in id:
+		return Color("c36eff")
+	return Color("f0c568")
