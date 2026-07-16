@@ -99,6 +99,16 @@ func _ready() -> void:
 	check(kit.has_method("ornate_button"), "ornate button factory")
 	check(kit.has_method("enemy_portrait"), "enemy portrait factory")
 	check(kit.has_method("map_node_button"), "map node factory")
+	var registry := VisualRegistry.new()
+	check(registry.has_method("ui_icon"), "UI icon registry interface")
+	if registry.has_method("ui_icon"):
+		for icon_id in ["undo", "mix", "pause", "music", "sound", "vibration"]:
+			var icon_path := str(registry.call("ui_icon", icon_id))
+			check(ResourceLoader.exists(icon_path), "registered UI icon: " + icon_id)
+			var icon_texture := load(icon_path) as Texture2D
+			check(icon_texture != null and icon_texture.get_width() == 512 \
+					and icon_texture.get_height() == 512,
+					"UI icon dimensions: " + icon_id)
 	check(kit.has_method("layout_profile"), "responsive layout profile interface")
 	if kit.has_method("layout_profile"):
 		var standard: Dictionary = kit.call("layout_profile", Vector2(720, 1280))

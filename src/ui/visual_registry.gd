@@ -65,6 +65,15 @@ const POTIONS := {
 	"purple": {"color": Color("a448e0"), "glow": Color("d879ff")},
 }
 
+const UI_ICONS := {
+	"undo": "res://assets/art/ui/controls/icon_undo.png",
+	"mix": "res://assets/art/ui/controls/icon_mix.png",
+	"pause": "res://assets/art/ui/controls/icon_pause.png",
+	"music": "res://assets/art/ui/controls/icon_music.png",
+	"sound": "res://assets/art/ui/controls/icon_sound.png",
+	"vibration": "res://assets/art/ui/controls/icon_vibration.png",
+}
+
 
 static func enemy(enemy_id: String) -> Dictionary:
 	var result := ENEMY_DEFAULT.duplicate(true)
@@ -78,6 +87,10 @@ static func potion(color: String) -> Dictionary:
 		"color": Color.WHITE,
 		"glow": Color.WHITE,
 	}).duplicate(true)
+
+
+static func ui_icon(icon_id: String) -> String:
+	return str(UI_ICONS.get(icon_id, ""))
 
 
 static func texture_or_null(path: String) -> Texture2D:
