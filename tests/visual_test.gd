@@ -64,6 +64,16 @@ func _ready() -> void:
 	else:
 		check(false, "reduced effects state")
 	fx.queue_free()
+	var textured_panel := UiKit.textured_panel(
+			"res://assets/art/ui/battle_panel.png", 26)
+	check(textured_panel.custom_minimum_size.y > 0.0,
+			"textured panel has minimum size")
+	var icon_control := UiKit.icon_button(
+			"res://assets/art/ui/icon_undo.png", 3, "Undo last pour")
+	check(icon_control.tooltip_text == "Undo last pour", "icon button tooltip")
+	check(icon_control.custom_minimum_size.x >= 84.0, "icon button touch target")
+	textured_panel.queue_free()
+	icon_control.queue_free()
 	print("---")
 	print("%d checks, %d failures" % [_checks, _failures])
 	get_tree().quit(1 if _failures > 0 else 0)

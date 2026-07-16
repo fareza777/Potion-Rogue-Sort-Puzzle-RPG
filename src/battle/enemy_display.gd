@@ -72,7 +72,10 @@ func _ensure_sprite_nodes() -> void:
 	_sprite_root.add_child(_shadow_texture)
 
 	_body_texture = TextureRect.new()
-	_body_texture.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_body_texture.anchor_left = 0.07
+	_body_texture.anchor_top = -0.15
+	_body_texture.anchor_right = 0.93
+	_body_texture.anchor_bottom = 1.15
 	_body_texture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_body_texture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_body_texture.mouse_filter = Control.MOUSE_FILTER_IGNORE

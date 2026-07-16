@@ -43,6 +43,65 @@ static func panel(border_color: Color = COLOR_PANEL_BORDER) -> PanelContainer:
 	return p
 
 
+static func textured_panel(texture_path: String, margins := 26) -> PanelContainer:
+	var p := PanelContainer.new()
+	p.custom_minimum_size = Vector2(0, 80)
+	var texture := VisualRegistry.texture_or_null(texture_path)
+	if texture == null:
+		return panel()
+	var style := StyleBoxTexture.new()
+	style.texture = texture
+	style.texture_margin_left = 64.0
+	style.texture_margin_right = 64.0
+	style.texture_margin_top = 58.0
+	style.texture_margin_bottom = 58.0
+	style.content_margin_left = float(margins)
+	style.content_margin_right = float(margins)
+	style.content_margin_top = float(margins)
+	style.content_margin_bottom = float(margins)
+	p.add_theme_stylebox_override("panel", style)
+	return p
+
+
+static func icon_button(icon_path: String, count: int, tooltip: String) -> Button:
+	var b := Button.new()
+	b.custom_minimum_size = Vector2(96, 96)
+	b.tooltip_text = tooltip
+	b.text = str(count) if count >= 0 else ""
+	b.icon = VisualRegistry.texture_or_null(icon_path)
+	b.expand_icon = true
+	b.add_theme_font_override("font", title_font())
+	b.add_theme_font_size_override("font_size", 24)
+	b.add_theme_color_override("font_color", COLOR_GOLD)
+	b.add_theme_color_override("font_hover_color", Color.WHITE)
+	b.add_theme_color_override("font_disabled_color", Color("675c6f"))
+	b.add_theme_constant_override("icon_max_width", 54)
+	var ring := VisualRegistry.texture_or_null("res://assets/art/ui/button_round.png")
+	if ring != null:
+		for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+			var style := StyleBoxTexture.new()
+			style.texture = ring
+			style.modulate_color = Color(1.15, 1.08, 0.92) if state == "hover" \
+					else Color(0.72, 0.72, 0.72) if state == "disabled" else Color.WHITE
+			style.content_margin_left = 18
+			style.content_margin_right = 18
+			style.content_margin_top = 18
+			style.content_margin_bottom = 18
+			b.add_theme_stylebox_override(state, style)
+	return b
+
+
+static func battle_background(parent: Control, texture_path: String) -> TextureRect:
+	var bg := TextureRect.new()
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.texture = VisualRegistry.texture_or_null(texture_path)
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(bg)
+	return bg
+
+
 static func _audio() -> Node:
 	var tree := Engine.get_main_loop() as SceneTree
 	return tree.root.get_node_or_null("AudioManager") if tree != null else null

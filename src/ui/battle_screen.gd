@@ -22,6 +22,7 @@ var shield_label: Label
 var player_status_label: Label
 var message_label: Label
 var undo_button: Button
+var undo_count_label: Label
 var overlay: Control
 var overlay_title: Label
 var overlay_body: Label
@@ -62,7 +63,9 @@ func _ready() -> void:
 
 	var entry := RunState.current_battle()
 	battle.setup(str(entry.get("enemy", "slime")))
-	enemy_display.configure(battle.enemy_shape, battle.enemy_color)
+	enemy_display.configure_enemy(str(entry.get("enemy", "slime")),
+			battle.enemy_shape, battle.enemy_color)
+	enemy_display.play_intro()
 	undo_left = battle.undos_allowed()
 	_set_message("Sort potions of one color to unleash them!")
 
@@ -85,25 +88,35 @@ func _insert_above_board(control: Control) -> void:
 
 func _build_ui() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
-	UiKit.background(self)
+	UiKit.battle_background(self,
+			"res://assets/art/backgrounds/shadow_crypt_battle.png")
+	var atmosphere := ColorRect.new()
+	atmosphere.set_anchors_preset(Control.PRESET_FULL_RECT)
+	atmosphere.color = Color(0.015, 0.012, 0.025, 0.18)
+	atmosphere.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(atmosphere)
 
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 24)
-	margin.add_theme_constant_override("margin_right", 24)
-	margin.add_theme_constant_override("margin_top", 44)   # notch safe zone
-	margin.add_theme_constant_override("margin_bottom", 36)  # nav bar safe zone
+	margin.add_theme_constant_override("margin_left", 16)
+	margin.add_theme_constant_override("margin_right", 16)
+	margin.add_theme_constant_override("margin_top", 34)   # notch safe zone
+	margin.add_theme_constant_override("margin_bottom", 26)  # nav bar safe zone
 	add_child(margin)
 
 	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 10)
+	root.add_theme_constant_override("separation", 4)
 	margin.add_child(root)
 
+	root.add_child(_build_top_strip())
 	root.add_child(_build_enemy_panel())
 	root.add_child(_build_player_panel())
+	root.add_child(_build_turn_banner())
 
-	message_label = UiKit.label("", 23, UiKit.COLOR_GOLD)
-	message_label.custom_minimum_size = Vector2(0, 34)
+	message_label = UiKit.label("", 20, UiKit.COLOR_GOLD)
+	message_label.custom_minimum_size = Vector2(0, 28)
+	message_label.add_theme_constant_override("outline_size", 5)
+	message_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
 	root.add_child(message_label)
 
 	board = PuzzleBoard.new()
@@ -116,42 +129,59 @@ func _build_ui() -> void:
 	_build_overlay()
 
 
-func _build_enemy_panel() -> PanelContainer:
-	var panel := UiKit.panel()
+func _build_top_strip() -> PanelContainer:
+	var panel := UiKit.panel(Color("7d6030"))
+	panel.custom_minimum_size = Vector2(0, 50)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	panel.add_child(row)
+	battle_kind_label = UiKit.label("", 17, UiKit.COLOR_TEXT)
+	battle_kind_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	battle_kind_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(battle_kind_label)
+	var currency := UiKit.label("◆  %d" % SaveSystem.crystals(), 20, Color("72cfff"))
+	currency.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	row.add_child(currency)
+	return panel
+
+
+func _build_enemy_panel() -> VBoxContainer:
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 4)
-	panel.add_child(box)
+	box.add_theme_constant_override("separation", 2)
 
-	battle_kind_label = UiKit.label("", 18, UiKit.COLOR_TEXT_DIM)
-	box.add_child(battle_kind_label)
-
-	enemy_name_label = UiKit.title_label("", 32)
+	enemy_name_label = UiKit.title_label("", 34)
+	enemy_name_label.custom_minimum_size = Vector2(0, 42)
 	box.add_child(enemy_name_label)
 
-	enemy_display = EnemyDisplay.new()
-	enemy_display.custom_minimum_size = Vector2(0, 160)
-	box.add_child(enemy_display)
-
-	enemy_hp_bar = UiKit.bar(UiKit.COLOR_ENEMY_HP)
+	enemy_hp_bar = UiKit.bar(UiKit.COLOR_ENEMY_HP, 30.0)
 	box.add_child(enemy_hp_bar)
 	enemy_hp_label = UiKit.bar_label(enemy_hp_bar)
+
+	enemy_display = EnemyDisplay.new()
+	enemy_display.custom_minimum_size = Vector2(0, 330)
+	enemy_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	box.add_child(enemy_display)
 
 	var status_row := HBoxContainer.new()
 	status_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	status_row.add_theme_constant_override("separation", 18)
 	box.add_child(status_row)
-	armor_label = UiKit.label("", 20, Color("c8c2b8"))
+	armor_label = UiKit.label("", 18, Color("d8d0bd"))
 	status_row.add_child(armor_label)
-	poison_label = UiKit.label("", 20, UiKit.COLOR_POISON)
+	poison_label = UiKit.label("", 18, UiKit.COLOR_POISON)
 	status_row.add_child(poison_label)
 
-	countdown_label = UiKit.label("", 25, UiKit.COLOR_FIRE)
+	countdown_label = UiKit.label("", 22, UiKit.COLOR_FIRE)
+	countdown_label.custom_minimum_size = Vector2(0, 28)
+	countdown_label.add_theme_constant_override("outline_size", 5)
+	countdown_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
 	box.add_child(countdown_label)
-	return panel
+	return box
 
 
 func _build_player_panel() -> PanelContainer:
-	var panel := UiKit.panel()
+	var panel := UiKit.textured_panel("res://assets/art/ui/battle_panel.png", 14)
+	panel.custom_minimum_size = Vector2(0, 68)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 16)
 	panel.add_child(row)
@@ -161,41 +191,83 @@ func _build_player_panel() -> PanelContainer:
 	hp_box.add_theme_constant_override("separation", 4)
 	row.add_child(hp_box)
 
-	var hp_title := UiKit.label("Your HP", 18, UiKit.COLOR_TEXT_DIM)
+	var hp_title := UiKit.label("Your HP", 15, UiKit.COLOR_TEXT_DIM)
 	hp_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	hp_box.add_child(hp_title)
 
-	player_hp_bar = UiKit.bar(UiKit.COLOR_HP)
+	player_hp_bar = UiKit.bar(UiKit.COLOR_HP, 26.0)
 	hp_box.add_child(player_hp_bar)
 	player_hp_label = UiKit.bar_label(player_hp_bar)
 
-	player_status_label = UiKit.label("", 18, UiKit.COLOR_POISON)
+	player_status_label = UiKit.label("", 15, UiKit.COLOR_POISON)
 	player_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	hp_box.add_child(player_status_label)
 
-	shield_label = UiKit.label("", 24, UiKit.COLOR_SHIELD)
+	shield_label = UiKit.label("", 20, UiKit.COLOR_SHIELD)
 	shield_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	row.add_child(shield_label)
 	return panel
 
 
+func _build_turn_banner() -> Control:
+	var holder := Control.new()
+	holder.custom_minimum_size = Vector2(0, 58)
+	var texture := TextureRect.new()
+	texture.set_anchors_preset(Control.PRESET_FULL_RECT)
+	texture.texture = VisualRegistry.texture_or_null("res://assets/art/ui/banner_turn.png")
+	texture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	texture.stretch_mode = TextureRect.STRETCH_SCALE
+	texture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(texture)
+	var label := UiKit.title_label("YOUR TURN", 28, Color("f5d681"))
+	label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	holder.add_child(label)
+	return holder
+
+
 func _build_button_row() -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 18)
+	row.custom_minimum_size = Vector2(0, 106)
+	row.add_theme_constant_override("separation", 42)
 
-	undo_button = UiKit.button("Undo", Vector2(200, 62))
+	undo_button = UiKit.icon_button("res://assets/art/ui/icon_undo.png", -1,
+			"Undo the last pour")
+	undo_count_label = UiKit.label("3", 18, Color("f5d681"))
+	undo_count_label.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	undo_count_label.offset_left = -30
+	undo_count_label.offset_top = -30
+	undo_count_label.offset_right = -4
+	undo_count_label.offset_bottom = -4
+	undo_count_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	undo_count_label.add_theme_constant_override("outline_size", 4)
+	undo_count_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.95))
+	undo_button.add_child(undo_count_label)
 	undo_button.pressed.connect(_on_undo_pressed)
-	row.add_child(undo_button)
+	row.add_child(_action_stack(undo_button, "Undo"))
 
-	var restart := UiKit.button("New Mix", Vector2(200, 62))
+	var restart := UiKit.icon_button("res://assets/art/ui/icon_remix.png", -1,
+			"Brew a new potion mix")
 	restart.pressed.connect(_on_restart_pressed)
-	row.add_child(restart)
+	row.add_child(_action_stack(restart, "New Mix"))
 
-	var pause := UiKit.button("Pause", Vector2(200, 62))
+	var pause := UiKit.icon_button("res://assets/art/ui/icon_pause.png", -1,
+			"Pause the battle")
 	pause.pressed.connect(_show_pause)
-	row.add_child(pause)
+	row.add_child(_action_stack(pause, "Pause"))
 	return row
+
+
+func _action_stack(button: Button, caption: String) -> VBoxContainer:
+	var stack := VBoxContainer.new()
+	stack.add_theme_constant_override("separation", -4)
+	stack.add_child(button)
+	var label := UiKit.label(caption, 15, UiKit.COLOR_GOLD)
+	label.add_theme_constant_override("outline_size", 4)
+	label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	stack.add_child(label)
+	return stack
 
 
 func _build_overlay() -> void:
@@ -282,7 +354,7 @@ func _refresh() -> void:
 			% [battle.player_poison_damage, battle.player_poison_turns]) \
 			if battle.player_poison_turns > 0 else ""
 
-	undo_button.text = "Undo (%d)" % undo_left
+	undo_count_label.text = str(undo_left)
 	undo_button.disabled = undo_left <= 0 or not board.can_undo() or battle.battle_over
 
 
