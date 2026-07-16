@@ -99,6 +99,19 @@ func _ready() -> void:
 	check(kit.has_method("ornate_button"), "ornate button factory")
 	check(kit.has_method("enemy_portrait"), "enemy portrait factory")
 	check(kit.has_method("map_node_button"), "map node factory")
+	check(kit.has_method("layout_profile"), "responsive layout profile interface")
+	if kit.has_method("layout_profile"):
+		var standard: Dictionary = kit.call("layout_profile", Vector2(720, 1280))
+		var tall: Dictionary = kit.call("layout_profile", Vector2(576, 1280))
+		check(standard.get("name") == "standard", "standard portrait profile")
+		check(tall.get("name") == "tall", "tall phone profile")
+		var ratio_sum := float(tall.get("arena_ratio", 0.0)) \
+				+ float(tall.get("status_ratio", 0.0)) \
+				+ float(tall.get("board_ratio", 0.0)) \
+				+ float(tall.get("controls_ratio", 0.0))
+		check(is_equal_approx(ratio_sum, 1.0), "responsive battle bands fill height")
+		check(float(tall.get("safe_horizontal", 0.0)) >= 20.0,
+				"tall profile keeps safe margins")
 	textured_panel.queue_free()
 	icon_control.queue_free()
 	print("---")

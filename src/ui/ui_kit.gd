@@ -20,6 +20,45 @@ const COLOR_FIRE := Color("ff8a4a")
 static var _title_font: FontFile
 
 
+static func layout_profile(viewport_size: Vector2) -> Dictionary:
+	var aspect := viewport_size.y / maxf(viewport_size.x, 1.0)
+	if aspect >= 2.05:
+		return {
+			"name": "tall",
+			"safe_horizontal": 22.0,
+			"safe_top": 34.0,
+			"safe_bottom": 30.0,
+			"hero_ratio": 0.39,
+			"arena_ratio": 0.34,
+			"status_ratio": 0.16,
+			"board_ratio": 0.36,
+			"controls_ratio": 0.14,
+		}
+	return {
+		"name": "standard",
+		"safe_horizontal": 24.0,
+		"safe_top": 28.0,
+		"safe_bottom": 24.0,
+		"hero_ratio": 0.34,
+		"arena_ratio": 0.36,
+		"status_ratio": 0.17,
+		"board_ratio": 0.33,
+		"controls_ratio": 0.14,
+	}
+
+
+static func safe_margin(parent: Control, horizontal := 24,
+		top := 28, bottom := 24) -> MarginContainer:
+	var margin := MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	margin.add_theme_constant_override("margin_left", horizontal)
+	margin.add_theme_constant_override("margin_right", horizontal)
+	margin.add_theme_constant_override("margin_top", top)
+	margin.add_theme_constant_override("margin_bottom", bottom)
+	parent.add_child(margin)
+	return margin
+
+
 static func title_font() -> Font:
 	if _title_font == null:
 		_title_font = load("res://assets/fonts/Cinzel.ttf")
