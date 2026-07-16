@@ -162,6 +162,15 @@ func _ready() -> void:
 			"main menu exposes responsive hero band")
 	check(menu_source.contains('action.name = "ActionBand"'),
 			"main menu exposes responsive action band")
+	check(ResourceLoader.exists("res://src/ui/ambient_particles.gd"),
+			"hall ambient particles script exists")
+	var ambient := AmbientParticles.new()
+	check(ambient.has_method("set_reduced_effects"),
+			"hall ambient particles reduced-effects interface")
+	ambient.free()
+	for hall_component in ["HeroHalo", "FeatureSeals", "SafeNavigation"]:
+		check(menu_source.contains('name = "' + hall_component + '"'),
+				"hall exposes premium " + hall_component)
 	var settings_source := FileAccess.get_file_as_string("res://src/ui/settings_screen.gd")
 	for row_name in ["MusicRow", "SoundRow", "VibrationRow"]:
 		check(settings_source.contains('name = "' + row_name + '"'),
