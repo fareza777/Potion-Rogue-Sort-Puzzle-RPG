@@ -71,6 +71,7 @@ func _ready() -> void:
 
 	AudioManager.play_music("boss" if RunState.is_boss_battle() else "dungeon")
 	if not SaveSystem.is_tutorial_done() and RunState.battle_index == 0:
+		board.generate_tutorial_board()
 		var tutorial := Tutorial.new()
 		tutorial.setup(board, battle)
 		_insert_above_board(tutorial)

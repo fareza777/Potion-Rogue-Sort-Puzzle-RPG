@@ -78,6 +78,26 @@ func generate_board() -> void:
 			tubes[t].set_contents([] as Array[String])
 
 
+## Deterministic first-run layout. Three exposed green units teach legal
+## matching immediately while preserving the complete four-color puzzle.
+func generate_tutorial_board() -> void:
+	_undo_stack.clear()
+	_deselect()
+	var layouts: Array[Array] = [
+		["red", "purple", "blue", "green"],
+		["purple", "red", "blue", "green"],
+		["blue", "purple", "red", "green"],
+		["green", "blue", "purple", "red"],
+	]
+	for t in tubes.size():
+		if t < layouts.size():
+			var contents: Array[String] = []
+			contents.assign(layouts[t])
+			tubes[t].set_contents(contents)
+		else:
+			tubes[t].set_contents([] as Array[String])
+
+
 func undo() -> bool:
 	if _undo_stack.is_empty():
 		return false

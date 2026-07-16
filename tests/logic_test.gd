@@ -15,6 +15,7 @@ func _ready() -> void:
 	_test_armor()
 	_test_defeat()
 	_test_board_rules()
+	_test_tutorial_opening()
 	_test_upgrades()
 	_test_relics_and_perma()
 	_test_last_remedy()
@@ -62,10 +63,10 @@ func _test_shield_and_enemy_turn() -> void:
 	var b := _fresh_battle()
 	b.on_potion_completed("blue")
 	check(b.shield == 12, "shield potion grants 12")
-	for i in 3:
+	for i in 4:
 		b.on_move()
-	check(b.shield == 4 and b.player_hp == 50, "attack of 8 absorbed by shield")
-	check(b.moves_until_attack == 3, "attack counter resets")
+	check(b.shield == 7 and b.player_hp == 50, "opening attack of 5 absorbed by shield")
+	check(b.moves_until_attack == 4, "opening attack counter resets")
 	b.free()
 
 
@@ -73,10 +74,27 @@ func _test_poison_flow() -> void:
 	var b := _fresh_battle()
 	b.on_potion_completed("purple")
 	check(b.poison_damage == 5 and b.poison_turns == 3, "poison applied 5x3")
-	for i in 3:
+	for i in 4:
 		b.on_move()
 	check(b.enemy_hp == 55 and b.poison_turns == 2, "poison ticks before attack")
 	b.free()
+
+
+func _test_tutorial_opening() -> void:
+	var board := PuzzleBoard.new()
+	add_child(board)
+	check(board.has_method("generate_tutorial_board"), "tutorial board generator interface")
+	if board.has_method("generate_tutorial_board"):
+		board.call("generate_tutorial_board")
+		var green_tops := 0
+		var blue_tops := 0
+		for tube in board.tubes:
+			if not tube.contents.is_empty():
+				green_tops += 1 if tube.contents.back() == "green" else 0
+				blue_tops += 1 if tube.contents.back() == "blue" else 0
+		check(green_tops >= 2 or blue_tops >= 2,
+				"tutorial starts with defensive matching progress")
+	board.free()
 
 
 func _test_armor() -> void:
@@ -96,7 +114,7 @@ func _test_defeat() -> void:
 	var lost := [false]
 	b.battle_lost.connect(func() -> void: lost[0] = true)
 	b.player_hp = 5
-	for i in 3:
+	for i in b.attack_every:
 		b.on_move()
 	check(lost[0] and b.battle_over, "player death emits battle_lost")
 	b.free()
@@ -180,13 +198,13 @@ func _test_last_remedy() -> void:
 	RunState.pick_upgrade("last_remedy")
 	var triggered := [0]
 	b.last_remedy_triggered.connect(func(heal: int) -> void: triggered[0] = heal)
-	b.player_hp = 12  # slime hits for 8 -> 4 HP = below 20% of 50
-	for i in 3:
+	b.player_hp = 12  # slime hits for 5 -> 7 HP = below 20% of 50
+	for i in b.attack_every:
 		b.on_move()
-	check(triggered[0] == 10 and b.player_hp == 14, "Last Remedy heals once below 20%")
+	check(triggered[0] == 10 and b.player_hp == 17, "Last Remedy heals once below 20%")
 	b.player_hp = 12
-	for i in 3:
+	for i in b.attack_every:
 		b.on_move()
-	check(b.player_hp == 4, "Last Remedy only fires once per battle")
+	check(b.player_hp == 7, "Last Remedy only fires once per battle")
 	b.free()
 	RunState.start_new_run()
