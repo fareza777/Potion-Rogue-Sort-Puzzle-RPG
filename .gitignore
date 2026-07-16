@@ -17,3 +17,7 @@ Thumbs.db
 
 # Local Godot binary for testing
 .tools/
+
+# Codex/Superpowers local working data
+.superpowers/
+.worktrees/
