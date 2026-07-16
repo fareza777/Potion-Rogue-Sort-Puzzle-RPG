@@ -67,6 +67,50 @@ func fire(at: Vector2) -> void:
 	_burst(at, Color("ff8a42"), 7 if reduced_effects else 18, 52.0)
 
 
+func projectile(from: Vector2, to: Vector2, color := Color("ff9b45")) -> void:
+	var orb := Polygon2D.new()
+	orb.polygon = _circle_points(10.0 if reduced_effects else 16.0, 18)
+	orb.color = color
+	orb.position = from
+	orb.scale = Vector2(0.4, 0.4)
+	add_child(orb)
+	var trail := Line2D.new()
+	trail.width = 8.0
+	trail.default_color = Color(color, 0.55)
+	trail.antialiased = true
+	trail.add_point(from)
+	trail.add_point(from)
+	add_child(trail)
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(orb, "position", to, 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tween.tween_property(orb, "scale", Vector2(1.25, 1.25), 0.20)
+	tween.tween_method(func(p: Vector2) -> void:
+		trail.set_point_position(1, p), from, to, 0.28)
+	tween.chain().tween_callback(func() -> void:
+		_burst(to, color, 6 if reduced_effects else 18, 56.0)
+		orb.queue_free()
+		var fade := create_tween()
+		fade.tween_property(trail, "modulate:a", 0.0, 0.16)
+		fade.tween_callback(trail.queue_free))
+
+
+func enemy_strike(from: Vector2, to: Vector2) -> void:
+	var warning := Line2D.new()
+	warning.width = 5.0
+	warning.default_color = Color(1.0, 0.18, 0.12, 0.78)
+	warning.antialiased = true
+	warning.add_point(from)
+	warning.add_point(to)
+	add_child(warning)
+	var flash := create_tween()
+	flash.tween_property(warning, "modulate:a", 0.15, 0.07)
+	flash.tween_property(warning, "modulate:a", 1.0, 0.07)
+	flash.tween_property(warning, "width", 18.0, 0.08)
+	flash.tween_property(warning, "modulate:a", 0.0, 0.12)
+	flash.tween_callback(warning.queue_free)
+	_burst(to, Color("ff4938"), 5 if reduced_effects else 14, 38.0)
+
+
 func _quadratic(a: Vector2, b: Vector2, c: Vector2, t: float) -> Vector2:
 	var inverse := 1.0 - t
 	return inverse * inverse * a + 2.0 * inverse * t * b + t * t * c

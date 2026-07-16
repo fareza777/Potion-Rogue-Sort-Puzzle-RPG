@@ -114,7 +114,15 @@ static func icon_button(icon_path: String, count: int, tooltip: String) -> Butto
 	b.add_theme_color_override("font_color", COLOR_GOLD)
 	b.add_theme_color_override("font_hover_color", Color.WHITE)
 	b.add_theme_color_override("font_disabled_color", Color("675c6f"))
-	b.add_theme_constant_override("icon_max_width", 54)
+	b.add_theme_color_override("icon_hover_color", Color(1.15, 1.08, 0.88))
+	b.add_theme_color_override("icon_pressed_color", Color(0.86, 0.74, 0.52))
+	b.add_theme_constant_override("icon_max_width", 82 if "/controls/" in icon_path else 54)
+	if "/controls/" in icon_path:
+		for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+			var empty := StyleBoxFlat.new()
+			empty.bg_color = Color.TRANSPARENT
+			b.add_theme_stylebox_override(state, empty)
+		return b
 	var ring := VisualRegistry.texture_or_null("res://assets/art/ui/button_round.png")
 	if ring != null:
 		for state in ["normal", "hover", "pressed", "focus", "disabled"]:

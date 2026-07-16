@@ -43,6 +43,13 @@ func _ready() -> void:
 	generate_board()
 
 
+func apply_layout_profile(profile: Dictionary) -> void:
+	var tall := str(profile.get("name", "standard")) == "tall"
+	var tube_size := Vector2(82, 318) if tall else Vector2(88, 280)
+	for tube in tubes:
+		tube.custom_minimum_size = tube_size
+
+
 ## Deals CAPACITY units of each color randomly into the filled tubes.
 ## Rerolls if any tube starts already complete.
 func generate_board() -> void:
