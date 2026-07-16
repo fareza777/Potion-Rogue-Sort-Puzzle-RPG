@@ -9,21 +9,150 @@ var body_color := Color("6fce4e")
 var enraged := false:
 	set(value):
 		enraged = value
+		if _sprite_material != null:
+			_sprite_material.set_shader_parameter("tint_color", Color("ff4b2e"))
+			_sprite_material.set_shader_parameter("tint_amount", 0.28 if value else 0.0)
 		queue_redraw()
 
 var _flash := 0.0
 var _bob := 0.0
 var _shake := Vector2.ZERO
+var _sprite_root: Control
+var _shadow_texture: TextureRect
+var _body_texture: TextureRect
+var _sprite_material: ShaderMaterial
+var _action_tween: Tween
+
+
+func _ready() -> void:
+	_ensure_sprite_nodes()
+	resized.connect(_sync_pivots)
+	_sync_pivots()
 
 
 func configure(new_shape: String, color_hex: String) -> void:
-	shape = new_shape
+	configure_enemy(new_shape, new_shape, color_hex)
+
+
+func configure_enemy(enemy_id: String, fallback_shape: String, color_hex: String) -> void:
+	shape = fallback_shape
 	body_color = Color(color_hex)
+	_ensure_sprite_nodes()
+	var config := VisualRegistry.enemy(enemy_id)
+	_body_texture.texture = VisualRegistry.texture_or_null(str(config.get("sprite", "")))
+	_shadow_texture.texture = VisualRegistry.texture_or_null(str(config.get("shadow", "")))
+	_sprite_root.visible = _body_texture.texture != null
+	_shadow_texture.visible = _shadow_texture.texture != null
+	_sprite_root.scale = Vector2.ONE * float(config.get("scale", 1.0))
+	_sprite_root.modulate = Color.WHITE
 	queue_redraw()
+
+
+func uses_sprite_art() -> bool:
+	return _body_texture != null and _body_texture.texture != null \
+			and _sprite_root != null and _sprite_root.visible
+
+
+func _ensure_sprite_nodes() -> void:
+	if _sprite_root != null:
+		return
+	_sprite_root = Control.new()
+	_sprite_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_sprite_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_sprite_root)
+
+	_shadow_texture = TextureRect.new()
+	_shadow_texture.anchor_left = 0.08
+	_shadow_texture.anchor_top = 0.63
+	_shadow_texture.anchor_right = 0.92
+	_shadow_texture.anchor_bottom = 1.0
+	_shadow_texture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_shadow_texture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_shadow_texture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_sprite_root.add_child(_shadow_texture)
+
+	_body_texture = TextureRect.new()
+	_body_texture.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_body_texture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_body_texture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_body_texture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_body_texture.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	_sprite_material = ShaderMaterial.new()
+	_sprite_material.shader = load("res://assets/shaders/enemy_hit.gdshader")
+	_body_texture.material = _sprite_material
+	_sprite_root.add_child(_body_texture)
+
+
+func _sync_pivots() -> void:
+	if _sprite_root == null:
+		return
+	_sprite_root.pivot_offset = size * 0.5
+	_body_texture.pivot_offset = size * 0.5
+
+
+func _kill_action_tween() -> void:
+	if _action_tween != null and _action_tween.is_valid():
+		_action_tween.kill()
+	_action_tween = null
+	if _sprite_root != null:
+		_sprite_root.position = Vector2.ZERO
+		_sprite_root.rotation = 0.0
+
+
+func play_intro() -> void:
+	if not uses_sprite_art():
+		return
+	_kill_action_tween()
+	_sprite_root.modulate.a = 0.0
+	_sprite_root.scale = Vector2(0.72, 0.62)
+	_sprite_root.position.y = 42.0
+	_action_tween = create_tween().set_parallel(true)
+	_action_tween.tween_property(_sprite_root, "modulate:a", 1.0, 0.34)
+	_action_tween.tween_property(_sprite_root, "position:y", 0.0, 0.42) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_action_tween.tween_property(_sprite_root, "scale", Vector2.ONE, 0.42) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func play_anticipate() -> void:
+	if not uses_sprite_art():
+		return
+	_kill_action_tween()
+	_action_tween = create_tween()
+	_action_tween.tween_property(_sprite_root, "scale", Vector2(0.92, 1.08), 0.13) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_action_tween.tween_property(_sprite_root, "scale", Vector2.ONE, 0.2) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func play_attack() -> void:
+	if not uses_sprite_art():
+		return
+	_kill_action_tween()
+	_action_tween = create_tween().set_parallel(true)
+	_action_tween.tween_property(_sprite_root, "position:y", -20.0, 0.14) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_action_tween.tween_property(_sprite_root, "scale", Vector2(1.11, 0.9), 0.14)
+	_action_tween.chain().tween_property(_sprite_root, "position:y", 0.0, 0.22) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_action_tween.parallel().tween_property(_sprite_root, "scale", Vector2.ONE, 0.22)
+
+
+func play_defeat() -> void:
+	if not uses_sprite_art():
+		return
+	_kill_action_tween()
+	_action_tween = create_tween().set_parallel(true)
+	_action_tween.tween_property(_sprite_root, "scale", Vector2(1.24, 0.12), 0.55) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	_action_tween.tween_property(_sprite_root, "position:y", size.y * 0.34, 0.55)
+	_action_tween.tween_property(_sprite_root, "modulate:a", 0.0, 0.55).set_delay(0.18)
 
 
 func play_hit() -> void:
 	_flash = 1.0
+	if _sprite_material != null:
+		_sprite_material.set_shader_parameter("flash_amount", 1.0)
 	var tween := create_tween()
 	tween.tween_method(_set_shake, 12.0, 0.0, 0.35)
 	tween.parallel().tween_method(_set_flash, 1.0, 0.0, 0.3)
@@ -31,20 +160,30 @@ func play_hit() -> void:
 
 func _set_shake(strength: float) -> void:
 	_shake = Vector2(randf_range(-strength, strength), randf_range(-strength, strength) * 0.4)
+	if _sprite_root != null:
+		_sprite_root.position = _shake
 	queue_redraw()
 
 
 func _set_flash(value: float) -> void:
 	_flash = value
+	if _sprite_material != null:
+		_sprite_material.set_shader_parameter("flash_amount", value)
 	queue_redraw()
 
 
 func _process(delta: float) -> void:
 	_bob += delta
+	if uses_sprite_art() and (_action_tween == null or not _action_tween.is_running()):
+		_sprite_root.position.y = sin(_bob * 2.2) * 4.0
+		var breath := sin(_bob * 2.0) * 0.012
+		_body_texture.scale = Vector2(1.0 + breath, 1.0 - breath)
 	queue_redraw()
 
 
 func _draw() -> void:
+	if uses_sprite_art():
+		return
 	var center := size / 2.0 + _shake
 	center.y += sin(_bob * 2.2) * 4.0
 	var r: float = minf(size.x, size.y) * 0.36

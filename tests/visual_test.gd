@@ -31,6 +31,20 @@ func _ready() -> void:
 		"res://assets/art/ui/icon_pause.png",
 	]:
 		check(ResourceLoader.exists(path), "loadable art: " + path)
+	var enemy_view := EnemyDisplay.new()
+	add_child(enemy_view)
+	enemy_view.custom_minimum_size = Vector2(520, 300)
+	check(enemy_view.has_method("configure_enemy"), "enemy configuration interface")
+	check(enemy_view.has_method("play_intro"), "enemy intro interface")
+	check(enemy_view.has_method("play_anticipate"), "enemy anticipate interface")
+	check(enemy_view.has_method("play_attack"), "enemy attack interface")
+	check(enemy_view.has_method("play_defeat"), "enemy defeat interface")
+	if enemy_view.has_method("configure_enemy") and enemy_view.has_method("uses_sprite_art"):
+		enemy_view.call("configure_enemy", "slime", "slime", "6fce4e")
+		check(bool(enemy_view.call("uses_sprite_art")), "slime uses registered sprite")
+	else:
+		check(false, "slime uses registered sprite")
+	enemy_view.queue_free()
 	print("---")
 	print("%d checks, %d failures" % [_checks, _failures])
 	get_tree().quit(1 if _failures > 0 else 0)
