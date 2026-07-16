@@ -122,6 +122,15 @@ func _ready() -> void:
 		check(is_equal_approx(ratio_sum, 1.0), "responsive battle bands fill height")
 		check(float(tall.get("safe_horizontal", 0.0)) >= 20.0,
 				"tall profile keeps safe margins")
+	var menu_source := FileAccess.get_file_as_string("res://src/ui/main_menu.gd")
+	check(menu_source.contains('hero.name = "HeroBand"'),
+			"main menu exposes responsive hero band")
+	check(menu_source.contains('action.name = "ActionBand"'),
+			"main menu exposes responsive action band")
+	var settings_source := FileAccess.get_file_as_string("res://src/ui/settings_screen.gd")
+	for row_name in ["MusicRow", "SoundRow", "VibrationRow"]:
+		check(settings_source.contains('name = "' + row_name + '"'),
+				"settings exposes aligned " + row_name)
 	textured_panel.queue_free()
 	icon_control.queue_free()
 	print("---")
