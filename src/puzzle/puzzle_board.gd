@@ -14,11 +14,14 @@ signal pour_presented(from_global: Vector2, to_global: Vector2, color: String, c
 const COLORS: Array[String] = ["red", "green", "blue", "purple"]
 const FILLED_TUBES := 4
 const EMPTY_TUBES := 2
-const TUBE_SIZE := Vector2(88, 250)
+const TUBE_SIZE := Vector2(84, 168)
+const LAYOUT_COLUMNS := 3
 
 var tubes: Array[PotionTube] = []
 var selected_tube: PotionTube = null
 var enabled := true
+var _tube_size := TUBE_SIZE
+var _tray: PanelContainer
 
 ## Undo history entries: {"from": PotionTube, "to": PotionTube, "count": int}.
 ## Cleared whenever a tube completes (its effect already fired and can't be taken back).
@@ -26,18 +29,44 @@ var _undo_stack: Array[Dictionary] = []
 
 
 func _ready() -> void:
-	var row := HBoxContainer.new()
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 16)
-	row.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(row)
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.offset_bottom = -160
+	add_child(center)
+
+	_tray = PanelContainer.new()
+	_tray.name = "AlchemyTray"
+	_tray.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_apply_tray_style()
+	center.add_child(_tray)
+
+	var stack := VBoxContainer.new()
+	stack.alignment = BoxContainer.ALIGNMENT_CENTER
+	stack.add_theme_constant_override("separation", 8)
+	_tray.add_child(stack)
+	var caption := Label.new()
+	caption.text = "ALCHEMY TABLE"
+	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	caption.add_theme_font_override("font", UiKit.title_font())
+	caption.add_theme_font_size_override("font_size", 15)
+	caption.add_theme_color_override("font_color", Color("bba064"))
+	caption.add_theme_constant_override("outline_size", 4)
+	caption.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	stack.add_child(caption)
+
+	var grid := GridContainer.new()
+	grid.name = "PotionGrid"
+	grid.columns = LAYOUT_COLUMNS
+	grid.add_theme_constant_override("h_separation", 18)
+	grid.add_theme_constant_override("v_separation", 6)
+	stack.add_child(grid)
 
 	for i in FILLED_TUBES + EMPTY_TUBES:
 		var tube := PotionTube.new()
 		tube.custom_minimum_size = TUBE_SIZE
 		tube.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		tube.tapped.connect(_on_tube_tapped)
-		row.add_child(tube)
+		grid.add_child(tube)
 		tubes.append(tube)
 
 	generate_board()
@@ -45,9 +74,32 @@ func _ready() -> void:
 
 func apply_layout_profile(profile: Dictionary) -> void:
 	var tall := str(profile.get("name", "standard")) == "tall"
-	var tube_size := Vector2(82, 318) if tall else Vector2(88, 280)
+	_tube_size = Vector2(84, 168) if tall else Vector2(88, 176)
 	for tube in tubes:
-		tube.custom_minimum_size = tube_size
+		tube.custom_minimum_size = _tube_size
+
+
+func layout_columns() -> int:
+	return LAYOUT_COLUMNS
+
+
+func tube_display_size() -> Vector2:
+	return _tube_size
+
+
+func _apply_tray_style() -> void:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.025, 0.018, 0.045, 0.82)
+	style.border_color = Color("80632e")
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(26)
+	style.content_margin_left = 24
+	style.content_margin_right = 24
+	style.content_margin_top = 12
+	style.content_margin_bottom = 18
+	style.shadow_color = Color(0.17, 0.04, 0.28, 0.72)
+	style.shadow_size = 16
+	_tray.add_theme_stylebox_override("panel", style)
 
 
 ## Deals CAPACITY units of each color randomly into the filled tubes.

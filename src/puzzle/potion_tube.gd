@@ -108,10 +108,12 @@ func play_invalid() -> void:
 func _draw() -> void:
 	var w := size.x
 	var h := size.y
-	var inner_left := w * 0.18
-	var inner_w := w * 0.64
-	var body_top := h * 0.22
-	var body_bottom := h * 0.88
+	var lift := -7.0 if selected else 0.0
+	draw_set_transform(Vector2(0, lift))
+	var inner_left := w * 0.21
+	var inner_w := w * 0.58
+	var body_top := h * 0.29
+	var body_bottom := h * 0.89
 	var liquid_area_h := body_bottom - body_top
 	var seg_h := liquid_area_h / float(CAPACITY)
 	var cx := w * 0.5
@@ -119,8 +121,8 @@ func _draw() -> void:
 	# Jewel-toned glow behind the physical bottle sprite.
 	if not contents.is_empty():
 		var glow: Color = VisualRegistry.potion(top_color()).get("glow", Color.WHITE)
-		glow.a = 0.12 if not selected else 0.26
-		draw_circle(Vector2(cx, h * 0.62), w * 0.62, glow)
+		glow.a = 0.14 if not selected else 0.34
+		draw_circle(Vector2(cx, h * 0.61), w * (0.50 if not selected else 0.68), glow)
 
 	# Dynamic liquid remains tied directly to the four logical capacity units.
 	for i in contents.size():
@@ -144,14 +146,14 @@ func _draw() -> void:
 	# The painted frame supplies bronze, scratches and high-quality glass edges.
 	if _bottle_texture != null:
 		draw_texture_rect(_bottle_texture,
-				Rect2(Vector2(-w * 0.22, -h * 0.035), Vector2(w * 1.44, h * 1.07)),
+				Rect2(Vector2(-w * 0.04, h * 0.015), Vector2(w * 1.08, h * 0.96)),
 				false)
 	else:
 		draw_rect(Rect2(4, 8, w - 8, h - 12), Color("7d7195"), false, 3.0)
 
 	if selected:
-		draw_arc(Vector2(cx, h * 0.55), w * 0.5, 0.0, TAU, 32,
-				Color("ffd36b"), 4.0, true)
+		draw_arc(Vector2(cx, h * 0.56), w * 0.55, 0.0, TAU, 40,
+				Color(1.0, 0.78, 0.25, 0.78), 4.0, true)
 
 	# Magical lock overlay
 	if is_locked():
@@ -163,3 +165,4 @@ func _draw() -> void:
 		var turns_label := str(locked_moves)
 		draw_string(ThemeDB.fallback_font, lock_c + Vector2(-5, 40), turns_label,
 				HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color.WHITE)
+	draw_set_transform(Vector2.ZERO)

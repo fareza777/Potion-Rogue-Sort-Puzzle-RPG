@@ -73,6 +73,23 @@ func _ready() -> void:
 	check(potion_view.has_method("flash_complete"), "potion complete animation interface")
 	check(potion_view.has_method("play_invalid"), "potion invalid animation interface")
 	potion_view.queue_free()
+	var premium_board := PuzzleBoard.new()
+	check(premium_board.has_method("layout_columns"),
+			"premium potion board exposes column count")
+	check(premium_board.has_method("tube_display_size"),
+			"premium potion board exposes bottle proportion")
+	if premium_board.has_method("layout_columns"):
+		check(int(premium_board.call("layout_columns")) == 3,
+				"premium potion board uses three columns")
+	if premium_board.has_method("tube_display_size"):
+		var bottle_size: Vector2 = premium_board.call("tube_display_size")
+		var aspect := bottle_size.x / bottle_size.y
+		check(aspect >= 0.38 and aspect <= 0.50,
+				"premium potion bottle keeps compact aspect")
+	var board_source := FileAccess.get_file_as_string("res://src/puzzle/puzzle_board.gd")
+	check(board_source.contains('name = "AlchemyTray"'),
+			"premium potion board owns an alchemy tray")
+	premium_board.free()
 	var fx := BattleFx.new()
 	add_child(fx)
 	check(fx.has_method("hit"), "battle hit effect interface")
@@ -82,6 +99,7 @@ func _ready() -> void:
 	check(fx.has_method("poison"), "battle poison effect interface")
 	check(fx.has_method("projectile"), "battle projectile effect interface")
 	check(fx.has_method("enemy_strike"), "battle strike effect interface")
+	check(fx.has_method("warning_pulse"), "battle warning pulse interface")
 	check(fx.has_method("set_reduced_effects"), "reduced effects interface")
 	if fx.has_method("set_reduced_effects"):
 		fx.call("set_reduced_effects", true)
@@ -89,6 +107,25 @@ func _ready() -> void:
 	else:
 		check(false, "reduced effects state")
 	fx.queue_free()
+	check(ResourceLoader.exists("res://src/ui/ornate_resource_bar.gd"),
+			"ornate resource bar script exists")
+	var vital_bar := OrnateResourceBar.new()
+	check(vital_bar.has_method("configure"), "ornate bar configuration interface")
+	check(vital_bar.has_method("set_values"), "ornate bar value interface")
+	check(vital_bar.has_method("set_badge"), "ornate bar badge interface")
+	vital_bar.free()
+	var vital_source := FileAccess.get_file_as_string(
+			"res://src/ui/ornate_resource_bar.gd")
+	check(vital_source.contains("TextureProgressBar"),
+			"ornate bar uses textured jewel fill")
+	var battle_source := FileAccess.get_file_as_string("res://src/ui/battle_screen.gd")
+	check(battle_source.contains('name = "EnemyVitalBar"'),
+			"battle exposes framed enemy vital bar")
+	check(battle_source.contains('name = "PlayerVitalBar"'),
+			"battle exposes framed player vital bar")
+	for component_name in ["EncounterHeader", "WarningPlaque", "ActionPedestal"]:
+		check(battle_source.contains('name = "' + component_name + '"'),
+				"battle exposes premium " + component_name)
 	var textured_panel := UiKit.textured_panel(
 			"res://assets/art/ui/battle_panel.png", 26)
 	check(textured_panel.custom_minimum_size.y > 0.0,
@@ -129,6 +166,15 @@ func _ready() -> void:
 			"main menu exposes responsive hero band")
 	check(menu_source.contains('action.name = "ActionBand"'),
 			"main menu exposes responsive action band")
+	check(ResourceLoader.exists("res://src/ui/ambient_particles.gd"),
+			"hall ambient particles script exists")
+	var ambient := AmbientParticles.new()
+	check(ambient.has_method("set_reduced_effects"),
+			"hall ambient particles reduced-effects interface")
+	ambient.free()
+	for hall_component in ["HeroHalo", "FeatureSeals", "SafeNavigation"]:
+		check(menu_source.contains('name = "' + hall_component + '"'),
+				"hall exposes premium " + hall_component)
 	var settings_source := FileAccess.get_file_as_string("res://src/ui/settings_screen.gd")
 	for row_name in ["MusicRow", "SoundRow", "VibrationRow"]:
 		check(settings_source.contains('name = "' + row_name + '"'),
