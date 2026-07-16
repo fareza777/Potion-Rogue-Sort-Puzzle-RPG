@@ -8,23 +8,35 @@ var _rows_box: VBoxContainer
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
-	UiKit.background(self)
+	UiKit.battle_background(self,
+			"res://assets/art/backgrounds/shadow_crypt_battle.png")
+	var shade := ColorRect.new()
+	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
+	shade.color = Color(0.015, 0.01, 0.025, 0.58)
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(shade)
 
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 	margin.add_theme_constant_override("margin_left", 28)
 	margin.add_theme_constant_override("margin_right", 28)
-	margin.add_theme_constant_override("margin_top", 48)
-	margin.add_theme_constant_override("margin_bottom", 40)
+	margin.add_theme_constant_override("margin_top", 28)
+	margin.add_theme_constant_override("margin_bottom", 26)
 	add_child(margin)
 
 	var root := VBoxContainer.new()
 	root.add_theme_constant_override("separation", 14)
 	margin.add_child(root)
 
-	root.add_child(UiKit.title_label("Permanent Upgrades", 40))
+	var header := UiKit.textured_panel("res://assets/art/ui/battle_panel.png", 16)
+	header.custom_minimum_size = Vector2(0, 112)
+	root.add_child(header)
+	var header_box := VBoxContainer.new()
+	header.add_child(header_box)
+	header_box.add_child(UiKit.title_label("ARCANE WORKSHOP", 37))
+	header_box.add_child(UiKit.label("PERMANENT UPGRADES", 16, UiKit.COLOR_TEXT_DIM))
 	_crystals_label = UiKit.label("", 24, Color("7fd4ff"))
-	root.add_child(_crystals_label)
+	header_box.add_child(_crystals_label)
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -36,7 +48,7 @@ func _ready() -> void:
 	_rows_box.add_theme_constant_override("separation", 10)
 	scroll.add_child(_rows_box)
 
-	var back := UiKit.button("Back", Vector2(300, 64))
+	var back := UiKit.ornate_button("RETURN TO HALL", Vector2(340, 66))
 	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	back.pressed.connect(func() -> void:
 		get_tree().change_scene_to_file("res://scenes/main_menu.tscn"))
@@ -46,7 +58,7 @@ func _ready() -> void:
 
 
 func _rebuild() -> void:
-	_crystals_label.text = "Crystals: %d" % SaveSystem.crystals()
+	_crystals_label.text = "◆  %d CRYSTALS AVAILABLE" % SaveSystem.crystals()
 	for child in _rows_box.get_children():
 		child.queue_free()
 	for id in RunState.perma_pool:
@@ -59,7 +71,8 @@ func _make_row(id: String) -> PanelContainer:
 	var max_level := int(up.get("max_level", 1))
 	var maxed := level >= max_level
 
-	var panel := UiKit.panel()
+	var panel := UiKit.textured_panel("res://assets/art/ui/battle_panel.png", 18)
+	panel.custom_minimum_size = Vector2(0, 130)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 14)
@@ -79,8 +92,9 @@ func _make_row(id: String) -> PanelContainer:
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	info.add_child(desc)
 
-	var buy := UiKit.button("MAX" if maxed else "Buy  %d" % RunState.perma_cost(id),
+	var buy := UiKit.ornate_button("MAX" if maxed else "BUY  ◆%d" % RunState.perma_cost(id),
 			Vector2(170, 60))
+	buy.add_theme_font_size_override("font_size", 18)
 	buy.disabled = maxed or SaveSystem.crystals() < RunState.perma_cost(id)
 	buy.pressed.connect(func() -> void:
 		if RunState.buy_perma(id):

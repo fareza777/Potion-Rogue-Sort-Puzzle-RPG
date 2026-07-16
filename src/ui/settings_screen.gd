@@ -6,13 +6,14 @@ var _confirm_panel: Control
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
-	UiKit.background(self)
+	UiKit.battle_background(self,
+			"res://assets/art/backgrounds/shadow_crypt_battle.png")
 
 	var center := CenterContainer.new()
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(center)
 
-	var panel := UiKit.panel()
+	var panel := UiKit.textured_panel("res://assets/art/ui/battle_panel.png", 34)
 	panel.custom_minimum_size = Vector2(560, 0)
 	center.add_child(panel)
 
@@ -46,7 +47,7 @@ func _ready() -> void:
 	reset.pressed.connect(_show_reset_confirm)
 	box.add_child(reset)
 
-	var back := UiKit.button("Back", Vector2(300, 64))
+	var back := UiKit.ornate_button("RETURN TO HALL", Vector2(340, 66))
 	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	back.pressed.connect(func() -> void:
 		get_tree().change_scene_to_file("res://scenes/main_menu.tscn"))
@@ -89,7 +90,7 @@ func _show_reset_confirm() -> void:
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_confirm_panel.add_child(center)
 
-	var panel := UiKit.panel(Color("e05252"))
+	var panel := UiKit.textured_panel("res://assets/art/ui/battle_panel.png", 32)
 	center.add_child(panel)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 16)

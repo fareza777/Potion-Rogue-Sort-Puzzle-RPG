@@ -26,6 +26,7 @@ func _ready() -> void:
 	check(missing.is_empty(),
 			"registered runtime assets exist: " + ", ".join(missing))
 	for path in [
+		"res://assets/art/app_icon.png",
 		"res://assets/art/backgrounds/shadow_crypt_battle.png",
 		"res://assets/art/potions/bottle_frame.png",
 		"res://assets/art/ui/battle_panel.png",
@@ -36,6 +37,8 @@ func _ready() -> void:
 		"res://assets/art/ui/icon_pause.png",
 	]:
 		check(ResourceLoader.exists(path), "loadable art: " + path)
+	check(ProjectSettings.get_setting("application/config/icon", "") ==
+			"res://assets/art/app_icon.png", "branded application icon configured")
 	var enemy_view := EnemyDisplay.new()
 	add_child(enemy_view)
 	enemy_view.custom_minimum_size = Vector2(520, 300)
@@ -92,6 +95,10 @@ func _ready() -> void:
 			"res://assets/art/ui/icon_undo.png", 3, "Undo last pour")
 	check(icon_control.tooltip_text == "Undo last pour", "icon button tooltip")
 	check(icon_control.custom_minimum_size.x >= 84.0, "icon button touch target")
+	var kit := UiKit.new()
+	check(kit.has_method("ornate_button"), "ornate button factory")
+	check(kit.has_method("enemy_portrait"), "enemy portrait factory")
+	check(kit.has_method("map_node_button"), "map node factory")
 	textured_panel.queue_free()
 	icon_control.queue_free()
 	print("---")

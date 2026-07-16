@@ -289,7 +289,7 @@ func _build_overlay() -> void:
 	center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	overlay.add_child(center)
 
-	var panel := UiKit.panel(UiKit.COLOR_GOLD_DIM)
+	var panel := UiKit.textured_panel("res://assets/art/ui/battle_panel.png", 30)
 	panel.custom_minimum_size = Vector2(560, 0)
 	center.add_child(panel)
 
@@ -490,7 +490,7 @@ func _show_upgrade_choice() -> void:
 	var body := "+%d crystals\nChoose an upgrade:" % battle.crystals_reward
 	_show_overlay("Victory!", body, [])
 	for id in choices:
-		var card := UiKit.button("%s\n%s" % [RunState.upgrade_name(id),
+		var card := UiKit.ornate_button("%s\n%s" % [RunState.upgrade_name(id),
 				RunState.upgrade_description(id)], Vector2(520, 84))
 		card.pressed.connect(_on_upgrade_picked.bind(str(id)))
 		overlay_choices.add_child(card)
@@ -505,7 +505,7 @@ func _show_relic_choice() -> void:
 			% battle.crystals_reward
 	_show_overlay("Elite Vanquished!", body, [])
 	for id in choices:
-		var card := UiKit.button("%s\n%s" % [RunState.relic_name(id),
+		var card := UiKit.ornate_button("%s\n%s" % [RunState.relic_name(id),
 				RunState.relic_description(id)], Vector2(520, 84), Color("c07ce8"))
 		card.pressed.connect(_on_relic_picked.bind(str(id)))
 		overlay_choices.add_child(card)
@@ -559,7 +559,7 @@ func _show_overlay(title: String, body: String, buttons: Array) -> void:
 	for child in overlay_buttons.get_children():
 		child.queue_free()
 	for entry in buttons:
-		var button := UiKit.button(entry[0], Vector2(220, 64))
+		var button := UiKit.ornate_button(entry[0], Vector2(220, 64))
 		button.pressed.connect(entry[1])
 		overlay_buttons.add_child(button)
 	overlay.visible = true

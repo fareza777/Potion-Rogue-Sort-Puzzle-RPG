@@ -113,9 +113,9 @@ Before accepting an asset or screen, verify:
 - Enemy HP, player HP, countdown, and action counts are readable at phone size.
 - Nine-slice corners do not stretch.
 - Nothing crosses the safe areas.
-- Fallback rendering remains usable when a non-benchmark enemy has no sprite.
+- Fallback rendering remains usable when an optional registered sprite is missing.
 - A 60-second idle does not continually add nodes.
 
 ## Play Store Rule
 
-Marketing screenshots must be captured from implemented scenes. External captions and device framing may be added later, but screenshots must not invent unimplemented equipment, progression, or combat systems.
+Marketing screenshots must be captured from implemented scenes. External captions and device framing may be added, but screenshots must not invent unimplemented equipment, progression, or combat systems. The committed `store-assets/` package follows this rule and can be rebuilt with its PowerShell compositors.

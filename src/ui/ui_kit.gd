@@ -91,6 +91,67 @@ static func icon_button(icon_path: String, count: int, tooltip: String) -> Butto
 	return b
 
 
+static func ornate_button(text: String, min_size := Vector2(340, 72),
+		accent := COLOR_GOLD) -> Button:
+	var b := button(text, min_size, accent)
+	var texture := VisualRegistry.texture_or_null("res://assets/art/ui/battle_panel.png")
+	if texture == null:
+		return b
+	var state_tints := {
+		"normal": Color("eee5d4"),
+		"hover": Color("fff5cf"),
+		"pressed": Color("c8b58c"),
+		"focus": Color("fff5cf"),
+		"disabled": Color("8d8583"),
+	}
+	for state in state_tints:
+		var style := StyleBoxTexture.new()
+		style.texture = texture
+		style.modulate_color = state_tints[state]
+		style.texture_margin_left = 76.0
+		style.texture_margin_right = 76.0
+		style.texture_margin_top = 58.0
+		style.texture_margin_bottom = 58.0
+		style.content_margin_left = 28.0
+		style.content_margin_right = 28.0
+		style.content_margin_top = 10.0
+		style.content_margin_bottom = 10.0
+		b.add_theme_stylebox_override(state, style)
+	return b
+
+
+static func enemy_portrait(enemy_id: String,
+		min_size := Vector2(300, 300)) -> TextureRect:
+	var portrait := TextureRect.new()
+	portrait.custom_minimum_size = min_size
+	portrait.texture = VisualRegistry.texture_or_null(
+			str(VisualRegistry.enemy(enemy_id).get("sprite", "")))
+	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	portrait.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return portrait
+
+
+static func map_node_button(text: String, kind: String,
+		is_current := false, is_cleared := false) -> Button:
+	var accent := COLOR_GOLD
+	if kind == "boss":
+		accent = Color("ff7048")
+	elif kind == "elite":
+		accent = Color("c778ff")
+	elif is_cleared:
+		accent = Color("708a68")
+	var node := ornate_button(text, Vector2(430, 68), accent)
+	node.disabled = not is_current
+	node.add_theme_color_override("font_disabled_color", accent.darkened(0.3))
+	if is_current:
+		node.text = "◆  " + text + "  ◆"
+	elif is_cleared:
+		node.text = "✓  " + text
+	return node
+
+
 static func battle_background(parent: Control, texture_path: String) -> TextureRect:
 	var bg := TextureRect.new()
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)

@@ -11,7 +11,7 @@ config/description="Sort potions, cast powerful spells, and conquer the dungeon.
 config/version="0.1.0"
 run/main_scene="res://scenes/main_menu.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
-config/icon="res://icon.svg"
+config/icon="res://assets/art/app_icon.png"
 
 [autoload]
 
