@@ -20,6 +20,45 @@ const COLOR_FIRE := Color("ff8a4a")
 static var _title_font: FontFile
 
 
+static func layout_profile(viewport_size: Vector2) -> Dictionary:
+	var aspect := viewport_size.y / maxf(viewport_size.x, 1.0)
+	if aspect >= 2.05:
+		return {
+			"name": "tall",
+			"safe_horizontal": 22.0,
+			"safe_top": 34.0,
+			"safe_bottom": 30.0,
+			"hero_ratio": 0.39,
+			"arena_ratio": 0.34,
+			"status_ratio": 0.16,
+			"board_ratio": 0.36,
+			"controls_ratio": 0.14,
+		}
+	return {
+		"name": "standard",
+		"safe_horizontal": 24.0,
+		"safe_top": 28.0,
+		"safe_bottom": 24.0,
+		"hero_ratio": 0.34,
+		"arena_ratio": 0.36,
+		"status_ratio": 0.17,
+		"board_ratio": 0.33,
+		"controls_ratio": 0.14,
+	}
+
+
+static func safe_margin(parent: Control, horizontal := 24,
+		top := 28, bottom := 24) -> MarginContainer:
+	var margin := MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	margin.add_theme_constant_override("margin_left", horizontal)
+	margin.add_theme_constant_override("margin_right", horizontal)
+	margin.add_theme_constant_override("margin_top", top)
+	margin.add_theme_constant_override("margin_bottom", bottom)
+	parent.add_child(margin)
+	return margin
+
+
 static func title_font() -> Font:
 	if _title_font == null:
 		_title_font = load("res://assets/fonts/Cinzel.ttf")
@@ -75,7 +114,15 @@ static func icon_button(icon_path: String, count: int, tooltip: String) -> Butto
 	b.add_theme_color_override("font_color", COLOR_GOLD)
 	b.add_theme_color_override("font_hover_color", Color.WHITE)
 	b.add_theme_color_override("font_disabled_color", Color("675c6f"))
-	b.add_theme_constant_override("icon_max_width", 54)
+	b.add_theme_color_override("icon_hover_color", Color(1.15, 1.08, 0.88))
+	b.add_theme_color_override("icon_pressed_color", Color(0.86, 0.74, 0.52))
+	b.add_theme_constant_override("icon_max_width", 82 if "/controls/" in icon_path else 54)
+	if "/controls/" in icon_path:
+		for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+			var empty := StyleBoxFlat.new()
+			empty.bg_color = Color.TRANSPARENT
+			b.add_theme_stylebox_override(state, empty)
+		return b
 	var ring := VisualRegistry.texture_or_null("res://assets/art/ui/button_round.png")
 	if ring != null:
 		for state in ["normal", "hover", "pressed", "focus", "disabled"]:

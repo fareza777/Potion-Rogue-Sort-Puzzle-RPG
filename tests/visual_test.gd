@@ -80,6 +80,8 @@ func _ready() -> void:
 	check(fx.has_method("heal"), "battle heal effect interface")
 	check(fx.has_method("shield"), "battle shield effect interface")
 	check(fx.has_method("poison"), "battle poison effect interface")
+	check(fx.has_method("projectile"), "battle projectile effect interface")
+	check(fx.has_method("enemy_strike"), "battle strike effect interface")
 	check(fx.has_method("set_reduced_effects"), "reduced effects interface")
 	if fx.has_method("set_reduced_effects"):
 		fx.call("set_reduced_effects", true)
@@ -99,6 +101,53 @@ func _ready() -> void:
 	check(kit.has_method("ornate_button"), "ornate button factory")
 	check(kit.has_method("enemy_portrait"), "enemy portrait factory")
 	check(kit.has_method("map_node_button"), "map node factory")
+	var registry := VisualRegistry.new()
+	check(registry.has_method("ui_icon"), "UI icon registry interface")
+	if registry.has_method("ui_icon"):
+		for icon_id in ["undo", "mix", "pause", "music", "sound", "vibration"]:
+			var icon_path := str(registry.call("ui_icon", icon_id))
+			check(ResourceLoader.exists(icon_path), "registered UI icon: " + icon_id)
+			var icon_texture := load(icon_path) as Texture2D
+			check(icon_texture != null and icon_texture.get_width() == 512 \
+					and icon_texture.get_height() == 512,
+					"UI icon dimensions: " + icon_id)
+	check(kit.has_method("layout_profile"), "responsive layout profile interface")
+	if kit.has_method("layout_profile"):
+		var standard: Dictionary = kit.call("layout_profile", Vector2(720, 1280))
+		var tall: Dictionary = kit.call("layout_profile", Vector2(576, 1280))
+		check(standard.get("name") == "standard", "standard portrait profile")
+		check(tall.get("name") == "tall", "tall phone profile")
+		var ratio_sum := float(tall.get("arena_ratio", 0.0)) \
+				+ float(tall.get("status_ratio", 0.0)) \
+				+ float(tall.get("board_ratio", 0.0)) \
+				+ float(tall.get("controls_ratio", 0.0))
+		check(is_equal_approx(ratio_sum, 1.0), "responsive battle bands fill height")
+		check(float(tall.get("safe_horizontal", 0.0)) >= 20.0,
+				"tall profile keeps safe margins")
+	var menu_source := FileAccess.get_file_as_string("res://src/ui/main_menu.gd")
+	check(menu_source.contains('hero.name = "HeroBand"'),
+			"main menu exposes responsive hero band")
+	check(menu_source.contains('action.name = "ActionBand"'),
+			"main menu exposes responsive action band")
+	var settings_source := FileAccess.get_file_as_string("res://src/ui/settings_screen.gd")
+	for row_name in ["MusicRow", "SoundRow", "VibrationRow"]:
+		check(settings_source.contains('name = "' + row_name + '"'),
+				"settings exposes aligned " + row_name)
+	var route := DungeonRoute.new()
+	check(route.has_method("configure"), "dungeon route data interface")
+	check(DungeonRoute.NODE_POSITIONS.size() == 7,
+			"dungeon route has seven illustrated encounters")
+	route.queue_free()
+	for audio_path in [
+		"res://assets/audio/dungeon_ambient.wav",
+		"res://assets/audio/boss_ambient.wav",
+	]:
+		check(ResourceLoader.exists(audio_path), "loadable ambient: " + audio_path)
+	check(AudioManager.has_method("crossfade_music"), "ambient crossfade interface")
+	var shop_source := FileAccess.get_file_as_string("res://src/ui/shop_screen.gd")
+	check(shop_source.contains('name = "WorkshopHeader"'), "workshop responsive header")
+	var credits_source := FileAccess.get_file_as_string("res://src/ui/credits_screen.gd")
+	check(credits_source.contains('name = "CreditsPanel"'), "credits full-height panel")
 	textured_panel.queue_free()
 	icon_control.queue_free()
 	print("---")

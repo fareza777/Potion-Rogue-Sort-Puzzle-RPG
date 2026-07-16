@@ -29,6 +29,7 @@ var overlay_body: Label
 var overlay_choices: VBoxContainer
 var overlay_buttons: HBoxContainer
 var battle_fx: BattleFx
+var _layout_profile: Dictionary
 
 
 func _ready() -> void:
@@ -71,6 +72,7 @@ func _ready() -> void:
 
 	AudioManager.play_music("boss" if RunState.is_boss_battle() else "dungeon")
 	if not SaveSystem.is_tutorial_done() and RunState.battle_index == 0:
+		board.generate_tutorial_board()
 		var tutorial := Tutorial.new()
 		tutorial.setup(board, battle)
 		_insert_above_board(tutorial)
@@ -96,21 +98,23 @@ func _build_ui() -> void:
 	atmosphere.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(atmosphere)
 
-	var margin := MarginContainer.new()
-	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 16)
-	margin.add_theme_constant_override("margin_right", 16)
-	margin.add_theme_constant_override("margin_top", 34)   # notch safe zone
-	margin.add_theme_constant_override("margin_bottom", 26)  # nav bar safe zone
-	add_child(margin)
+	_layout_profile = UiKit.layout_profile(get_viewport_rect().size)
+	var margin := UiKit.safe_margin(self,
+			int(_layout_profile.get("safe_horizontal", 18)),
+			int(_layout_profile.get("safe_top", 30)),
+			int(_layout_profile.get("safe_bottom", 24)))
 
 	var root := VBoxContainer.new()
 	root.add_theme_constant_override("separation", 4)
 	margin.add_child(root)
 
 	root.add_child(_build_top_strip())
-	root.add_child(_build_enemy_panel())
-	root.add_child(_build_player_panel())
+	var enemy_panel := _build_enemy_panel()
+	enemy_panel.name = "ArenaBand"
+	root.add_child(enemy_panel)
+	var player_panel := _build_player_panel()
+	player_panel.name = "StatusBand"
+	root.add_child(player_panel)
 	root.add_child(_build_turn_banner())
 
 	message_label = UiKit.label("", 20, UiKit.COLOR_GOLD)
@@ -120,10 +124,14 @@ func _build_ui() -> void:
 	root.add_child(message_label)
 
 	board = PuzzleBoard.new()
+	board.name = "PotionBoardBand"
 	board.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(board)
+	board.apply_layout_profile(_layout_profile)
 
-	root.add_child(_build_button_row())
+	var controls := _build_button_row()
+	controls.name = "ControlsBand"
+	root.add_child(controls)
 	battle_fx = BattleFx.new()
 	add_child(battle_fx)
 	battle_fx.set_reduced_effects(bool(ProjectSettings.get_setting(
@@ -160,7 +168,7 @@ func _build_enemy_panel() -> VBoxContainer:
 	enemy_hp_label = UiKit.bar_label(enemy_hp_bar)
 
 	enemy_display = EnemyDisplay.new()
-	enemy_display.custom_minimum_size = Vector2(0, 330)
+	enemy_display.custom_minimum_size = Vector2(0, 300 if _layout_profile.get("name") == "tall" else 330)
 	enemy_display.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	box.add_child(enemy_display)
 
@@ -234,7 +242,7 @@ func _build_button_row() -> HBoxContainer:
 	row.custom_minimum_size = Vector2(0, 106)
 	row.add_theme_constant_override("separation", 42)
 
-	undo_button = UiKit.icon_button("res://assets/art/ui/icon_undo.png", -1,
+	undo_button = UiKit.icon_button(VisualRegistry.ui_icon("undo"), -1,
 			"Undo the last pour")
 	undo_count_label = UiKit.label("3", 18, Color("f5d681"))
 	undo_count_label.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
@@ -249,12 +257,12 @@ func _build_button_row() -> HBoxContainer:
 	undo_button.pressed.connect(_on_undo_pressed)
 	row.add_child(_action_stack(undo_button, "Undo"))
 
-	var restart := UiKit.icon_button("res://assets/art/ui/icon_remix.png", -1,
+	var restart := UiKit.icon_button(VisualRegistry.ui_icon("mix"), -1,
 			"Brew a new potion mix")
 	restart.pressed.connect(_on_restart_pressed)
 	row.add_child(_action_stack(restart, "New Mix"))
 
-	var pause := UiKit.icon_button("res://assets/art/ui/icon_pause.png", -1,
+	var pause := UiKit.icon_button(VisualRegistry.ui_icon("pause"), -1,
 			"Pause the battle")
 	pause.pressed.connect(_show_pause)
 	row.add_child(_action_stack(pause, "Pause"))
@@ -330,7 +338,7 @@ func _refresh() -> void:
 	enemy_name_label.text = battle.enemy_name \
 			+ ("  (Enraged!)" if battle.enraged else "")
 	enemy_hp_bar.max_value = battle.enemy_max_hp
-	enemy_hp_bar.value = battle.enemy_hp
+	_animate_bar(enemy_hp_bar, battle.enemy_hp)
 	enemy_hp_label.text = "%d / %d" % [battle.enemy_hp, battle.enemy_max_hp]
 	enemy_display.enraged = battle.enraged
 
@@ -349,7 +357,7 @@ func _refresh() -> void:
 			Color("ff5a3a") if moves <= 1 else UiKit.COLOR_FIRE)
 
 	player_hp_bar.max_value = battle.player_max_hp
-	player_hp_bar.value = battle.player_hp
+	_animate_bar(player_hp_bar, battle.player_hp)
 	player_hp_label.text = "%d / %d" % [battle.player_hp, battle.player_max_hp]
 	shield_label.text = "Shield %d" % battle.shield if battle.shield > 0 else "No Shield"
 	player_status_label.text = ("Poisoned! %d dmg / %d turns"
@@ -362,6 +370,16 @@ func _refresh() -> void:
 
 func _set_message(text: String) -> void:
 	message_label.text = text
+	message_label.modulate.a = 0.45
+	var tween := create_tween()
+	tween.tween_property(message_label, "modulate:a", 1.0, 0.16)
+
+
+func _animate_bar(bar: ProgressBar, target: float) -> void:
+	if not is_instance_valid(bar):
+		return
+	var tween := create_tween()
+	tween.tween_property(bar, "value", target, 0.22).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 
 func _enemy_center() -> Vector2:
@@ -380,7 +398,7 @@ func _on_potion_activated(color: String, text: String) -> void:
 	match color:
 		"red":
 			AudioManager.play("fire")
-			battle_fx.fire(_enemy_center())
+			battle_fx.projectile(_player_bar_center(), _enemy_center(), Color("ff8a42"))
 		"green":
 			AudioManager.play("heal")
 			battle_fx.heal(_player_bar_center())
@@ -417,6 +435,7 @@ func _on_combo_triggered(text: String) -> void:
 
 func _on_enemy_attacked(damage: int, blocked: int, crit: bool) -> void:
 	enemy_display.play_attack()
+	battle_fx.enemy_strike(_enemy_center(), _player_bar_center())
 	var prefix := "CRITICAL! " if crit else ""
 	if blocked >= damage:
 		_set_message("%s%s attacks! Shield blocks everything." % [prefix, battle.enemy_name])

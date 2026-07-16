@@ -43,6 +43,13 @@ func _ready() -> void:
 	generate_board()
 
 
+func apply_layout_profile(profile: Dictionary) -> void:
+	var tall := str(profile.get("name", "standard")) == "tall"
+	var tube_size := Vector2(82, 318) if tall else Vector2(88, 280)
+	for tube in tubes:
+		tube.custom_minimum_size = tube_size
+
+
 ## Deals CAPACITY units of each color randomly into the filled tubes.
 ## Rerolls if any tube starts already complete.
 func generate_board() -> void:
@@ -74,6 +81,26 @@ func generate_board() -> void:
 	for t in tubes.size():
 		if t < layouts.size():
 			tubes[t].set_contents(layouts[t])
+		else:
+			tubes[t].set_contents([] as Array[String])
+
+
+## Deterministic first-run layout. Three exposed green units teach legal
+## matching immediately while preserving the complete four-color puzzle.
+func generate_tutorial_board() -> void:
+	_undo_stack.clear()
+	_deselect()
+	var layouts: Array[Array] = [
+		["red", "purple", "blue", "green"],
+		["purple", "red", "blue", "green"],
+		["blue", "purple", "red", "green"],
+		["green", "blue", "purple", "red"],
+	]
+	for t in tubes.size():
+		if t < layouts.size():
+			var contents: Array[String] = []
+			contents.assign(layouts[t])
+			tubes[t].set_contents(contents)
 		else:
 			tubes[t].set_contents([] as Array[String])
 

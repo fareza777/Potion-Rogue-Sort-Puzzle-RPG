@@ -4,8 +4,8 @@
 		"shape": "slime",
 		"color": "6fce4e",
 		"hp": 60,
-		"attack": 8,
-		"attack_every": 3,
+		"attack": 5,
+		"attack_every": 4,
 		"crystals": 5
 	},
 	"skeleton": {

@@ -10,7 +10,9 @@ const SFX_POOL_SIZE := 6
 
 var _sfx: Dictionary = {}
 var _music_streams: Dictionary = {}
-var _music_player: AudioStreamPlayer
+var _music_players: Array[AudioStreamPlayer] = []
+var _active_music_player := 0
+var _music_tween: Tween
 var _current_music := ""
 var _sfx_players: Array[AudioStreamPlayer] = []
 var _next_player := 0
@@ -24,9 +26,12 @@ func _ready() -> void:
 		p.bus = "SFX"
 		add_child(p)
 		_sfx_players.append(p)
-	_music_player = AudioStreamPlayer.new()
-	_music_player.bus = "Music"
-	add_child(_music_player)
+	for i in 2:
+		var music_player := AudioStreamPlayer.new()
+		music_player.bus = "Music"
+		music_player.volume_db = -80.0
+		add_child(music_player)
+		_music_players.append(music_player)
 	set_music_volume(float(SaveSystem.setting("music")))
 	set_sfx_volume(float(SaveSystem.setting("sfx")))
 
@@ -42,17 +47,36 @@ func play(sound_name: String) -> void:
 
 
 func play_music(track: String) -> void:
-	if _current_music == track and _music_player.playing:
+	if _current_music == track and _music_players[_active_music_player].playing:
 		return
+	crossfade_music(track)
+
+
+func crossfade_music(track: String, duration := 0.8) -> void:
+	var stream: AudioStream = _music_streams.get(track)
+	if stream == null:
+		return
+	if _music_tween != null and _music_tween.is_valid():
+		_music_tween.kill()
+	var previous := _music_players[_active_music_player]
+	_active_music_player = 1 - _active_music_player
+	var incoming := _music_players[_active_music_player]
+	incoming.stream = stream
+	incoming.volume_db = -36.0
+	incoming.play()
 	_current_music = track
-	_music_player.stream = _music_streams.get(track)
-	if _music_player.stream != null:
-		_music_player.play()
+	_music_tween = create_tween().set_parallel(true)
+	_music_tween.tween_property(incoming, "volume_db", 0.0, duration)
+	if previous.playing:
+		_music_tween.tween_property(previous, "volume_db", -36.0, duration)
+		_music_tween.chain().tween_callback(previous.stop)
 
 
 func stop_music() -> void:
 	_current_music = ""
-	_music_player.stop()
+	for player in _music_players:
+		player.stop()
+		player.volume_db = -80.0
 
 
 func vibrate(ms := 30) -> void:
@@ -126,9 +150,22 @@ func _build_sounds() -> void:
 			return _sin(f, t) * 0.28 * _decay(fmod(t, d / 4.0), d / 4.0, 3.0)),
 	}
 	_music_streams = {
-		"dungeon": _make_drone([55.0, 82.5, 110.0], 6.0, 0.10),
-		"boss": _make_drone([65.4, 98.0, 130.8, 155.6], 4.0, 0.13),
+		"dungeon": _load_ambient("res://assets/audio/dungeon_ambient.wav",
+				_make_drone([55.0, 82.5, 110.0], 6.0, 0.10)),
+		"boss": _load_ambient("res://assets/audio/boss_ambient.wav",
+				_make_drone([65.4, 98.0, 130.8, 155.6], 4.0, 0.13)),
 	}
+
+
+func _load_ambient(path: String, fallback: AudioStreamWAV) -> AudioStream:
+	if not ResourceLoader.exists(path):
+		return fallback
+	var stream := load(path)
+	if stream is AudioStreamWAV:
+		stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		stream.loop_begin = 0
+		stream.loop_end = int(stream.mix_rate * 24.0)
+	return stream
 
 
 func _sin(freq: float, t: float) -> float:
