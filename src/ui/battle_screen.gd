@@ -6,6 +6,7 @@ extends Control
 var battle: BattleManager
 var board: PuzzleBoard
 var undo_left := 0
+var _last_moves_until_attack := -1
 
 var battle_kind_label: Label
 var enemy_name_label: Label
@@ -26,6 +27,7 @@ var overlay_title: Label
 var overlay_body: Label
 var overlay_choices: VBoxContainer
 var overlay_buttons: HBoxContainer
+var battle_fx: BattleFx
 
 
 func _ready() -> void:
@@ -52,6 +54,7 @@ func _ready() -> void:
 
 	board.move_made.connect(battle.on_move)
 	board.move_made.connect(func() -> void: AudioManager.play("pour"))
+	board.pour_presented.connect(_on_pour_presented)
 	board.tube_completed.connect(battle.on_potion_completed)
 	board.tube_completed.connect(func(_c: String) -> void: AudioManager.play("complete"))
 	board.tube_locked.connect(func() -> void: AudioManager.play("lock"))
@@ -108,6 +111,8 @@ func _build_ui() -> void:
 	root.add_child(board)
 
 	root.add_child(_build_button_row())
+	battle_fx = BattleFx.new()
+	add_child(battle_fx)
 	_build_overlay()
 
 
@@ -261,6 +266,9 @@ func _refresh() -> void:
 			if battle.poison_turns > 0 else ""
 
 	var moves := battle.moves_until_attack
+	if moves == 1 and _last_moves_until_attack != 1:
+		enemy_display.play_anticipate()
+	_last_moves_until_attack = moves
 	countdown_label.text = "Enemy attacks in %d move%s!" \
 			% [moves, "" if moves == 1 else "s"]
 	countdown_label.add_theme_color_override("font_color",
@@ -298,20 +306,30 @@ func _on_potion_activated(color: String, text: String) -> void:
 	match color:
 		"red":
 			AudioManager.play("fire")
+			battle_fx.fire(_enemy_center())
 		"green":
 			AudioManager.play("heal")
+			battle_fx.heal(_player_bar_center())
 			UiKit.float_text(self, _player_bar_center(), text.get_slice("  ", 1),
 					UiKit.COLOR_HP)
 		"blue":
 			AudioManager.play("shield")
+			battle_fx.shield(_player_bar_center())
 			UiKit.float_text(self, _player_bar_center(), text.get_slice("  ", 1),
 					UiKit.COLOR_SHIELD)
 		"purple":
 			AudioManager.play("poison")
+			battle_fx.poison(_enemy_center())
+
+
+func _on_pour_presented(from: Vector2, to: Vector2, color: String, count: int) -> void:
+	var style := VisualRegistry.potion(color)
+	battle_fx.pour(from, to, style.get("glow", Color.WHITE), count)
 
 
 func _on_enemy_damaged(amount: int) -> void:
 	enemy_display.play_hit()
+	battle_fx.hit(enemy_display, 1.0)
 	AudioManager.play("enemy_hit")
 	UiKit.float_text(self, _enemy_center() + Vector2(randf_range(-40, 40), -20),
 			"-%d" % amount, UiKit.COLOR_FIRE, 40)
@@ -324,6 +342,7 @@ func _on_combo_triggered(text: String) -> void:
 
 
 func _on_enemy_attacked(damage: int, blocked: int, crit: bool) -> void:
+	enemy_display.play_attack()
 	var prefix := "CRITICAL! " if crit else ""
 	if blocked >= damage:
 		_set_message("%s%s attacks! Shield blocks everything." % [prefix, battle.enemy_name])
@@ -374,6 +393,7 @@ func _on_tube_lock_requested(moves: int) -> void:
 
 func _on_battle_won() -> void:
 	board.enabled = false
+	enemy_display.play_defeat()
 	AudioManager.play("victory")
 	AudioManager.stop_music()
 	var was_last := RunState.is_last_battle()
