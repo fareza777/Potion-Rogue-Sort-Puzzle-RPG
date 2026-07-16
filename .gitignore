@@ -6,6 +6,7 @@
 android/
 *.apk
 *.aab
+*.idsig
 
 # Export credentials (never commit keystores)
 *.keystore
