@@ -99,6 +99,7 @@ func _ready() -> void:
 	check(fx.has_method("poison"), "battle poison effect interface")
 	check(fx.has_method("projectile"), "battle projectile effect interface")
 	check(fx.has_method("enemy_strike"), "battle strike effect interface")
+	check(fx.has_method("warning_pulse"), "battle warning pulse interface")
 	check(fx.has_method("set_reduced_effects"), "reduced effects interface")
 	if fx.has_method("set_reduced_effects"):
 		fx.call("set_reduced_effects", true)
@@ -118,6 +119,9 @@ func _ready() -> void:
 			"battle exposes framed enemy vital bar")
 	check(battle_source.contains('name = "PlayerVitalBar"'),
 			"battle exposes framed player vital bar")
+	for component_name in ["EncounterHeader", "WarningPlaque", "ActionPedestal"]:
+		check(battle_source.contains('name = "' + component_name + '"'),
+				"battle exposes premium " + component_name)
 	var textured_panel := UiKit.textured_panel(
 			"res://assets/art/ui/battle_panel.png", 26)
 	check(textured_panel.custom_minimum_size.y > 0.0,

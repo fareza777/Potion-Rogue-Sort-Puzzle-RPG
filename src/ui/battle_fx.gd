@@ -111,6 +111,19 @@ func enemy_strike(from: Vector2, to: Vector2) -> void:
 	_burst(to, Color("ff4938"), 5 if reduced_effects else 14, 38.0)
 
 
+func warning_pulse(target: Control) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	target.pivot_offset = target.size * 0.5
+	var peak := Vector2(1.008, 1.008) if reduced_effects else Vector2(1.025, 1.025)
+	var tween := create_tween()
+	for i in (1 if reduced_effects else 2):
+		tween.tween_property(target, "scale", peak, 0.10)
+		tween.parallel().tween_property(target, "modulate", Color(1.25, 0.72, 0.65), 0.10)
+		tween.tween_property(target, "scale", Vector2.ONE, 0.14)
+		tween.parallel().tween_property(target, "modulate", Color.WHITE, 0.14)
+
+
 func _quadratic(a: Vector2, b: Vector2, c: Vector2, t: float) -> Vector2:
 	var inverse := 1.0 - t
 	return inverse * inverse * a + 2.0 * inverse * t * b + t * t * c

@@ -15,6 +15,7 @@ var enemy_hp_bar: OrnateResourceBar
 var armor_label: Label
 var poison_label: Label
 var countdown_label: Label
+var warning_plaque: PanelContainer
 var player_hp_bar: OrnateResourceBar
 var player_status_label: Label
 var message_label: Label
@@ -137,17 +138,38 @@ func _build_ui() -> void:
 
 
 func _build_top_strip() -> PanelContainer:
-	var panel := UiKit.panel(Color("7d6030"))
-	panel.custom_minimum_size = Vector2(0, 50)
+	var panel := PanelContainer.new()
+	panel.name = "EncounterHeader"
+	panel.custom_minimum_size = Vector2(0, 58)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.025, 0.018, 0.05, 0.94)
+	style.border_color = Color("8e6c34")
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(13)
+	style.content_margin_left = 16
+	style.content_margin_right = 12
+	style.content_margin_top = 6
+	style.content_margin_bottom = 6
+	style.shadow_color = Color(0, 0, 0, 0.7)
+	style.shadow_size = 7
+	panel.add_theme_stylebox_override("panel", style)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 	panel.add_child(row)
-	battle_kind_label = UiKit.label("", 17, UiKit.COLOR_TEXT)
+	var stage_box := VBoxContainer.new()
+	stage_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	stage_box.add_theme_constant_override("separation", -3)
+	row.add_child(stage_box)
+	var kicker := UiKit.label("DUNGEON EXPEDITION", 10, Color("a992c1"))
+	kicker.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	stage_box.add_child(kicker)
+	battle_kind_label = UiKit.label("", 15, UiKit.COLOR_TEXT)
 	battle_kind_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	battle_kind_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(battle_kind_label)
-	var currency := UiKit.label("◆  %d" % SaveSystem.crystals(), 20, Color("72cfff"))
+	stage_box.add_child(battle_kind_label)
+	var currency := UiKit.label("◆  %d" % SaveSystem.crystals(), 19, Color("72cfff"))
 	currency.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	currency.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	currency.custom_minimum_size = Vector2(78, 0)
 	row.add_child(currency)
 	return panel
 
@@ -179,11 +201,21 @@ func _build_enemy_panel() -> VBoxContainer:
 	poison_label = UiKit.label("", 18, UiKit.COLOR_POISON)
 	status_row.add_child(poison_label)
 
-	countdown_label = UiKit.label("", 22, UiKit.COLOR_FIRE)
-	countdown_label.custom_minimum_size = Vector2(0, 28)
+	warning_plaque = PanelContainer.new()
+	warning_plaque.name = "WarningPlaque"
+	warning_plaque.custom_minimum_size = Vector2(0, 38)
+	var warning_style := StyleBoxFlat.new()
+	warning_style.bg_color = Color(0.12, 0.035, 0.025, 0.76)
+	warning_style.border_color = Color("87502d")
+	warning_style.border_width_top = 1
+	warning_style.border_width_bottom = 1
+	warning_style.set_corner_radius_all(10)
+	warning_plaque.add_theme_stylebox_override("panel", warning_style)
+	countdown_label = UiKit.label("", 19, UiKit.COLOR_FIRE)
 	countdown_label.add_theme_constant_override("outline_size", 5)
 	countdown_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
-	box.add_child(countdown_label)
+	warning_plaque.add_child(countdown_label)
+	box.add_child(warning_plaque)
 	return box
 
 
@@ -256,7 +288,17 @@ func _build_button_row() -> HBoxContainer:
 func _action_stack(button: Button, caption: String) -> VBoxContainer:
 	var stack := VBoxContainer.new()
 	stack.add_theme_constant_override("separation", -4)
-	stack.add_child(button)
+	var pedestal := PanelContainer.new()
+	pedestal.name = "ActionPedestal"
+	pedestal.custom_minimum_size = Vector2(96, 96)
+	var pedestal_style := StyleBoxFlat.new()
+	pedestal_style.bg_color = Color(0.01, 0.008, 0.02, 0.24)
+	pedestal_style.set_corner_radius_all(48)
+	pedestal_style.shadow_color = Color(0.23, 0.07, 0.32, 0.28)
+	pedestal_style.shadow_size = 4
+	pedestal.add_theme_stylebox_override("panel", pedestal_style)
+	pedestal.add_child(button)
+	stack.add_child(pedestal)
 	var label := UiKit.label(caption, 15, UiKit.COLOR_GOLD)
 	label.add_theme_constant_override("outline_size", 4)
 	label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
@@ -332,6 +374,7 @@ func _refresh() -> void:
 	var moves := battle.moves_until_attack
 	if moves == 1 and _last_moves_until_attack != 1:
 		enemy_display.play_anticipate()
+		battle_fx.warning_pulse(warning_plaque)
 	_last_moves_until_attack = moves
 	countdown_label.text = "Enemy attacks in %d move%s!" \
 			% [moves, "" if moves == 1 else "s"]
