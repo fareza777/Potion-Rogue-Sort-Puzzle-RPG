@@ -105,6 +105,13 @@ func _test_defeat() -> void:
 func _test_board_rules() -> void:
 	var board := PuzzleBoard.new()
 	add_child(board)
+	var presented := [false, "", 0]
+	if board.has_signal("pour_presented"):
+		board.connect("pour_presented", func(_from: Vector2, _to: Vector2,
+				color: String, count: int) -> void:
+			presented[0] = true
+			presented[1] = color
+			presented[2] = count)
 	var a := board.tubes[0]
 	var c := board.tubes[1]
 	a.set_contents(["red", "blue"] as Array[String])
@@ -114,6 +121,8 @@ func _test_board_rules() -> void:
 	check(board._try_pour(a, c), "pour blue onto blue")
 	check(a.contents == (["red"] as Array[String])
 			and c.contents.size() == 3, "one unit moved")
+	check(presented[0] and presented[1] == "blue" and presented[2] == 1,
+			"pour emits presentation metadata")
 	check(board.undo(), "undo available")
 	check(a.contents.size() == 2 and c.contents.size() == 2, "undo restores tubes")
 

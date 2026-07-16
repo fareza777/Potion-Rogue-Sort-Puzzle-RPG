@@ -45,6 +45,11 @@ func _ready() -> void:
 	else:
 		check(false, "slime uses registered sprite")
 	enemy_view.queue_free()
+	var potion_view := PotionTube.new()
+	add_child(potion_view)
+	check(potion_view.has_method("flash_complete"), "potion complete animation interface")
+	check(potion_view.has_method("play_invalid"), "potion invalid animation interface")
+	potion_view.queue_free()
 	print("---")
 	print("%d checks, %d failures" % [_checks, _failures])
 	get_tree().quit(1 if _failures > 0 else 0)

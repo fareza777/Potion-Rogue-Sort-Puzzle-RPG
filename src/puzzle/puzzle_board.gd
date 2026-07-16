@@ -9,6 +9,7 @@ signal tube_selected
 signal board_refilled
 signal invalid_move
 signal tube_locked
+signal pour_presented(from_global: Vector2, to_global: Vector2, color: String, count: int)
 
 const COLORS: Array[String] = ["red", "green", "blue", "purple"]
 const FILLED_TUBES := 4
@@ -129,6 +130,7 @@ func _on_tube_tapped(tube: PotionTube) -> void:
 	if not enabled:
 		return
 	if tube.is_locked():
+		tube.play_invalid()
 		invalid_move.emit()
 		return
 	if selected_tube == null:
@@ -144,6 +146,7 @@ func _on_tube_tapped(tube: PotionTube) -> void:
 		_deselect()
 	else:
 		# Invalid pour: treat the tap as selecting the new tube instead.
+		tube.play_invalid()
 		_deselect()
 		if not tube.contents.is_empty():
 			selected_tube = tube
@@ -159,6 +162,8 @@ func _try_pour(from_tube: PotionTube, to_tube: PotionTube) -> bool:
 		return false
 
 	var count: int = mini(from_tube.top_run_count(), to_tube.free_space())
+	var from_global := from_tube.global_position + from_tube.size * 0.5
+	var to_global := to_tube.global_position + to_tube.size * 0.5
 	for i in count:
 		to_tube.contents.append(from_tube.contents.pop_back())
 	from_tube.queue_redraw()
@@ -167,6 +172,7 @@ func _try_pour(from_tube: PotionTube, to_tube: PotionTube) -> bool:
 	_undo_stack.append({"from": from_tube, "to": to_tube, "count": count})
 	_tick_locks()
 	move_made.emit()
+	pour_presented.emit(from_global, to_global, color, count)
 
 	if to_tube.is_complete():
 		_undo_stack.clear()
@@ -177,10 +183,8 @@ func _try_pour(from_tube: PotionTube, to_tube: PotionTube) -> bool:
 
 
 func _flash_and_empty(tube: PotionTube) -> void:
+	tube.flash_complete()
 	tube.set_contents([] as Array[String])
-	var tween := create_tween()
-	tube.modulate = Color(2.0, 2.0, 2.0)
-	tween.tween_property(tube, "modulate", Color.WHITE, 0.35)
 	# Each color exists exactly once per board, so the board only runs dry
 	# when every color has been completed -> brew a fresh batch.
 	if total_units() == 0:

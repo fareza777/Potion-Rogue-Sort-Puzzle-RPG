@@ -29,9 +29,16 @@ var selected := false:
 		selected = value
 		queue_redraw()
 
+var _bottle_texture: Texture2D
+var _feedback_tween: Tween
+
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	_bottle_texture = VisualRegistry.texture_or_null(
+			"res://assets/art/potions/bottle_frame.png")
+	resized.connect(func() -> void: pivot_offset = size * 0.5)
+	pivot_offset = size * 0.5
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -74,61 +81,81 @@ func set_contents(new_contents: Array[String]) -> void:
 	queue_redraw()
 
 
+func flash_complete() -> void:
+	if _feedback_tween != null and _feedback_tween.is_valid():
+		_feedback_tween.kill()
+	_feedback_tween = create_tween().set_parallel(true)
+	modulate = Color(1.8, 1.65, 1.25, 1.0)
+	scale = Vector2.ONE
+	_feedback_tween.tween_property(self, "scale", Vector2(1.1, 1.08), 0.12) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_feedback_tween.chain().tween_property(self, "scale", Vector2.ONE, 0.2) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_feedback_tween.tween_property(self, "modulate", Color.WHITE, 0.32)
+
+
+func play_invalid() -> void:
+	if _feedback_tween != null and _feedback_tween.is_valid():
+		_feedback_tween.kill()
+	var base_x := position.x
+	_feedback_tween = create_tween()
+	_feedback_tween.tween_property(self, "position:x", base_x - 5.0, 0.045)
+	_feedback_tween.tween_property(self, "position:x", base_x + 5.0, 0.07)
+	_feedback_tween.tween_property(self, "position:x", base_x - 3.0, 0.06)
+	_feedback_tween.tween_property(self, "position:x", base_x, 0.05)
+
+
 func _draw() -> void:
 	var w := size.x
 	var h := size.y
-	var wall := 6.0
-	var rim_h := 16.0                       # glass rim band at the top
-	var inner_left := wall
-	var inner_w := w - wall * 2.0
-	var bottom_r := inner_w * 0.5           # rounded flask bottom
-	var body_top := rim_h + 4.0
-	var liquid_area_h := h - body_top - 6.0
+	var inner_left := w * 0.18
+	var inner_w := w * 0.64
+	var body_top := h * 0.22
+	var body_bottom := h * 0.88
+	var liquid_area_h := body_bottom - body_top
 	var seg_h := liquid_area_h / float(CAPACITY)
 	var cx := w * 0.5
 
-	# Soft glow behind the tube from its dominant liquid color
+	# Jewel-toned glow behind the physical bottle sprite.
 	if not contents.is_empty():
-		var glow: Color = COLOR_MAP.get(top_color(), Color.WHITE)
-		glow.a = 0.10 if not selected else 0.22
-		draw_circle(Vector2(cx, h * 0.68), w * 0.55, glow)
+		var glow: Color = VisualRegistry.potion(top_color()).get("glow", Color.WHITE)
+		glow.a = 0.12 if not selected else 0.26
+		draw_circle(Vector2(cx, h * 0.62), w * 0.62, glow)
 
-	# Glass body (dark translucent) with rounded bottom
-	var glass := Color(0.75, 0.8, 1.0, 0.07)
-	draw_rect(Rect2(inner_left, body_top, inner_w, h - body_top - bottom_r), glass)
-	draw_circle(Vector2(cx, h - bottom_r - 1.0), bottom_r, glass)
-
-	# Liquid segments, bottom-up. Bottom segment fills the rounded base.
+	# Dynamic liquid remains tied directly to the four logical capacity units.
 	for i in contents.size():
-		var color: Color = COLOR_MAP.get(contents[i], Color.WHITE)
-		var seg_top := h - 6.0 - seg_h * float(i + 1)
-		if i == 0:
-			draw_circle(Vector2(cx, h - bottom_r - 1.0), bottom_r - 2.0, color)
-			draw_rect(Rect2(inner_left + 2.0, seg_top + 1.0,
-					inner_w - 4.0, seg_h - bottom_r + 4.0), color)
-		else:
-			draw_rect(Rect2(inner_left + 2.0, seg_top + 1.0,
-					inner_w - 4.0, seg_h - 1.0), color)
-		# Brighter surface line on top of the topmost unit of each run
+		var style := VisualRegistry.potion(contents[i])
+		var color: Color = style.get("color", COLOR_MAP.get(contents[i], Color.WHITE))
+		var seg_top := body_bottom - seg_h * float(i + 1)
+		var liquid_rect := Rect2(inner_left, seg_top + 1.0, inner_w, seg_h - 2.0)
+		draw_rect(liquid_rect, color.darkened(0.12))
+		draw_rect(Rect2(liquid_rect.position + Vector2(2, 2),
+				Vector2(liquid_rect.size.x * 0.32, liquid_rect.size.y - 4)),
+				color.lightened(0.32))
+		# Each cell receives a readable surface and small deterministic bubble.
 		if i == contents.size() - 1:
-			draw_rect(Rect2(inner_left + 2.0, seg_top + 1.0, inner_w - 4.0, 4.0),
-					color.lightened(0.45))
+			draw_line(Vector2(inner_left, seg_top + 2.0),
+					Vector2(inner_left + inner_w, seg_top + 2.0),
+					color.lightened(0.55), 3.0, true)
+		var bubble_r := maxf(1.5, w * 0.025)
+		draw_circle(Vector2(inner_left + inner_w * (0.67 if i % 2 == 0 else 0.78),
+				seg_top + seg_h * 0.55), bubble_r, Color(1, 1, 1, 0.28))
 
-	# Glass shine: vertical highlight strip
-	draw_rect(Rect2(inner_left + 4.0, body_top + 6.0, 6.0, h - body_top - 20.0),
-			Color(1, 1, 1, 0.16))
+	# The painted frame supplies bronze, scratches and high-quality glass edges.
+	if _bottle_texture != null:
+		draw_texture_rect(_bottle_texture,
+				Rect2(Vector2(-w * 0.22, -h * 0.035), Vector2(w * 1.44, h * 1.07)),
+				false)
+	else:
+		draw_rect(Rect2(4, 8, w - 8, h - 12), Color("7d7195"), false, 3.0)
 
-	# Outline + rim
-	var outline := Color("e8c069") if selected else Color("6b5f8a")
-	var width := 4.0 if selected else 2.5
-	draw_rect(Rect2(2, rim_h, w - 4, h - rim_h - 2), outline, false, width)
-	var rim_color := outline.lightened(0.2)
-	draw_rect(Rect2(0, 0, w, rim_h), Color("2e2148"))
-	draw_rect(Rect2(0, 0, w, rim_h), rim_color, false, 2.5)
+	if selected:
+		draw_arc(Vector2(cx, h * 0.55), w * 0.5, 0.0, TAU, 32,
+				Color("ffd36b"), 4.0, true)
 
 	# Magical lock overlay
 	if is_locked():
-		draw_rect(Rect2(2, rim_h, w - 4, h - rim_h - 2), Color(0.05, 0.02, 0.12, 0.62))
+		draw_rect(Rect2(5, h * 0.16, w - 10, h * 0.76), Color(0.05, 0.02, 0.12, 0.7))
 		var lock_c := Vector2(cx, h * 0.5)
 		var lock_col := Color("c07ce8")
 		draw_rect(Rect2(lock_c.x - 13, lock_c.y - 4, 26, 22), lock_col)
