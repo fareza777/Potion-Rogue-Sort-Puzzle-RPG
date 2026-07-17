@@ -43,7 +43,8 @@ func _ready() -> void:
 	for scene_path in ["res://scenes/main_menu.tscn", "res://scenes/kit_select.tscn",
 			"res://scenes/map.tscn",
 			"res://scenes/battle.tscn", "res://scenes/shop.tscn",
-			"res://scenes/settings.tscn", "res://scenes/credits.tscn"]:
+			"res://scenes/settings.tscn", "res://scenes/credits.tscn",
+			"res://scenes/event.tscn"]:
 		var smoke_scene := load(scene_path) as PackedScene
 		check(smoke_scene != null, "scene loads: " + scene_path)
 		if smoke_scene != null:
@@ -124,6 +125,12 @@ func _ready() -> void:
 	fx.queue_free()
 	check(ResourceLoader.exists("res://src/ui/ornate_resource_bar.gd"),
 			"ornate resource bar script exists")
+	var route_contract := DungeonRoute.new()
+	check(route_contract.has_method("configure_graph"), "branching map consumes run graph")
+	check(route_contract.has_signal("node_selected"), "branching map exposes reachable selection")
+	var route_source := FileAccess.get_file_as_string("res://src/ui/dungeon_route.gd")
+	check(route_source.contains("[0.19, 0.5, 0.81]"), "branching map uses three lanes")
+	route_contract.free()
 	var vital_bar := OrnateResourceBar.new()
 	check(vital_bar.has_method("configure"), "ornate bar configuration interface")
 	check(vital_bar.has_method("set_values"), "ornate bar value interface")

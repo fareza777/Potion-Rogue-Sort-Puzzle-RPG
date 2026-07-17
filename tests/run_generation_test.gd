@@ -13,6 +13,7 @@ func _ready() -> void:
 		var reachable := _reachable(graph)
 		assert_check(reachable.has(graph.boss), "boss reachable")
 		assert_check(_has_safe_route(graph), "safe route")
+	_test_events()
 	print("---\n%d checks, %d failures" % [checks, failures])
 	get_tree().quit(1 if failures else 0)
 
@@ -35,6 +36,17 @@ func _has_safe_route(graph: Dictionary) -> bool:
 		if not by_floor[floor].any(func(n: Dictionary) -> bool: return n.kind != "elite"):
 			return false
 	return true
+
+func _test_events() -> void:
+	RunState.start_new_run("ember_adept")
+	RunState.run_crystals = 100
+	var resolver := EventResolver.new()
+	for event_id in resolver.events:
+		var choice_id := str(resolver.events[event_id].choices.keys()[0])
+		var before := resolver.preview(str(event_id), choice_id)
+		var applied := resolver.apply(str(event_id), choice_id, RunState)
+		assert_check(before.ok and applied.ok and before.effects == applied.effects,
+				"event preview parity: " + str(event_id))
 
 func assert_check(ok: bool, label: String) -> void:
 	checks += 1

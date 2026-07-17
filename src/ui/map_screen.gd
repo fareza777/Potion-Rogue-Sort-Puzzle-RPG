@@ -26,14 +26,27 @@ func _ready() -> void:
 	route.name = "DungeonRoute"
 	route.custom_minimum_size = Vector2(0, 860)
 	route_panel.add_child(route)
-	route.configure(RunState.battles(), RunState.battle_index)
+	if not RunState.run_graph.is_empty():
+		route.configure_graph(RunState.run_graph, RunState.current_node_id,
+				RunState.reachable_node_ids())
+		route.node_selected.connect(_on_node_selected)
+	else:
+		route.configure(RunState.battles(), RunState.battle_index)
 
 	root.add_child(_make_status_panel())
-	var enter := UiKit.ornate_button("ENTER CURRENT BATTLE", Vector2(440, 70))
+	var enter := UiKit.ornate_button("SELECT A GLOWING PATH", Vector2(440, 70))
 	enter.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	enter.pressed.connect(func() -> void:
-		get_tree().change_scene_to_file("res://scenes/battle.tscn"))
+	enter.disabled = true
 	root.add_child(enter)
+
+
+func _on_node_selected(node_id: String) -> void:
+	if not RunState.select_node(node_id): return
+	var kind := str(RunState.current_node().get("kind", "battle"))
+	if kind in ["battle", "elite", "boss"]:
+		get_tree().change_scene_to_file("res://scenes/battle.tscn")
+	else:
+		get_tree().change_scene_to_file("res://scenes/event.tscn")
 
 
 func _make_header() -> PanelContainer:

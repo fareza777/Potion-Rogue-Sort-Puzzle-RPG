@@ -9,9 +9,22 @@ const NODE_POSITIONS := [
 	Vector2(0.50, 0.11),
 ]
 
+signal node_selected(node_id: String)
+
 var entries: Array = []
 var current_index := 0
 var _pulse := 0.0
+var graph_nodes: Array = []
+var graph_current := ""
+var graph_reachable: Array[String] = []
+
+
+func configure_graph(graph: Dictionary, current_id: String, reachable: Array[String]) -> void:
+	graph_nodes = graph.get("nodes", [])
+	graph_current = current_id
+	graph_reachable = reachable
+	_rebuild_graph_nodes()
+	queue_redraw()
 
 
 func configure(battles: Array, active_index: int) -> void:
@@ -34,11 +47,15 @@ func _ready() -> void:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED:
-		_position_nodes()
+		if graph_nodes.is_empty(): _position_nodes()
+		else: _position_graph_nodes()
 		queue_redraw()
 
 
 func _draw() -> void:
+	if not graph_nodes.is_empty():
+		_draw_graph()
+		return
 	if entries.is_empty():
 		return
 	var count := mini(entries.size(), NODE_POSITIONS.size())
@@ -67,6 +84,81 @@ func _rebuild_nodes() -> void:
 	for i in mini(entries.size(), NODE_POSITIONS.size()):
 		add_child(_make_medallion(i, entries[i]))
 	_position_nodes()
+
+
+func _rebuild_graph_nodes() -> void:
+	for child in get_children():
+		if child is not Timer: child.queue_free()
+	for node in graph_nodes:
+		var button := Button.new()
+		button.name = "GraphNode_" + str(node.id)
+		button.custom_minimum_size = Vector2(132, 62)
+		button.size = button.custom_minimum_size
+		button.text = _kind_icon(str(node.kind)) + "\n" + str(node.kind).to_upper()
+		button.disabled = str(node.id) not in graph_reachable
+		button.tooltip_text = "Floor %d • %s" % [int(node.floor) + 1, str(node.kind).capitalize()]
+		button.add_theme_font_size_override("font_size", 14)
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color("241533") if not button.disabled else Color("110d19")
+		style.border_color = _graph_color(node)
+		style.set_border_width_all(3 if str(node.id) in graph_reachable else 1)
+		style.set_corner_radius_all(16 if str(node.kind) != "boss" else 31)
+		style.shadow_color = Color(0.45, 0.12, 0.65, 0.6)
+		style.shadow_size = 8 if str(node.id) in graph_reachable else 2
+		button.add_theme_stylebox_override("normal", style)
+		button.add_theme_stylebox_override("disabled", style)
+		button.pressed.connect(_emit_node.bind(str(node.id)))
+		add_child(button)
+	_position_graph_nodes()
+
+
+func _draw_graph() -> void:
+	var by_id := {}
+	for node in graph_nodes: by_id[str(node.id)] = node
+	for node in graph_nodes:
+		for target_id in node.links:
+			if not by_id.has(str(target_id)): continue
+			var a := _graph_point(node)
+			var b := _graph_point(by_id[str(target_id)])
+			var active := str(node.id) == graph_current or bool(node.visited)
+			draw_line(a, b, Color(0.03, 0.01, 0.06, 0.95), 13.0, true)
+			draw_line(a, b, Color("d292ff") if active else Color("51445b"), 5.0, true)
+			draw_line(a, b, Color("f2c968") if active else Color("79664e"), 1.5, true)
+
+
+func _position_graph_nodes() -> void:
+	for node in graph_nodes:
+		var control := get_node_or_null("GraphNode_" + str(node.id)) as Control
+		if control: control.position = _graph_point(node) - control.size * 0.5
+
+
+func _graph_point(node: Dictionary) -> Vector2:
+	var x: float = [0.19, 0.5, 0.81][clampi(int(node.lane), 0, 2)]
+	var y: float = lerpf(0.90, 0.09, float(node.floor) / 6.0)
+	return Vector2(size.x * x, size.y * y)
+
+
+func _emit_node(id: String) -> void:
+	node_selected.emit(id)
+
+
+func _graph_color(node: Dictionary) -> Color:
+	if str(node.id) == graph_current: return Color("74e990")
+	if bool(node.visited): return Color("6f8a68")
+	if str(node.id) in graph_reachable: return _node_color(str(node.kind), 0)
+	return Color("5e5264")
+
+
+func _kind_icon(kind: String) -> String:
+	match kind:
+		"battle": return "⚔"
+		"elite": return "✦"
+		"boss": return "☠"
+		"event": return "?"
+		"shop": return "¤"
+		"treasure": return "◆"
+		"campfire": return "♨"
+		_: return "•"
 
 
 func _make_medallion(index: int, entry: Dictionary) -> Control:

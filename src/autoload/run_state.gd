@@ -29,6 +29,7 @@ var run_graph: Dictionary = {}
 var current_node_id := ""
 var run_seed := 0
 var resolved_event_ids: Array = []
+var active_curses := 0
 
 
 func _ready() -> void:
@@ -50,6 +51,7 @@ func start_new_run(selected_kit := "ember_adept") -> void:
 	mutation_ids = []
 	catalyst_ids = []
 	resolved_event_ids = []
+	active_curses = 0
 	run_seed = int(Time.get_unix_time_from_system())
 	run_graph = RunGenerator.new().generate(run_seed)
 	current_node_id = str(run_graph.get("start", "f0_l1"))
@@ -152,6 +154,45 @@ func _effects_for(ids: Array, pool: Dictionary) -> Array:
 func reward_build() -> Dictionary:
 	var tags: Array = GameState.kits.get(kit_id, {}).get("tags", []).duplicate()
 	return {"tags": tags, "owned": mutation_ids + relic_ids + catalyst_ids}
+
+
+func max_hp() -> int:
+	return int(stat("max_hp", float(GameState.player.get("max_hp", 50))))
+
+
+func current_hp() -> int:
+	return max_hp() if player_hp < 0 else player_hp
+
+
+func heal(amount: int) -> void:
+	player_hp = mini(max_hp(), current_hp() + maxi(0, amount))
+
+
+func spend_run_crystals(amount: int) -> bool:
+	if run_crystals < amount: return false
+	run_crystals -= amount
+	return true
+
+
+func add_relic(id: String) -> bool:
+	if id.is_empty() or not relic_pool.has(id) or id in relic_ids: return false
+	relic_ids.append(id); return true
+
+
+func add_mutation(id: String) -> bool:
+	if id.is_empty() or not mutation_pool.has(id) or id in mutation_ids: return false
+	mutation_ids.append(id); return true
+
+
+func add_catalyst(id: String) -> bool:
+	if id.is_empty() or not catalyst_pool.has(id) or id in catalyst_ids: return false
+	catalyst_ids.append(id); return true
+
+
+func cleanse_curse(count: int) -> int:
+	var removed := mini(active_curses, maxi(0, count))
+	active_curses -= removed
+	return removed
 
 
 ## Total bonus for a stat from purchased permanent upgrade levels.
