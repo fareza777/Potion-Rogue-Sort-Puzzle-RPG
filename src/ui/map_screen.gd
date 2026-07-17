@@ -1,6 +1,9 @@
 extends Control
 ## Full-height illustrated dungeon route with persistent run status and CTA.
 
+var route_control: DungeonRoute
+var tutorial_director: TutorialDirector
+
 
 func _ready() -> void:
 	if not RunState.active:
@@ -22,25 +25,31 @@ func _ready() -> void:
 	var route_panel := UiKit.textured_panel("res://assets/art/ui/battle_panel.png", 10)
 	route_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(route_panel)
-	var route := DungeonRoute.new()
-	route.name = "DungeonRoute"
-	route.custom_minimum_size = Vector2(0, 860)
-	route_panel.add_child(route)
+	route_control = DungeonRoute.new()
+	route_control.name = "DungeonRoute"
+	route_control.custom_minimum_size = Vector2(0, 860)
+	route_panel.add_child(route_control)
 	if not RunState.run_graph.is_empty():
-		route.configure_graph(RunState.run_graph, RunState.current_node_id,
+		route_control.configure_graph(RunState.run_graph, RunState.current_node_id,
 				RunState.reachable_node_ids())
-		route.node_selected.connect(_on_node_selected)
+		route_control.node_selected.connect(_on_node_selected)
 	else:
-		route.configure(RunState.battles(), RunState.battle_index)
+		route_control.configure(RunState.battles(), RunState.battle_index)
 
 	root.add_child(_make_status_panel())
 	var hint := UiKit.label("SELECT ONE OF THE GLOWING PATHS", 16, UiKit.COLOR_GOLD)
 	hint.custom_minimum_size = Vector2(0, 34)
 	root.add_child(hint)
+	if not SaveSystem.is_tutorial_done() and SaveSystem.tutorial_step() >= 9:
+		tutorial_director = TutorialDirector.new(); tutorial_director.configure()
+		var tutorial := Tutorial.new(); add_child(tutorial)
+		tutorial.setup(self, tutorial_director,
+				func(_target: String) -> Control: return route_control)
 
 
 func _on_node_selected(node_id: String) -> void:
 	if not RunState.select_node(node_id): return
+	if tutorial_director != null: tutorial_director.accept_action("choose_path")
 	var kind := str(RunState.current_node().get("kind", "battle"))
 	if kind in ["battle", "elite", "boss"]:
 		get_tree().change_scene_to_file("res://scenes/battle.tscn")

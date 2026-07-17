@@ -211,6 +211,13 @@ func _ready() -> void:
 	for row_name in ["MusicRow", "SoundRow", "VibrationRow", "AssistModeRow"]:
 		check(settings_source.contains('name = "' + row_name + '"'),
 				"settings exposes aligned " + row_name)
+	check(settings_source.contains('name = "ReplayTutorial"'),
+			"settings exposes tutorial replay")
+	var tutorial_source := FileAccess.get_file_as_string("res://src/ui/tutorial.gd")
+	for tutorial_node in ["TutorialDimTop", "TutorialDimBottom", "TutorialDimLeft",
+			"TutorialDimRight", "TutorialPointer", "TutorialCard", "TutorialSkip"]:
+		check(tutorial_source.contains(tutorial_node),
+				"guided tutorial exposes " + tutorial_node)
 	var route := DungeonRoute.new()
 	check(route.has_method("configure"), "dungeon route data interface")
 	check(DungeonRoute.NODE_POSITIONS.size() == 7,

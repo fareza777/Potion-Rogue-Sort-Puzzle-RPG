@@ -40,6 +40,11 @@ func _ready() -> void:
 			"Adds one warning move. Rewards stay unchanged.")
 	assist_row.name = "AssistModeRow"
 	rows.add_child(assist_row)
+	var replay := UiKit.button("REPLAY TUTORIAL", Vector2(320, 58), Color("78c8ff"))
+	replay.name = "ReplayTutorial"
+	replay.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	replay.pressed.connect(_replay_tutorial)
+	rows.add_child(replay)
 
 	var separator := HSeparator.new()
 	separator.modulate = Color("8a6d3b")
@@ -198,3 +203,9 @@ func _close_confirm() -> void:
 	if _confirm_panel != null:
 		_confirm_panel.queue_free()
 		_confirm_panel = null
+
+
+func _replay_tutorial() -> void:
+	SaveSystem.replay_tutorial()
+	RunState.start_new_run("ember_adept")
+	get_tree().change_scene_to_file("res://scenes/battle.tscn")

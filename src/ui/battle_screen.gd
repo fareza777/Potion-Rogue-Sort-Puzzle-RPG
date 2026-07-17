@@ -41,6 +41,8 @@ var combo_label: Label
 var skill_button: Button
 var ultimate_button: Button
 var boss_phase_controller: BossPhaseController
+var tutorial_director: TutorialDirector
+var tutorial_overlay: Tutorial
 
 
 func _ready() -> void:
@@ -86,10 +88,26 @@ func _ready() -> void:
 	AudioManager.set_combat_layer("boss_phase_1" if combat_kind == "boss" else "elite" if combat_kind == "elite" else "battle")
 	if not SaveSystem.is_tutorial_done() and RunState.battle_index == 0:
 		board.generate_tutorial_board()
-		var tutorial := Tutorial.new()
-		tutorial.setup(board, battle)
-		_insert_above_board(tutorial)
+		tutorial_director = TutorialDirector.new(); tutorial_director.configure()
+		tutorial_overlay = Tutorial.new(); add_child(tutorial_overlay)
+		tutorial_overlay.setup(self, tutorial_director, _tutorial_target)
 	_refresh()
+
+
+func _tutorial_target(target_name: String) -> Control:
+	match target_name:
+		"TutorialSource": return board.tubes[0] if board.tubes.size() > 0 else board
+		"TutorialTarget": return board.tubes[1] if board.tubes.size() > 1 else board
+		_: return find_child(target_name, true, false) as Control
+
+
+func tutorial_fill_mana() -> void:
+	if skill_controller != null: skill_controller.gain_mana(100)
+
+
+func _tutorial_action(action: String) -> void:
+	if tutorial_director != null and tutorial_director.active:
+		tutorial_director.accept_action(action)
 
 
 func _setup_tactical_controllers(enemy_id: String) -> void:
@@ -122,6 +140,8 @@ func _setup_tactical_controllers(enemy_id: String) -> void:
 	skill_controller.configure(RunState.kit_id, board)
 	skill_controller.mana_changed.connect(_on_mana_changed)
 	board.move_made.connect(_on_tactical_move)
+	board.tube_selected.connect(func(): _tutorial_action("select_source"))
+	board.move_made.connect(func(): _tutorial_action("select_target"))
 	board.tube_completed.connect(_on_depth_potion_completed)
 	battle.enemy_action_resolved.connect(_on_intent_resolved)
 
@@ -137,9 +157,11 @@ func _on_tactical_move() -> void:
 
 
 func _on_depth_potion_completed(color: String) -> void:
+	_tutorial_action("complete_potion")
 	objective_controller.on_potion_completed(color)
 	modifier_controller.on_potion_completed(color)
 	skill_controller.gain_mana(18 if color == "wild" else 25)
+	_tutorial_action("gain_mana")
 	skill_controller.tick_cooldowns()
 	var result := combo_resolver.push_potion(color)
 	if not result.is_empty(): skill_controller.gain_ultimate(int(result.get("charge", 0)))
@@ -187,6 +209,7 @@ func _on_skill_pressed() -> void:
 			if not board.tubes[index].contents.is_empty(): target = {"tube": index}; break
 	var result := skill_controller.cast(skill_id, target)
 	if not bool(result.get("ok", false)): return
+	_tutorial_action("cast_skill")
 	match skill_id:
 		"flash_boil": battle.deal_skill_damage(16)
 		"purify":
@@ -430,6 +453,7 @@ func _build_button_row() -> HBoxContainer:
 
 	undo_button = UiKit.icon_button(VisualRegistry.ui_icon("undo"), -1,
 			"Undo the last pour")
+	undo_button.name = "UndoAction"
 	undo_count_label = UiKit.label("3", 18, Color("f5d681"))
 	undo_count_label.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	undo_count_label.offset_left = -30
@@ -816,6 +840,7 @@ func _on_undo_pressed() -> void:
 		undo_left -= 1
 		battle.on_undo()
 		_set_message("Move undone.")
+		_tutorial_action("undo")
 		_refresh()
 
 

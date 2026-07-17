@@ -42,6 +42,7 @@ func _ready() -> void:
 
 	for i in FILLED_TUBES + EMPTY_TUBES:
 		var tube := PotionTube.new()
+		tube.name = "PotionTube%d" % i
 		tube.custom_minimum_size = TUBE_SIZE
 		tube.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		tube.tapped.connect(_on_tube_tapped)
