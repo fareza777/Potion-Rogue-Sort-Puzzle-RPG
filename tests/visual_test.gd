@@ -222,6 +222,10 @@ func _ready() -> void:
 	]:
 		check(ResourceLoader.exists(audio_path), "loadable ambient: " + audio_path)
 	check(AudioManager.has_method("crossfade_music"), "ambient crossfade interface")
+	check(AudioManager.has_method("set_combat_layer"), "layered combat music interface")
+	check(fx.has_method("play_combo"), "combo spectacle interface")
+	check(fx.has_method("play_ultimate"), "ultimate spectacle interface")
+	check(fx.has_method("play_phase_transition"), "boss phase spectacle interface")
 	var shop_source := FileAccess.get_file_as_string("res://src/ui/shop_screen.gd")
 	check(shop_source.contains('name = "WorkshopHeader"'), "workshop responsive header")
 	check(shop_source.contains('name = "UpgradeSigil"'),

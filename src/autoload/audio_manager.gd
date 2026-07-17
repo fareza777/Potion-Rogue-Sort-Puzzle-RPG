@@ -16,6 +16,7 @@ var _music_tween: Tween
 var _current_music := ""
 var _sfx_players: Array[AudioStreamPlayer] = []
 var _next_player := 0
+var _combat_layer := "explore"
 
 
 func _ready() -> void:
@@ -50,6 +51,13 @@ func play_music(track: String) -> void:
 	if _current_music == track and _music_players[_active_music_player].playing:
 		return
 	crossfade_music(track)
+
+
+func set_combat_layer(layer: String) -> void:
+	if layer == _combat_layer and not _current_music.is_empty(): return
+	_combat_layer = layer
+	var track := "boss" if layer in ["elite", "boss_phase_1", "boss_phase_2", "boss_phase_3"] else "dungeon"
+	crossfade_music(track, 0.65)
 
 
 func crossfade_music(track: String, duration := 0.8) -> void:

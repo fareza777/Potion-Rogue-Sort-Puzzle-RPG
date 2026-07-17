@@ -82,7 +82,8 @@ func _ready() -> void:
 	undo_left = battle.undos_allowed()
 	_set_message("Sort potions of one color to unleash them!")
 
-	AudioManager.play_music("boss" if RunState.is_boss_battle() else "dungeon")
+	var combat_kind := str(entry.get("kind", "battle"))
+	AudioManager.set_combat_layer("boss_phase_1" if combat_kind == "boss" else "elite" if combat_kind == "elite" else "battle")
 	if not SaveSystem.is_tutorial_done() and RunState.battle_index == 0:
 		board.generate_tutorial_board()
 		var tutorial := Tutorial.new()
@@ -608,6 +609,7 @@ func _on_enemy_damaged(amount: int) -> void:
 func _on_boss_phase_changed(index: int, config: Dictionary) -> void:
 	board.enabled = false
 	battle_fx.play_phase_transition(str(config.get("id", "phase")))
+	AudioManager.set_combat_layer("boss_phase_%d" % (index + 1))
 	_set_message("PHASE %d — %s" % [index + 1, str(config.get("title", "INFERNO"))])
 	if int(config.get("armor", 0)) > 0: battle.add_enemy_armor(int(config.armor))
 	if int(config.get("attack_interval_delta", 0)) != 0:

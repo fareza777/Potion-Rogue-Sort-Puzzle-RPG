@@ -19,7 +19,9 @@ func generate(seed: int) -> Dictionary:
 			# The left route is always safe; it cannot force consecutive elites.
 			if slot == 0 and kind == "elite": kind = "battle"
 			var enemy: String = str(ENEMIES[mini(floor, ENEMIES.size() - 1)])
-			nodes.append(_node("f%d_s%d" % [floor, slot], floor, lane, kind, enemy))
+			var created := _node("f%d_s%d" % [floor, slot], floor, lane, kind, enemy)
+			_decorate_contract(created, rng)
+			nodes.append(created)
 	nodes.append(_node("f6_boss", 6, 1, "boss", "fire_golem"))
 	for node in nodes:
 		var floor := int(node.floor)
@@ -36,3 +38,18 @@ func _node(id: String, floor: int, lane: int, kind: String, enemy: String) -> Di
 		"enemy": enemy, "links": [], "visited": false,
 		"contract": {"enemy_id": enemy, "objective_id": "defeat",
 			"modifier_ids": [], "threat": budget}}
+
+
+func _decorate_contract(node: Dictionary, rng: RandomNumberGenerator) -> void:
+	var kind := str(node.kind); var floor := int(node.floor)
+	if kind not in ["battle", "elite"]: return
+	var intro := ["hidden_layer", "frozen_tube"]
+	var advanced := ["cursed_layer", "volatile_liquid", "wild_essence",
+			"chain_lock", "corruption", "unstable_flask"]
+	var pool: Array = intro if floor <= 2 else advanced
+	var count := 2 if kind == "elite" else 1
+	for _pick in count:
+		var id := str(pool[rng.randi_range(0, pool.size() - 1)])
+		if id not in node.contract.modifier_ids: node.contract.modifier_ids.append(id)
+	var objectives := ["defeat", "survive", "brew_order", "armor_break", "cleanse"]
+	node.contract.objective_id = objectives[(floor + int(node.lane)) % objectives.size()]
