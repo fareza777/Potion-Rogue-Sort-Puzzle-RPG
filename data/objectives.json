@@ -1,0 +1,27 @@
+{
+	"defeat": {
+		"label": "Defeat the enemy",
+		"event": "enemy_defeated",
+		"target": 1
+	},
+	"survive": {
+		"label": "Survive 3 attacks",
+		"event": "enemy_attacked",
+		"target": 3
+	},
+	"brew_order": {
+		"label": "Brew the shown sequence",
+		"event": "potion_completed",
+		"sequence": ["red", "blue", "purple"]
+	},
+	"armor_break": {
+		"label": "Break 20 armor",
+		"event": "armor_damaged",
+		"target": 20
+	},
+	"cleanse": {
+		"label": "Cleanse 3 cursed layers",
+		"event": "curse_cleansed",
+		"target": 3
+	}
+}

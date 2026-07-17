@@ -1,0 +1,10 @@
+{
+	"frozen_tube": {"name": "Frozen Tube", "tier": "intro"},
+	"cursed_layer": {"name": "Cursed Layer", "tier": "standard"},
+	"volatile_liquid": {"name": "Volatile Liquid", "tier": "standard"},
+	"hidden_layer": {"name": "Hidden Layer", "tier": "intro"},
+	"wild_essence": {"name": "Wild Essence", "tier": "standard"},
+	"chain_lock": {"name": "Chain Lock", "tier": "advanced"},
+	"corruption": {"name": "Corruption", "tier": "advanced"},
+	"unstable_flask": {"name": "Unstable Flask", "tier": "advanced"}
+}

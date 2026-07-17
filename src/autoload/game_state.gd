@@ -17,16 +17,26 @@ const DEFAULT_ENEMIES := {
 	"slime": {"name": "Cave Slime", "hp": 60, "attack": 8, "attack_every": 3, "color": "6fce4e"},
 }
 const DEFAULT_PLAYER := {"max_hp": 50, "max_shield": 30, "undos_per_battle": 3}
+const DEFAULT_OBJECTIVES := {
+	"defeat": {"label": "Defeat the enemy", "event": "enemy_defeated", "target": 1},
+}
+const DEFAULT_MODIFIERS := {
+	"hidden_layer": {"name": "Hidden Layer", "tier": "intro"},
+}
 
 var potions: Dictionary = {}
 var enemies: Dictionary = {}
 var player: Dictionary = {}
+var objectives: Dictionary = {}
+var modifiers: Dictionary = {}
 
 
 func _ready() -> void:
 	potions = load_data_file("potions.json", DEFAULT_POTIONS)
 	enemies = load_data_file("enemies.json", DEFAULT_ENEMIES)
 	player = load_data_file("player.json", DEFAULT_PLAYER)
+	objectives = load_data_file("objectives.json", DEFAULT_OBJECTIVES)
+	modifiers = load_data_file("modifiers.json", DEFAULT_MODIFIERS)
 
 
 ## Loads a JSON dictionary from res://data/ with a fallback on any failure.
