@@ -76,10 +76,15 @@ func setup(new_enemy_id: String) -> void:
 	enemy_name = str(e.get("name", "Slime"))
 	enemy_shape = str(e.get("shape", "slime"))
 	enemy_color = str(e.get("color", "6fce4e"))
-	enemy_max_hp = int(e.get("hp", 60))
+	var threat_scale := maxf(float(RunState.current_contract().get("threat", {}).get(
+			"enemy_scale", 1.0)), 0.5)
+	enemy_max_hp = roundi(float(e.get("hp", 60)) * threat_scale)
 	enemy_hp = enemy_max_hp
 	enemy_armor = int(e.get("armor", 0))
-	enemy_attack = int(e.get("attack", 8))
+	# Damage rises more gently than vitality so later realms require stronger
+	# builds without turning a single unlucky enemy action into a run killer.
+	var damage_scale := 1.0 + (threat_scale - 1.0) * 0.35
+	enemy_attack = roundi(float(e.get("attack", 8)) * damage_scale)
 	attack_every = int(e.get("attack_every", 3)) + int(RunState.stat("enemy_delay", 0.0)) \
 			+ (1 if bool(SaveSystem.setting("assist_mode")) else 0)
 	moves_until_attack = attack_every

@@ -188,6 +188,8 @@ func _ready() -> void:
 			"ornate bar uses textured jewel fill")
 	var battle_source := FileAccess.get_file_as_string("res://src/ui/battle_screen.gd")
 	check(battle_source.contains("RunState.current_area()"), "battle renders current area identity")
+	check(not battle_source.contains('RunState.run_config.get("area_name"'),
+			"battle header never leaks legacy Shadow Crypt copy")
 	check(not battle_source.contains('enemy_id == "fire_golem"'), "battle supports every authored boss")
 	check(battle_source.contains('"Next Expedition"'), "boss clear offers the newly unlocked expedition")
 	check(battle_source.contains('func _go_to_area_select()'), "battle exposes campaign navigation")

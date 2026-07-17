@@ -31,6 +31,14 @@ func _ready() -> void:
 				for enemy_id in pool:
 					check(GameState.enemies.has(str(enemy_id)),
 							"area enemy exists: %s/%s" % [id, enemy_id])
+	RunState.start_new_run("ember_adept", "shadow_crypt")
+	RunState.current_node().contract.threat.enemy_scale = 1.5
+	var scaled_battle := BattleManager.new()
+	scaled_battle.setup("slime")
+	check(scaled_battle.enemy_max_hp == roundi(float(GameState.enemies.slime.hp) * 1.5),
+			"battle consumes generated threat for enemy vitality")
+	check(scaled_battle.enemy_attack == roundi(float(GameState.enemies.slime.attack) * 1.175),
+			"battle applies a moderated threat curve to enemy damage")
 	print("---\n%d checks, %d failures" % [checks, failures])
 	get_tree().quit(1 if failures else 0)
 

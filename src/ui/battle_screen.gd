@@ -550,7 +550,7 @@ func _refresh() -> void:
 	var entry := RunState.current_battle()
 	var kind := str(entry.get("kind", "battle"))
 	var stage := "%s — Battle %d / %d" % [
-		str(RunState.run_config.get("area_name", "Dungeon")),
+		str(RunState.current_area().get("name", "Dungeon")),
 		RunState.battle_index + 1, RunState.battles().size()]
 	match kind:
 		"elite": stage += "  [ELITE]"

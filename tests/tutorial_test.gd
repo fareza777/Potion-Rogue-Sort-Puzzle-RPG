@@ -21,7 +21,8 @@ func _ready() -> void:
 	director.skip()
 	check(SaveSystem.data.tutorial_skipped and SaveSystem.is_tutorial_done(), "skip persists separately")
 	var migrated := SaveSystem.migrate({"version":2,"tutorial_done":true,"settings":{}})
-	check(migrated.version == 3 and migrated.tutorial_state == "complete", "v2 tutorial migrates to v3")
+	check(migrated.version == SaveSystem.SAVE_VERSION and migrated.tutorial_state == "complete",
+			"v2 tutorial migrates to current save schema")
 	SaveSystem.data = original
 	print("---\n%d checks, %d failures" % [checks, failures])
 	get_tree().quit(1 if failures else 0)
