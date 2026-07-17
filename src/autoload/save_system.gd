@@ -5,7 +5,7 @@ extends Node
 ## so a bad save can never crash the game.
 
 const SAVE_PATH := "user://save.json"
-const SAVE_VERSION := 3
+const SAVE_VERSION := 4
 
 const DEFAULT_DATA := {
 	"version": SAVE_VERSION,
@@ -20,6 +20,10 @@ const DEFAULT_DATA := {
 	"active_run": {},
 	"legacy_run_compensated": false,
 	"early_defeat_streak": 0,
+	"unlocked_areas": ["shadow_crypt"],
+	"completed_areas": [],
+	"selected_area": "shadow_crypt",
+	"area_stats": {},
 }
 
 var data: Dictionary = {}
@@ -64,6 +68,11 @@ func migrate(source: Dictionary) -> Dictionary:
 		migrated["tutorial_state"] = "complete" if was_done else "new"
 		migrated["tutorial_step"] = 0
 		migrated["tutorial_skipped"] = false
+	if int(migrated.get("version", 1)) < 4:
+		migrated["unlocked_areas"] = migrated.get("unlocked_areas", ["shadow_crypt"])
+		migrated["completed_areas"] = migrated.get("completed_areas", [])
+		migrated["selected_area"] = migrated.get("selected_area", "shadow_crypt")
+		migrated["area_stats"] = migrated.get("area_stats", {})
 	var settings: Dictionary = migrated.get("settings", {})
 	if not settings.has("assist_mode"): settings["assist_mode"] = false
 	migrated["settings"] = settings
@@ -188,3 +197,86 @@ func record_early_defeat(early: bool) -> int:
 	data["early_defeat_streak"] = int(data.get("early_defeat_streak", 0)) + 1 if early else 0
 	save()
 	return int(data.early_defeat_streak)
+
+
+# --- Campaign progression ---------------------------------------------------
+
+func is_area_unlocked(area_id: String) -> bool:
+	return area_id in (data.get("unlocked_areas", ["shadow_crypt"]) as Array)
+
+
+func selected_area() -> String:
+	var candidate := str(data.get("selected_area", "shadow_crypt"))
+	return candidate if is_area_unlocked(candidate) else "shadow_crypt"
+
+
+func set_selected_area(area_id: String) -> bool:
+	if not is_area_unlocked(area_id) or GameState.area(area_id).is_empty():
+		return false
+	data["selected_area"] = area_id
+	save()
+	return true
+
+
+func completed_areas() -> Array:
+	return (data.get("completed_areas", []) as Array).duplicate()
+
+
+func area_wins(area_id: String) -> int:
+	var all_stats: Dictionary = data.get("area_stats", {})
+	return int((all_stats.get(area_id, {}) as Dictionary).get("wins", 0))
+
+
+func best_depth(area_id: String) -> int:
+	var all_stats: Dictionary = data.get("area_stats", {})
+	return int((all_stats.get(area_id, {}) as Dictionary).get("best_depth", 0))
+
+
+func record_area_depth(area_id: String, depth: int) -> void:
+	if GameState.area(area_id).is_empty():
+		return
+	var all_stats: Dictionary = data.get("area_stats", {})
+	var stats: Dictionary = (all_stats.get(area_id, {}) as Dictionary).duplicate()
+	stats["best_depth"] = maxi(int(stats.get("best_depth", 0)), depth)
+	all_stats[area_id] = stats
+	data["area_stats"] = all_stats
+	save()
+
+
+func complete_area(area_id: String) -> Dictionary:
+	var area_data := GameState.area(area_id)
+	if area_data.is_empty():
+		return {"first_clear": false, "unlocked_area": "", "reward": 0, "campaign_complete": false}
+	var completed: Array = data.get("completed_areas", [])
+	var first_clear := area_id not in completed
+	var reward := 0
+	if first_clear:
+		completed.append(area_id)
+		reward = int(area_data.get("first_clear_reward", 0))
+		data["crystals"] = crystals() + reward
+	data["completed_areas"] = completed
+
+	var all_stats: Dictionary = data.get("area_stats", {})
+	var stats: Dictionary = (all_stats.get(area_id, {}) as Dictionary).duplicate()
+	stats["wins"] = int(stats.get("wins", 0)) + 1
+	stats["best_depth"] = maxi(int(stats.get("best_depth", 0)), 7)
+	all_stats[area_id] = stats
+	data["area_stats"] = all_stats
+
+	var ids := GameState.area_ids()
+	var current_index := ids.find(area_id)
+	var unlocked_area := ""
+	if first_clear and current_index >= 0 and current_index + 1 < ids.size():
+		unlocked_area = str(ids[current_index + 1])
+		var unlocked: Array = data.get("unlocked_areas", ["shadow_crypt"])
+		if unlocked_area not in unlocked:
+			unlocked.append(unlocked_area)
+		data["unlocked_areas"] = unlocked
+		data["selected_area"] = unlocked_area
+	save()
+	return {
+		"first_clear": first_clear,
+		"unlocked_area": unlocked_area,
+		"reward": reward,
+		"campaign_complete": first_clear and current_index == ids.size() - 1,
+	}
