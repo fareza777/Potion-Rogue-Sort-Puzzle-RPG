@@ -121,11 +121,10 @@ func _make_vibration_row() -> HBoxContainer:
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(label)
-	var vib := CheckButton.new()
-	vib.custom_minimum_size = Vector2(96, 58)
-	vib.button_pressed = bool(SaveSystem.setting("vibration"))
+	var vib := _make_switch("vibration")
 	vib.toggled.connect(func(on: bool) -> void:
 		SaveSystem.set_setting("vibration", on)
+		vib.text = "ON" if on else "OFF"
 		AudioManager.vibrate(40))
 	row.add_child(vib)
 	return row
@@ -139,11 +138,23 @@ func _make_toggle_row(title: String, key: String, description: String) -> HBoxCo
 	var detail := UiKit.label(description, 13, UiKit.COLOR_TEXT_DIM)
 	detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT; detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	copy.add_child(detail); row.add_child(copy)
-	var toggle := CheckButton.new(); toggle.custom_minimum_size = Vector2(96, 58)
-	toggle.button_pressed = bool(SaveSystem.setting(key))
-	toggle.toggled.connect(func(on: bool): SaveSystem.set_setting(key, on))
+	var toggle := _make_switch(key)
+	toggle.toggled.connect(func(on: bool):
+		SaveSystem.set_setting(key, on)
+		toggle.text = "ON" if on else "OFF")
 	row.add_child(toggle)
 	return row
+
+
+func _make_switch(key: String) -> Button:
+	var enabled := bool(SaveSystem.setting(key))
+	var toggle := UiKit.button("ON" if enabled else "OFF", Vector2(88, 48),
+			Color("6ed89a") if enabled else Color("8c8098"))
+	toggle.toggle_mode = true
+	toggle.button_pressed = enabled
+	toggle.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	toggle.add_theme_font_size_override("font_size", 16)
+	return toggle
 
 
 func _style_slider(slider: HSlider) -> void:

@@ -89,7 +89,11 @@ static func enemy(enemy_id: String) -> Dictionary:
 		result["atlas"] = str(data.atlas)
 		result["atlas_cell"] = data.get("atlas_cell", [0, 0])
 		result["motion_profile"] = str(data.get("motion_profile", "elastic"))
-		result["scale"] = float(data.get("sprite_scale", 1.0))
+		var profile := str(data.get("motion_profile", "elastic"))
+		var generated_scale := 1.12
+		if profile == "caster": generated_scale = 1.18
+		elif profile == "heavy": generated_scale = 1.08
+		result["scale"] = float(data.get("sprite_scale", generated_scale))
 	return result
 
 

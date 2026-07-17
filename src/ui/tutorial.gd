@@ -19,7 +19,7 @@ var _target: Control
 func setup(host: Control, tutorial_director: TutorialDirector,
 		resolver: Callable) -> void:
 	screen = host; director = tutorial_director; target_resolver = resolver
-	name = "TutorialOverlay"; set_anchors_preset(Control.PRESET_FULL_RECT)
+	name = "TutorialOverlay"; set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE; z_index = 90
 	_build()
 	director.step_changed.connect(_show_step)
@@ -92,7 +92,7 @@ func _update_layout() -> void:
 	dim_panels[3].position = Vector2(focus.end.x, focus.position.y); dim_panels[3].size = Vector2(maxf(0, size.x - focus.end.x), focus.size.y)
 	card.size = Vector2(minf(560, size.x - 32), 230)
 	card.position.x = (size.x - card.size.x) * 0.5
-	card.position.y = 24 if focus.position.y > size.y * 0.52 else size.y - card.size.y - 28
+	card.position.y = 92 if focus.position.y > size.y * 0.52 else size.y - card.size.y - 36
 	pointer.size = Vector2(60, 50); pointer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	pointer.position = Vector2(focus.get_center().x - 30, focus.position.y - 46)
 	pointer.visible = _target != null

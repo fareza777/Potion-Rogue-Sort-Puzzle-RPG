@@ -92,9 +92,9 @@ func _rebuild_graph_nodes() -> void:
 	for node in graph_nodes:
 		var button := Button.new()
 		button.name = "GraphNode_" + str(node.id)
-		button.custom_minimum_size = Vector2(132, 62)
+		button.custom_minimum_size = Vector2(148, 70)
 		button.size = button.custom_minimum_size
-		button.text = _kind_icon(str(node.kind)) + "\n" + str(node.kind).to_upper()
+		button.text = ""
 		button.disabled = str(node.id) not in graph_reachable
 		button.tooltip_text = "Floor %d • %s" % [int(node.floor) + 1, str(node.kind).capitalize()]
 		button.add_theme_font_size_override("font_size", 14)
@@ -102,14 +102,56 @@ func _rebuild_graph_nodes() -> void:
 		style.bg_color = Color("241533") if not button.disabled else Color("110d19")
 		style.border_color = _graph_color(node)
 		style.set_border_width_all(3 if str(node.id) in graph_reachable else 1)
-		style.set_corner_radius_all(16 if str(node.kind) != "boss" else 31)
+		style.set_corner_radius_all(17 if str(node.kind) != "boss" else 35)
 		style.shadow_color = Color(0.45, 0.12, 0.65, 0.6)
 		style.shadow_size = 8 if str(node.id) in graph_reachable else 2
 		button.add_theme_stylebox_override("normal", style)
 		button.add_theme_stylebox_override("disabled", style)
 		button.pressed.connect(_emit_node.bind(str(node.id)))
 		add_child(button)
+		_populate_graph_card(button, node)
 	_position_graph_nodes()
+
+
+func _populate_graph_card(button: Button, node: Dictionary) -> void:
+	var kind := str(node.kind)
+	var is_combat := kind in ["battle", "elite", "boss"]
+	var icon_holder := CenterContainer.new()
+	icon_holder.position = Vector2(6, 5)
+	icon_holder.size = Vector2(54, 59)
+	icon_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(icon_holder)
+	if is_combat:
+		var portrait := TextureRect.new()
+		portrait.texture = VisualRegistry.enemy_texture(str(node.enemy))
+		portrait.custom_minimum_size = Vector2(54, 59)
+		portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		portrait.modulate = Color.WHITE if not button.disabled else Color(0.48, 0.45, 0.55, 0.82)
+		portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon_holder.add_child(portrait)
+	else:
+		var rune := UiKit.label(_kind_icon(kind), 24, _node_color(kind, 0))
+		rune.custom_minimum_size = Vector2(40, 40)
+		icon_holder.add_child(rune)
+	var copy := VBoxContainer.new()
+	copy.position = Vector2(62, 11)
+	copy.size = Vector2(80, 48)
+	copy.add_theme_constant_override("separation", -2)
+	copy.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(copy)
+	var kind_label := UiKit.label(kind.to_upper(), 11, _graph_color(node))
+	kind_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	copy.add_child(kind_label)
+	var detail_text := "CHAMBER"
+	if is_combat:
+		detail_text = str(GameState.enemies.get(str(node.enemy), {}).get("name", "Unknown"))
+	elif node.has("event_id"):
+		detail_text = str(node.event_id).replace("_", " ")
+	var detail := UiKit.label(detail_text.to_upper(), 9, UiKit.COLOR_TEXT_DIM)
+	detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	detail.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	copy.add_child(detail)
 
 
 func _draw_graph() -> void:

@@ -122,15 +122,15 @@ func _link_floors(nodes: Array) -> void:
 		var current: Array = by_floor[floor]
 		var next: Array = by_floor[floor + 1]
 		for node in current:
-			for target in next:
-				if current.size() == 1 or next.size() == 1 or absi(int(node.lane) - int(target.lane)) <= 1:
-					node.links.append(str(target.id))
-			if node.links.is_empty():
-				var nearest: Dictionary = next[0]
-				for target in next:
-					if absi(int(target.lane) - int(node.lane)) < absi(int(nearest.lane) - int(node.lane)):
-						nearest = target
-				node.links.append(str(nearest.id))
+			if current.size() == 1 or next.size() == 1:
+				for target in next: node.links.append(str(target.id))
+				continue
+			var ordered: Array = next.duplicate()
+			ordered.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+				return absi(int(a.lane) - int(node.lane)) < absi(int(b.lane) - int(node.lane)))
+			node.links.append(str(ordered[0].id))
+			if int(node.lane) == 1 and ordered.size() > 1 and absi(int(ordered[1].lane) - 1) <= 1:
+				node.links.append(str(ordered[1].id))
 		# Guarantee that every generated choice is reachable from the prior floor.
 		for target in next:
 			var has_incoming := false
