@@ -34,10 +34,9 @@ func _ready() -> void:
 		route.configure(RunState.battles(), RunState.battle_index)
 
 	root.add_child(_make_status_panel())
-	var enter := UiKit.ornate_button("SELECT A GLOWING PATH", Vector2(440, 70))
-	enter.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	enter.disabled = true
-	root.add_child(enter)
+	var hint := UiKit.label("SELECT ONE OF THE GLOWING PATHS", 16, UiKit.COLOR_GOLD)
+	hint.custom_minimum_size = Vector2(0, 34)
+	root.add_child(hint)
 
 
 func _on_node_selected(node_id: String) -> void:

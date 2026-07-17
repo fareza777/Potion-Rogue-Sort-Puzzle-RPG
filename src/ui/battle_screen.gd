@@ -98,6 +98,7 @@ func _setup_tactical_controllers(enemy_id: String) -> void:
 	var objective_id := str(contract.get("objective_id", "defeat"))
 	objective_controller.configure(objective_id, GameState.objectives.get(objective_id, {}))
 	objective_controller.progress_changed.connect(_on_objective_progress)
+	_on_objective_progress(objective_controller.current, objective_controller.target)
 	objective_controller.completed.connect(func():
 		_set_message("OPTIONAL OBJECTIVE COMPLETE  +15 mana")
 		skill_controller.gain_mana(15))
@@ -364,9 +365,14 @@ func _build_player_panel() -> PanelContainer:
 
 
 func _build_tactical_hud() -> PanelContainer:
-	var panel := UiKit.textured_panel("res://assets/art/ui/battle_panel.png", 8)
+	var panel := PanelContainer.new()
 	panel.name = "ObjectivePanel"
-	panel.custom_minimum_size = Vector2(0, 58)
+	panel.custom_minimum_size = Vector2(0, 48)
+	var style := StyleBoxFlat.new(); style.bg_color = Color(0.025, 0.012, 0.045, 0.92)
+	style.border_color = Color("795c31"); style.set_border_width_all(1); style.set_corner_radius_all(10)
+	style.content_margin_left = 12; style.content_margin_right = 12
+	style.content_margin_top = 7; style.content_margin_bottom = 7
+	panel.add_theme_stylebox_override("panel", style)
 	var row := HBoxContainer.new(); row.add_theme_constant_override("separation", 10)
 	panel.add_child(row)
 	objective_label = UiKit.label("OBJECTIVE", 13, UiKit.COLOR_GOLD)
@@ -379,19 +385,23 @@ func _build_tactical_hud() -> PanelContainer:
 
 
 func _build_power_strip() -> PanelContainer:
-	var panel := PanelContainer.new(); panel.custom_minimum_size = Vector2(0, 76)
+	var panel := PanelContainer.new(); panel.custom_minimum_size = Vector2(0, 66)
+	var style := StyleBoxFlat.new(); style.bg_color = Color(0.025, 0.012, 0.045, 0.94)
+	style.border_color = Color("795c31"); style.set_border_width_all(1); style.set_corner_radius_all(12)
+	style.content_margin_left = 10; style.content_margin_right = 10
+	panel.add_theme_stylebox_override("panel", style)
 	var row := HBoxContainer.new(); row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 12); panel.add_child(row)
-	var mana_stack := VBoxContainer.new(); mana_stack.custom_minimum_size = Vector2(190, 60)
+	row.add_theme_constant_override("separation", 8); panel.add_child(row)
+	var mana_stack := VBoxContainer.new(); mana_stack.custom_minimum_size = Vector2(145, 54)
 	mana_label = UiKit.label("MANA 0/100", 13, Color("73d9ff")); mana_stack.add_child(mana_label)
 	mana_bar = UiKit.bar(Color("368ed8"), 18); mana_bar.name = "ManaMeter"; mana_bar.max_value = 100
 	mana_stack.add_child(mana_bar); row.add_child(mana_stack)
 	combo_label = UiKit.label("◇  ◇  ◇", 18, Color("d998ff")); combo_label.name = "ComboSlots"
-	combo_label.custom_minimum_size = Vector2(125, 0); row.add_child(combo_label)
-	skill_button = UiKit.button("SKILL", Vector2(125, 54), Color("70d9ff")); skill_button.name = "SkillButton"
-	skill_button.add_theme_font_size_override("font_size", 16); skill_button.pressed.connect(_on_skill_pressed); row.add_child(skill_button)
-	ultimate_button = UiKit.button("ULT", Vector2(105, 54), Color("ffb84d")); ultimate_button.name = "UltimateButton"
-	ultimate_button.add_theme_font_size_override("font_size", 16); ultimate_button.pressed.connect(_on_ultimate_pressed); row.add_child(ultimate_button)
+	combo_label.custom_minimum_size = Vector2(84, 0); row.add_child(combo_label)
+	skill_button = UiKit.button("SKILL", Vector2(112, 50), Color("70d9ff")); skill_button.name = "SkillButton"
+	skill_button.add_theme_font_size_override("font_size", 14); skill_button.pressed.connect(_on_skill_pressed); row.add_child(skill_button)
+	ultimate_button = UiKit.button("ULT", Vector2(88, 50), Color("ffb84d")); ultimate_button.name = "UltimateButton"
+	ultimate_button.add_theme_font_size_override("font_size", 14); ultimate_button.pressed.connect(_on_ultimate_pressed); row.add_child(ultimate_button)
 	return panel
 
 
