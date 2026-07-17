@@ -65,6 +65,78 @@ func tube_display_size() -> Vector2:
 	return _tube_size
 
 
+func export_state() -> Array:
+	var state: Array = []
+	for tube in tubes:
+		state.append(tube.contents.duplicate())
+	return state
+
+
+func import_state(state: Array) -> void:
+	_deselect()
+	_undo_stack.clear()
+	for index in tubes.size():
+		var contents: Array[String] = []
+		if index < state.size() and typeof(state[index]) == TYPE_ARRAY:
+			for value in state[index]:
+				contents.append(str(value))
+		if contents.size() <= tubes[index].capacity:
+			tubes[index].set_contents(contents)
+		else:
+			tubes[index].set_contents([] as Array[String])
+
+
+func legal_moves() -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	for from_index in tubes.size():
+		var source := tubes[from_index]
+		if source.contents.is_empty() or source.is_locked():
+			continue
+		for to_index in tubes.size():
+			if from_index == to_index:
+				continue
+			var destination := tubes[to_index]
+			if destination.is_locked() or destination.free_space() <= 0:
+				continue
+			if destination.contents.is_empty() \
+					or destination.top_color() == source.top_color():
+				result.append(Vector2i(from_index, to_index))
+	return result
+
+
+func apply_board_command(command: Dictionary) -> bool:
+	var index := int(command.get("tube", -1))
+	if index < 0 or index >= tubes.size():
+		return false
+	var tube := tubes[index]
+	match str(command.get("type", "")):
+		"lock_tube":
+			tube.locked_moves = maxi(int(command.get("moves", 1)), 1)
+		"unlock_tube":
+			tube.locked_moves = 0
+		"replace_top":
+			if tube.contents.is_empty():
+				return false
+			tube.contents[tube.contents.size() - 1] = str(command.get("color", ""))
+			tube.queue_redraw()
+		"append_layer":
+			if tube.free_space() <= 0:
+				return false
+			tube.contents.append(str(command.get("color", "")))
+			tube.queue_redraw()
+		"reveal_top":
+			tube.queue_redraw()
+		"set_capacity":
+			var new_capacity := int(command.get("capacity", 0))
+			if new_capacity < 1 or new_capacity > 8 \
+					or tube.contents.size() > new_capacity:
+				return false
+			tube.capacity = new_capacity
+		_:
+			return false
+	return true
+
+
 ## Deals CAPACITY units of each color randomly into the filled tubes.
 ## Rerolls if any tube starts already complete.
 func generate_board() -> void:

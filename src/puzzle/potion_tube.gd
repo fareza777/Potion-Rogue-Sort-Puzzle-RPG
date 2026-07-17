@@ -17,6 +17,10 @@ const COLOR_MAP := {
 
 ## Liquid colors from bottom (index 0) to top.
 var contents: Array[String] = []
+var capacity := CAPACITY:
+	set(value):
+		capacity = clampi(value, 1, 8)
+		queue_redraw()
 
 ## Moves remaining while this tube is magically locked (0 = unlocked).
 var locked_moves := 0:
@@ -69,11 +73,11 @@ func top_run_count() -> int:
 
 
 func free_space() -> int:
-	return CAPACITY - contents.size()
+	return capacity - contents.size()
 
 
 func is_complete() -> bool:
-	return contents.size() == CAPACITY and top_run_count() == CAPACITY
+	return contents.size() == capacity and top_run_count() == capacity
 
 
 func set_contents(new_contents: Array[String]) -> void:
@@ -115,7 +119,7 @@ func _draw() -> void:
 	var body_top := h * 0.29
 	var body_bottom := h * 0.89
 	var liquid_area_h := body_bottom - body_top
-	var seg_h := liquid_area_h / float(CAPACITY)
+	var seg_h := liquid_area_h / float(capacity)
 	var cx := w * 0.5
 
 	# Jewel-toned glow behind the physical bottle sprite.
