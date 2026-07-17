@@ -6,6 +6,7 @@
 		"hp": 60,
 		"attack": 5,
 		"attack_every": 4,
+		"intent_pool": [{"id": "attack", "weight": 4}, {"id": "guard", "weight": 1}],
 		"crystals": 5
 	},
 	"skeleton": {
@@ -16,6 +17,7 @@
 		"attack": 10,
 		"attack_every": 3,
 		"crit_chance": 0.25,
+		"intent_pool": [{"id": "attack", "weight": 4}, {"id": "guard", "weight": 1}],
 		"crystals": 7
 	},
 	"poison_beast": {
@@ -26,6 +28,7 @@
 		"attack": 7,
 		"attack_every": 3,
 		"poison_player": {"damage": 3, "turns": 2, "every_attacks": 2},
+		"intent_pool": [{"id": "attack", "weight": 3}, {"id": "poison", "weight": 2}],
 		"crystals": 8
 	},
 	"stone_golem": {
@@ -36,6 +39,7 @@
 		"attack": 12,
 		"attack_every": 4,
 		"armor": 25,
+		"intent_pool": [{"id": "attack", "weight": 3}, {"id": "guard", "weight": 2}],
 		"crystals": 12
 	},
 	"dark_mage": {
@@ -47,6 +51,7 @@
 		"attack_every": 3,
 		"lock_every_attacks": 2,
 		"lock_moves": 2,
+		"intent_pool": [{"id": "attack", "weight": 3}, {"id": "lock", "weight": 2}, {"id": "corruption", "weight": 1}],
 		"crystals": 10
 	},
 	"blood_slime": {
@@ -56,6 +61,7 @@
 		"hp": 110,
 		"attack": 13,
 		"attack_every": 3,
+		"intent_pool": [{"id": "attack", "weight": 4}, {"id": "enrage", "weight": 1}],
 		"crystals": 12
 	},
 	"fire_golem": {
@@ -69,6 +75,7 @@
 		"lock_every_attacks": 2,
 		"lock_moves": 2,
 		"enrage": {"threshold": 0.4, "attack_mult": 1.5},
+		"intent_pool": [{"id": "attack", "weight": 4}, {"id": "guard", "weight": 1}, {"id": "lock", "weight": 1}, {"id": "enrage", "weight": 1}],
 		"crystals": 30
 	}
 }

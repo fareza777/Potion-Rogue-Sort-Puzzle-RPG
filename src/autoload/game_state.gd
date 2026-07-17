@@ -23,12 +23,17 @@ const DEFAULT_OBJECTIVES := {
 const DEFAULT_MODIFIERS := {
 	"hidden_layer": {"name": "Hidden Layer", "tier": "intro"},
 }
+const DEFAULT_INTENTS := {
+	"attack": {"label": "Attack", "icon": "attack",
+		"actions": [{"type": "attack", "multiplier": 1.0}]},
+}
 
 var potions: Dictionary = {}
 var enemies: Dictionary = {}
 var player: Dictionary = {}
 var objectives: Dictionary = {}
 var modifiers: Dictionary = {}
+var intents: Dictionary = {}
 
 
 func _ready() -> void:
@@ -37,6 +42,7 @@ func _ready() -> void:
 	player = load_data_file("player.json", DEFAULT_PLAYER)
 	objectives = load_data_file("objectives.json", DEFAULT_OBJECTIVES)
 	modifiers = load_data_file("modifiers.json", DEFAULT_MODIFIERS)
+	intents = load_data_file("intents.json", DEFAULT_INTENTS)
 
 
 ## Loads a JSON dictionary from res://data/ with a fallback on any failure.

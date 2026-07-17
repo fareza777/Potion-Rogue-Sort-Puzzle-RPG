@@ -1,0 +1,32 @@
+{
+	"attack": {
+		"label": "Attack",
+		"icon": "attack",
+		"actions": [{"type": "attack", "multiplier": 1.0}]
+	},
+	"guard": {
+		"label": "Raise 8 Armor",
+		"icon": "armor",
+		"actions": [{"type": "armor", "amount": 8}]
+	},
+	"lock": {
+		"label": "Lock a Flask",
+		"icon": "lock",
+		"actions": [{"type": "lock", "moves": 2}]
+	},
+	"poison": {
+		"label": "Venom Spit",
+		"icon": "poison",
+		"actions": [{"type": "poison", "damage": 3, "turns": 2}]
+	},
+	"corruption": {
+		"label": "Spread Corruption",
+		"icon": "corruption",
+		"actions": [{"type": "corruption", "count": 1}]
+	},
+	"enrage": {
+		"label": "Gather Rage",
+		"icon": "enrage",
+		"actions": [{"type": "enrage", "multiplier": 1.25}]
+	}
+}

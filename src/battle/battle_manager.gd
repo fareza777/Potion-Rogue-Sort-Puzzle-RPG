@@ -10,6 +10,9 @@ signal potion_activated(color: String, text: String)
 signal combo_triggered(text: String)
 signal enemy_damaged(amount: int)
 signal enemy_attacked(damage: int, blocked: int, crit: bool)
+signal armor_changed(delta: int)
+signal enemy_action_resolved(intent_id: String)
+signal board_hazard_requested(command: Dictionary)
 signal enemy_enraged
 signal poison_ticked(damage: int)
 signal player_poison_ticked(damage: int)
@@ -233,22 +236,9 @@ func _enemy_turn() -> void:
 			return
 		_try_last_remedy()
 
-	# The attack itself. Shield absorbs first, the rest hits HP.
-	var damage := enemy_attack
-	var crit := false
-	if randf() < _enemy_crit_chance:
-		damage = int(damage * 1.5)
-		crit = true
-	damage = maxi(damage - int(RunState.stat("damage_reduction", 0.0)), 1)
-	var blocked: int = mini(shield, damage)
-	shield -= blocked
-	player_hp = maxi(player_hp - (damage - blocked), 0)
-	enemy_attacked.emit(damage, blocked, crit)
-	_attacks_done += 1
-
-	if _check_defeat():
+	resolve_enemy_attack()
+	if battle_over:
 		return
-	_try_last_remedy()
 
 	# Post-attack abilities
 	if _lock_every_attacks > 0 and _attacks_done % _lock_every_attacks == 0:
@@ -259,6 +249,58 @@ func _enemy_turn() -> void:
 			player_poison_damage = int(_poison_player_cfg.get("damage", 3))
 			player_poison_turns = int(_poison_player_cfg.get("turns", 2))
 			player_poison_ticked.emit(0)
+
+
+func resolve_enemy_attack(multiplier := 1.0) -> Dictionary:
+	if battle_over:
+		return {}
+	var damage := int(enemy_attack * maxf(multiplier, 0.0))
+	var crit := false
+	if randf() < _enemy_crit_chance:
+		damage = int(damage * 1.5)
+		crit = true
+	damage = maxi(damage - int(RunState.stat("damage_reduction", 0.0)), 1)
+	var blocked: int = mini(shield, damage)
+	shield -= blocked
+	player_hp = maxi(player_hp - (damage - blocked), 0)
+	enemy_attacked.emit(damage, blocked, crit)
+	_attacks_done += 1
+	_check_defeat()
+	_try_last_remedy()
+	stats_changed.emit()
+	return {"damage": damage, "blocked": blocked, "crit": crit}
+
+
+func add_enemy_armor(amount: int) -> void:
+	var applied := maxi(amount, 0)
+	enemy_armor += applied
+	armor_changed.emit(applied)
+	stats_changed.emit()
+
+
+func request_tube_lock(moves: int) -> void:
+	tube_lock_requested.emit(maxi(moves, 1))
+
+
+func apply_player_poison(damage: int, turns: int) -> void:
+	player_poison_damage = maxi(damage, 0)
+	player_poison_turns = maxi(turns, 0)
+	player_poison_ticked.emit(0)
+	stats_changed.emit()
+
+
+func request_board_hazard(command: Dictionary) -> void:
+	board_hazard_requested.emit(command.duplicate(true))
+
+
+func empower_enemy_attack(multiplier: float) -> void:
+	enemy_attack = maxi(int(ceil(enemy_attack * maxf(multiplier, 1.0))), 1)
+	enemy_enraged.emit()
+	stats_changed.emit()
+
+
+func complete_enemy_action(intent_id: String) -> void:
+	enemy_action_resolved.emit(intent_id)
 
 
 ## Last Remedy upgrade: once per battle, dropping below 20% HP auto-heals.
