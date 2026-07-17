@@ -1,0 +1,44 @@
+{
+	"shadow_crypt": {
+		"id": "shadow_crypt", "order": 0, "name": "Shadow Crypt",
+		"subtitle": "The dead guard the Crucible Gate", "unlock_after": "",
+		"boss": "fire_golem", "background": "res://assets/art/backgrounds/shadow_crypt_battle.png",
+		"music": "dungeon", "accent": "9f6bd2", "particle_preset": "embers",
+		"difficulty": "INITIATE", "threat_multiplier": 1.0, "first_clear_reward": 30,
+		"enemy_pools": {
+			"intro": ["slime", "skeleton"],
+			"tier_1": ["slime", "skeleton", "bone_rat", "grave_archer"],
+			"tier_2": ["wailing_spirit", "mimic_flask"],
+			"tier_3": ["crypt_knight", "ossuary_priest", "dark_mage", "stone_golem"],
+			"elite": ["crypt_knight", "ossuary_priest", "stone_golem"]
+		}
+	},
+	"verdant_catacombs": {
+		"id": "verdant_catacombs", "order": 1, "name": "Verdant Catacombs",
+		"subtitle": "A buried garden learned to hunger", "unlock_after": "shadow_crypt",
+		"boss": "bloom_horror", "background": "res://assets/art/backgrounds/verdant_catacombs_battle.png",
+		"music": "verdant", "accent": "65c98b", "particle_preset": "spores",
+		"difficulty": "ADEPT", "threat_multiplier": 1.12, "first_clear_reward": 50,
+		"enemy_pools": {
+			"intro": ["sporeling", "slime"],
+			"tier_1": ["sporeling", "mossback_toad"],
+			"tier_2": ["poison_beast", "myconid_brute", "rotcap_shaman", "mossback_toad"],
+			"tier_3": ["myconid_brute", "rotcap_shaman", "poison_beast"],
+			"elite": ["myconid_brute", "rotcap_shaman", "poison_beast"]
+		}
+	},
+	"astral_foundry": {
+		"id": "astral_foundry", "order": 2, "name": "Astral Foundry",
+		"subtitle": "Runes turn while the star-forge wakes", "unlock_after": "verdant_catacombs",
+		"boss": "furnace_titan", "background": "res://assets/art/backgrounds/astral_foundry_battle.png",
+		"music": "astral", "accent": "6bbff0", "particle_preset": "sparks",
+		"difficulty": "MASTER", "threat_multiplier": 1.25, "first_clear_reward": 75,
+		"enemy_pools": {
+			"intro": ["rune_wisp", "mimic_flask"],
+			"tier_1": ["rune_wisp", "mimic_flask", "clockwork_imp"],
+			"tier_2": ["clockwork_imp", "cinder_hound", "ash_harpy", "magma_beetle"],
+			"tier_3": ["dark_mage", "void_acolyte", "prism_sentinel", "flame_wraith", "magma_beetle"],
+			"elite": ["prism_sentinel", "flame_wraith", "magma_beetle"]
+		}
+	}
+}

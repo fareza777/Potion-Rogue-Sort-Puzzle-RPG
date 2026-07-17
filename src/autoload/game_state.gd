@@ -31,6 +31,12 @@ const DEFAULT_COMBOS := {
 	"fire_burst": {"pattern": ["red", "red"],
 		"effect": "damage_multiplier", "value": 1.5, "charge": 20},
 }
+const DEFAULT_AREAS := {
+	"shadow_crypt": {"id":"shadow_crypt", "order":0, "name":"Shadow Crypt",
+		"boss":"fire_golem", "background":"res://assets/art/backgrounds/shadow_crypt_battle.png",
+		"threat_multiplier":1.0, "enemy_pools":{"intro":["slime"], "tier_1":["slime"],
+		"tier_2":["slime"], "tier_3":["slime"], "elite":["slime"]}},
+}
 
 var potions: Dictionary = {}
 var enemies: Dictionary = {}
@@ -40,6 +46,7 @@ var modifiers: Dictionary = {}
 var intents: Dictionary = {}
 var combos: Dictionary = {}
 var kits: Dictionary = {}
+var areas: Dictionary = {}
 
 
 func _ready() -> void:
@@ -51,6 +58,19 @@ func _ready() -> void:
 	intents = load_data_file("intents.json", DEFAULT_INTENTS)
 	combos = load_data_file("combos.json", DEFAULT_COMBOS)
 	kits = load_data_file("kits.json", {"ember_adept":{"active":"flash_boil","cost":50}})
+	areas = load_data_file("areas.json", DEFAULT_AREAS)
+
+
+func area(id: String) -> Dictionary:
+	return areas.get(id, areas.get("shadow_crypt", DEFAULT_AREAS.shadow_crypt)).duplicate(true)
+
+
+func area_ids() -> Array[String]:
+	var ids: Array[String] = []
+	for id in areas: ids.append(str(id))
+	ids.sort_custom(func(a: String, b: String) -> bool:
+		return int(areas[a].get("order", 99)) < int(areas[b].get("order", 99)))
+	return ids
 
 
 ## Loads a JSON dictionary from res://data/ with a fallback on any failure.
