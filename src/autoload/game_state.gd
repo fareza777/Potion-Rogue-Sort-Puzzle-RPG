@@ -27,6 +27,10 @@ const DEFAULT_INTENTS := {
 	"attack": {"label": "Attack", "icon": "attack",
 		"actions": [{"type": "attack", "multiplier": 1.0}]},
 }
+const DEFAULT_COMBOS := {
+	"fire_burst": {"pattern": ["red", "red"],
+		"effect": "damage_multiplier", "value": 1.5, "charge": 20},
+}
 
 var potions: Dictionary = {}
 var enemies: Dictionary = {}
@@ -34,6 +38,7 @@ var player: Dictionary = {}
 var objectives: Dictionary = {}
 var modifiers: Dictionary = {}
 var intents: Dictionary = {}
+var combos: Dictionary = {}
 
 
 func _ready() -> void:
@@ -43,6 +48,7 @@ func _ready() -> void:
 	objectives = load_data_file("objectives.json", DEFAULT_OBJECTIVES)
 	modifiers = load_data_file("modifiers.json", DEFAULT_MODIFIERS)
 	intents = load_data_file("intents.json", DEFAULT_INTENTS)
+	combos = load_data_file("combos.json", DEFAULT_COMBOS)
 
 
 ## Loads a JSON dictionary from res://data/ with a fallback on any failure.

@@ -1,0 +1,13 @@
+{
+	"fire_burst": {"pattern": ["red", "red"], "effect": "damage_multiplier", "value": 1.5, "charge": 20},
+	"restorative_barrier": {"pattern": ["green", "blue"], "effect": "heal_and_shield", "heal": 5, "shield": 4, "charge": 20},
+	"reflected_blaze": {"pattern": ["blue", "red"], "effect": "shield_to_damage", "ratio": 0.5, "charge": 20},
+	"toxic_detonation": {"pattern": ["purple", "red"], "effect": "consume_poison", "charge": 20},
+	"burning_venom": {"pattern": ["red", "purple"], "effect": "burning_poison", "value": 2, "charge": 20},
+	"fortify": {"pattern": ["blue", "blue"], "effect": "fortify", "reflect": 0.25, "charge": 20},
+	"regeneration": {"pattern": ["green", "green"], "effect": "regeneration", "turns": 3, "charge": 20},
+	"venom_ward": {"pattern": ["purple", "blue"], "effect": "venom_ward", "damage": 3, "charge": 20},
+	"inferno_catalyst": {"pattern": ["red", "purple", "red"], "effect": "ultimate_inferno", "charge": 45},
+	"sanctuary": {"pattern": ["blue", "green", "blue"], "effect": "ultimate_sanctuary", "charge": 45},
+	"plague_nova": {"pattern": ["purple", "purple", "red"], "effect": "ultimate_plague", "charge": 45}
+}
