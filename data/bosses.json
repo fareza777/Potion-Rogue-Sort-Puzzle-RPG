@@ -6,5 +6,21 @@
 			{"id":"molten_floor","threshold":0.7,"title":"MOLTEN FLOOR","modifier":"volatile_liquid","description":"Volatile essence floods the table."},
 			{"id":"inferno","threshold":0.4,"title":"INFERNO","attack_interval_delta":-1,"ultimate_window":true,"description":"The core is exposed. Finish it now!"}
 		]
+	},
+	"bloom_horror": {
+		"name": "The Root That Dreams",
+		"phases": [
+			{"id":"thorn_crown","threshold":1.0,"title":"THORN CROWN","armor":18,"description":"Crack the living bark before it regenerates."},
+			{"id":"spore_bloom","threshold":0.68,"title":"SPORE BLOOM","modifier":"corruption","description":"Toxic spores infect exposed layers."},
+			{"id":"hungry_garden","threshold":0.35,"title":"HUNGRY GARDEN","attack_interval_delta":-1,"ultimate_window":true,"description":"The buried garden wakes. Burn the heart now!"}
+		]
+	},
+	"furnace_titan": {
+		"name": "The Star-Forge Colossus",
+		"phases": [
+			{"id":"astral_plating","threshold":1.0,"title":"ASTRAL PLATING","armor":30,"description":"Shatter the titan's orbiting shield."},
+			{"id":"gravity_surge","threshold":0.66,"title":"GRAVITY SURGE","modifier":"chain_lock","description":"Runic gravity binds the outer flasks."},
+			{"id":"supernova_core","threshold":0.32,"title":"SUPERNOVA CORE","attack_interval_delta":-1,"ultimate_window":true,"description":"The forge collapses inward. Finish the core!"}
+		]
 	}
 }

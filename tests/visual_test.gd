@@ -42,6 +42,8 @@ func _ready() -> void:
 		"res://assets/art/app_icon.png",
 		"res://assets/art/backgrounds/shadow_crypt_battle.png",
 		"res://assets/art/backgrounds/main_hall_v2.png",
+		"res://assets/art/backgrounds/verdant_catacombs_battle.png",
+		"res://assets/art/backgrounds/astral_foundry_battle.png",
 		"res://assets/art/potions/bottle_frame.png",
 		"res://assets/art/ui/battle_panel.png",
 		"res://assets/art/ui/banner_turn.png",
@@ -165,6 +167,7 @@ func _ready() -> void:
 			"map Hall action returns to main menu")
 	check(not map_source.contains("RunState.active = false"), "map Hall action preserves active run")
 	check(map_source.contains("UNCHARTED ROUTE"), "map explains fog-of-war legend")
+	check(map_source.contains("RunState.current_area()"), "map renders current area identity")
 	check(not map_source.contains("if not RunState.active:\n\t\tRunState.start_new_run()"),
 			"map never silently starts a run")
 	var menu_source_campaign := FileAccess.get_file_as_string("res://src/ui/main_menu.gd")
@@ -184,6 +187,8 @@ func _ready() -> void:
 	check(vital_source.contains("TextureProgressBar"),
 			"ornate bar uses textured jewel fill")
 	var battle_source := FileAccess.get_file_as_string("res://src/ui/battle_screen.gd")
+	check(battle_source.contains("RunState.current_area()"), "battle renders current area identity")
+	check(not battle_source.contains('enemy_id == "fire_golem"'), "battle supports every authored boss")
 	check(battle_source.contains('name = "EnemyVitalBar"'),
 			"battle exposes framed enemy vital bar")
 	check(battle_source.contains('name = "PlayerVitalBar"'),

@@ -12,6 +12,13 @@ func _ready() -> void:
 	check(AudioManager.get("_stem_players").size() == 2, "music has melodic and percussion stems")
 	AudioManager.set_combat_layer("battle")
 	check(AudioManager.current_combat_layer() == "battle", "same layer does not change identity")
+	check(AudioManager.has_method("set_area"), "soundtrack exposes area identity")
+	if AudioManager.has_method("set_area"):
+		AudioManager.call("set_area", "verdant")
+		AudioManager.set_combat_layer("elite")
+		check(str(AudioManager.get("_current_music")) == "verdant", "verdant battles use verdant score")
+		AudioManager.set_combat_layer("boss_phase_1")
+		check(str(AudioManager.get("_current_music")) == "verdant_boss", "verdant boss uses distinct score")
 	var preview := AudioManager.preview_music()
 	check(preview != "battle" and AudioManager.current_combat_layer() == preview, "settings preview cycles soundtrack")
 	SaveSystem.data.settings.music = 0.0; AudioManager.set_music_volume(0.0)

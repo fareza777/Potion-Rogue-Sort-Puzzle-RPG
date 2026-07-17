@@ -13,6 +13,10 @@ func _ready() -> void:
 	check(restored.phase_index == 2, "boss phase restores without re-emission")
 	var bosses := GameState.load_data_file("bosses.json", {})
 	check(bosses.fire_golem.phases.size() == 3, "fire golem has three authored phases")
+	for area_id in GameState.area_ids():
+		var boss_id := str(GameState.area(area_id).boss)
+		check(bosses.has(boss_id) and bosses[boss_id].phases.size() == 3,
+				"area boss has three authored phases: " + boss_id)
 	print("---\n%d checks, %d failures" % [checks, failures]); get_tree().quit(1 if failures else 0)
 
 func check(ok: bool, label: String) -> void:

@@ -19,6 +19,7 @@ var _next_player := 0
 var _combat_layer := "explore"
 var _stem_players: Array[AudioStreamPlayer] = []
 var _preview_index := 0
+var _area_music := "dungeon"
 
 
 func _ready() -> void:
@@ -65,9 +66,15 @@ func play_music(track: String) -> void:
 func set_combat_layer(layer: String) -> void:
 	if layer == _combat_layer and not _current_music.is_empty(): return
 	_combat_layer = layer
-	var track := "boss" if layer in ["elite", "boss_phase_1", "boss_phase_2", "boss_phase_3"] else "dungeon"
+	var is_boss := layer in ["boss_phase_1", "boss_phase_2", "boss_phase_3"]
+	var track := (_area_music + "_boss") if is_boss and _music_streams.has(_area_music + "_boss") else (
+			"boss" if is_boss else _area_music)
 	crossfade_music(track, 0.65)
 	_play_layer_stems(layer)
+
+
+func set_area(track: String) -> void:
+	_area_music = track if _music_streams.has(track) else "dungeon"
 
 
 func current_combat_layer() -> String:
@@ -189,6 +196,14 @@ func _build_sounds() -> void:
 				_make_drone([55.0, 82.5, 110.0], 6.0, 0.10)),
 		"boss": _load_ambient("res://assets/audio/boss_ambient.wav",
 				_make_drone([65.4, 98.0, 130.8, 155.6], 4.0, 0.13)),
+		"verdant": _load_ambient("res://assets/audio/verdant_ambient.wav",
+				_make_drone([65.4, 78.5, 98.1], 6.0, 0.10)),
+		"verdant_boss": _load_ambient("res://assets/audio/verdant_boss.wav",
+				_make_drone([58.3, 87.3, 116.5], 5.0, 0.13)),
+		"astral": _load_ambient("res://assets/audio/astral_ambient.wav",
+				_make_drone([55.0, 68.8, 82.5], 6.0, 0.10)),
+		"astral_boss": _load_ambient("res://assets/audio/astral_boss.wav",
+				_make_drone([49.0, 73.5, 98.0], 5.0, 0.14)),
 	}
 
 
@@ -199,7 +214,7 @@ func _load_ambient(path: String, fallback: AudioStreamWAV) -> AudioStream:
 	if stream is AudioStreamWAV:
 		stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
 		stream.loop_begin = 0
-		stream.loop_end = int(stream.mix_rate * 24.0)
+		stream.loop_end = int(stream.mix_rate * stream.get_length())
 	return stream
 
 

@@ -85,6 +85,7 @@ func _ready() -> void:
 	_set_message("Sort potions of one color to unleash them!")
 
 	var combat_kind := str(entry.get("kind", "battle"))
+	AudioManager.set_area(str(RunState.current_area().get("music", "dungeon")))
 	AudioManager.set_combat_layer("boss_phase_1" if combat_kind == "boss" else "elite" if combat_kind == "elite" else "battle")
 	if not SaveSystem.is_tutorial_done() and RunState.battle_index == 0:
 		board.generate_tutorial_board()
@@ -125,7 +126,7 @@ func _setup_tactical_controllers(enemy_id: String) -> void:
 	intent_controller.set_battle_values(battle.enemy_attack, 0.0, battle.attack_every)
 	battle.intent_controller = intent_controller
 	battle.intent_board = board
-	if enemy_id == "fire_golem":
+	if RunState.is_boss_battle():
 		boss_phase_controller = BossPhaseController.new()
 		boss_phase_controller.phase_changed.connect(_on_boss_phase_changed)
 		boss_phase_controller.configure(enemy_id, battle.enemy_max_hp)
@@ -239,7 +240,8 @@ func _insert_above_board(control: Control) -> void:
 func _build_ui() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	UiKit.battle_background(self,
-			"res://assets/art/backgrounds/shadow_crypt_battle.png")
+			str(RunState.current_area().get("background",
+			"res://assets/art/backgrounds/shadow_crypt_battle.png")))
 	var atmosphere := ColorRect.new()
 	atmosphere.set_anchors_preset(Control.PRESET_FULL_RECT)
 	atmosphere.color = Color(0.015, 0.012, 0.025, 0.18)
