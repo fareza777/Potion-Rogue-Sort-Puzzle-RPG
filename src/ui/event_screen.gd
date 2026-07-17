@@ -11,7 +11,7 @@ func _ready() -> void:
 	var shade := ColorRect.new(); shade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	shade.color = Color(0.01, 0.005, 0.03, 0.7); add_child(shade)
 	var node := RunState.current_node(); var kind := str(node.get("kind", "event"))
-	event_id = _event_for_kind(kind)
+	event_id = str(node.get("event_id", _event_for_kind(kind)))
 	var event: Dictionary = resolver.events.get(event_id, {})
 	var margin := UiKit.safe_margin(self, 28, 90, 32)
 	var root := VBoxContainer.new(); root.alignment = BoxContainer.ALIGNMENT_CENTER

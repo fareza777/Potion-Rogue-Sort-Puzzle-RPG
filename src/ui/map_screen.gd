@@ -64,7 +64,7 @@ func _make_header() -> PanelContainer:
 	box.add_theme_constant_override("separation", -2)
 	header.add_child(box)
 	box.add_child(UiKit.title_label(str(RunState.run_config.get("area_name", "Shadow Crypt")).to_upper(), 31))
-	box.add_child(UiKit.label("FLOOR I  -  CHOOSE YOUR PATH", 14, UiKit.COLOR_TEXT_DIM))
+	box.add_child(UiKit.label("FLOOR I  -  CHOOSE YOUR PATH  -  SEED #%s" % str(abs(RunState.run_seed)), 13, UiKit.COLOR_TEXT_DIM))
 	return header
 
 
