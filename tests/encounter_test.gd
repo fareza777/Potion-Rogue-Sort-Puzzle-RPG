@@ -151,9 +151,11 @@ func _test_expanded_roster() -> void:
 	for family in ["crypt", "fungal", "arcane", "infernal"]:
 		var illustrated := 0
 		for enemy in GameState.enemies.values():
-			if str(enemy.get("family", "")) == family and enemy.has("atlas"):
+			if (str(enemy.get("family", "")) == family
+					and not str(enemy.get("sprite", "")).is_empty()
+					and not enemy.has("atlas")):
 				illustrated += 1
-		check(illustrated == 5, family + " atlas contains five new enemies")
+		check(illustrated == 5, family + " has five individual enemy sprites")
 	for enemy_id in GameState.enemies:
 		var enemy: Dictionary = GameState.enemies[enemy_id]
 		check(int(enemy.get("tier", 0)) in [1, 2, 3, 4], "enemy tier: " + str(enemy_id))
