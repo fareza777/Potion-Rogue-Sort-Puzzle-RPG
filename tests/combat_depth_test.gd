@@ -6,6 +6,7 @@ var _checks := 0
 
 func _ready() -> void:
 	_test_combos()
+	_test_skills()
 	print("---")
 	print("%d checks, %d failures" % [_checks, _failures])
 	get_tree().quit(1 if _failures > 0 else 0)
@@ -42,6 +43,38 @@ func _test_combos() -> void:
 	longest.push_potion("green")
 	check(longest.history().size() == 3, "combo history is limited to three")
 	check(longest.ultimate_charge() > 0, "resolved combos build ultimate charge")
+
+
+func _test_skills() -> void:
+	var ember := SkillController.new()
+	ember.configure("ember_adept")
+	ember.gain_mana(150)
+	check(ember.mana == 100, "mana is capped at one hundred")
+	check(ember.can_cast("flash_boil"), "ember active becomes castable")
+	var cast := ember.cast("flash_boil", {})
+	check(bool(cast.get("ok", false)) and ember.mana == 50,
+			"valid skill spends its exact mana cost")
+	check(not ember.can_cast("flash_boil"), "active skill enters cooldown")
+	ember.tick_cooldowns()
+	check(ember.can_cast("flash_boil"), "cooldown advances explicitly")
+
+	var board := PuzzleBoard.new()
+	add_child(board)
+	board.generate_tutorial_board()
+	var void_brewer := SkillController.new()
+	void_brewer.configure("void_brewer", board)
+	void_brewer.gain_mana(100)
+	var mana_before := void_brewer.mana
+	var invalid := void_brewer.cast("transmute", {"tube": 99})
+	check(not bool(invalid.get("ok", true)) and void_brewer.mana == mana_before,
+			"invalid skill target does not spend mana")
+	var valid := void_brewer.cast("transmute", {"tube": 0})
+	check(bool(valid.get("ok", false)) and board.tubes[0].top_color() == "wild",
+			"transmute creates wild essence through board commands")
+	void_brewer.gain_ultimate(100)
+	check(void_brewer.ultimate_ready() and void_brewer.consume_ultimate(),
+			"ultimate charge can be consumed at full")
+	board.free()
 
 
 func check(condition: bool, what: String) -> void:

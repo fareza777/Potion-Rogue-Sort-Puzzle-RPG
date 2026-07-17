@@ -39,6 +39,7 @@ var objectives: Dictionary = {}
 var modifiers: Dictionary = {}
 var intents: Dictionary = {}
 var combos: Dictionary = {}
+var kits: Dictionary = {}
 
 
 func _ready() -> void:
@@ -49,6 +50,7 @@ func _ready() -> void:
 	modifiers = load_data_file("modifiers.json", DEFAULT_MODIFIERS)
 	intents = load_data_file("intents.json", DEFAULT_INTENTS)
 	combos = load_data_file("combos.json", DEFAULT_COMBOS)
+	kits = load_data_file("kits.json", {"ember_adept":{"active":"flash_boil","cost":50}})
 
 
 ## Loads a JSON dictionary from res://data/ with a fallback on any failure.
