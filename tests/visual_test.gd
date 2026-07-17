@@ -143,6 +143,21 @@ func _ready() -> void:
 	check(route_contract.has_signal("node_selected"), "branching map exposes reachable selection")
 	var route_source := FileAccess.get_file_as_string("res://src/ui/dungeon_route.gd")
 	check(route_source.contains("[0.19, 0.5, 0.81]"), "branching map uses three lanes")
+	check(route_contract.has_method("disclosure_state"), "route exposes fog disclosure state")
+	if route_contract.has_method("disclosure_state"):
+		var fog_graph := {"nodes": [
+			{"id":"past", "floor":0, "lane":1, "kind":"battle", "enemy":"slime", "links":["now"], "visited":true},
+			{"id":"now", "floor":1, "lane":1, "kind":"battle", "enemy":"skeleton", "links":["choice"], "visited":false},
+			{"id":"choice", "floor":2, "lane":1, "kind":"elite", "enemy":"crypt_knight", "links":["future"], "visited":false},
+			{"id":"future", "floor":3, "lane":1, "kind":"event", "enemy":"slime", "event_id":"bone_oracle", "links":[], "visited":false},
+		]}
+		route_contract.configure_graph(fog_graph, "now", ["choice"])
+		check(route_contract.call("disclosure_state", "past") == "revealed", "visited route is revealed")
+		check(route_contract.call("disclosure_state", "choice") == "mystery", "reachable route remains mysterious")
+		check(route_contract.call("disclosure_state", "future") == "fog", "future route remains uncharted")
+		var choice := route_contract.get_node_or_null("GraphNode_choice") as Control
+		check(choice != null and choice.find_children("*", "TextureRect", true, false).is_empty(),
+				"mystery node does not render enemy portrait")
 	route_contract.free()
 	var vital_bar := OrnateResourceBar.new()
 	check(vital_bar.has_method("configure"), "ornate bar configuration interface")

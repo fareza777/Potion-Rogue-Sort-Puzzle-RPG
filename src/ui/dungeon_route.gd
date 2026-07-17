@@ -90,19 +90,21 @@ func _rebuild_graph_nodes() -> void:
 	for child in get_children():
 		if child is not Timer: child.queue_free()
 	for node in graph_nodes:
+		var disclosure := disclosure_state(str(node.id))
 		var button := Button.new()
 		button.name = "GraphNode_" + str(node.id)
 		button.custom_minimum_size = Vector2(148, 70)
 		button.size = button.custom_minimum_size
 		button.text = ""
 		button.disabled = str(node.id) not in graph_reachable
-		button.tooltip_text = "Floor %d • %s" % [int(node.floor) + 1, str(node.kind).capitalize()]
+		button.tooltip_text = "Floor %d - %s" % [int(node.floor) + 1,
+				"Known chamber" if disclosure == "revealed" else "Uncharted path"]
 		button.add_theme_font_size_override("font_size", 14)
 		var style := StyleBoxFlat.new()
 		style.bg_color = Color("241533") if not button.disabled else Color("110d19")
 		style.border_color = _graph_color(node)
 		style.set_border_width_all(3 if str(node.id) in graph_reachable else 1)
-		style.set_corner_radius_all(17 if str(node.kind) != "boss" else 35)
+		style.set_corner_radius_all(17)
 		style.shadow_color = Color(0.45, 0.12, 0.65, 0.6)
 		style.shadow_size = 8 if str(node.id) in graph_reachable else 2
 		button.add_theme_stylebox_override("normal", style)
@@ -115,7 +117,9 @@ func _rebuild_graph_nodes() -> void:
 
 func _populate_graph_card(button: Button, node: Dictionary) -> void:
 	var kind := str(node.kind)
-	var is_combat := kind in ["battle", "elite", "boss"]
+	var disclosure := disclosure_state(str(node.id))
+	var revealed := disclosure == "revealed"
+	var is_combat := revealed and kind in ["battle", "elite", "boss"]
 	var icon_holder := CenterContainer.new()
 	icon_holder.position = Vector2(6, 5)
 	icon_holder.size = Vector2(54, 59)
@@ -130,23 +134,31 @@ func _populate_graph_card(button: Button, node: Dictionary) -> void:
 		portrait.modulate = Color.WHITE if not button.disabled else Color(0.48, 0.45, 0.55, 0.82)
 		portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		icon_holder.add_child(portrait)
-	else:
+	elif revealed:
 		var rune := UiKit.label(_kind_icon(kind), 24, _node_color(kind, 0))
 		rune.custom_minimum_size = Vector2(40, 40)
 		icon_holder.add_child(rune)
+	else:
+		var mystery_rune := UiKit.label("?", 30,
+				Color("f1cb68") if disclosure == "mystery" else Color("74667d"))
+		mystery_rune.custom_minimum_size = Vector2(40, 40)
+		icon_holder.add_child(mystery_rune)
 	var copy := VBoxContainer.new()
 	copy.position = Vector2(62, 11)
 	copy.size = Vector2(80, 48)
 	copy.add_theme_constant_override("separation", -2)
 	copy.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(copy)
-	var kind_label := UiKit.label(kind.to_upper(), 11, _graph_color(node))
+	var heading := kind.to_upper() if revealed else (
+			"PATH CHOICE" if disclosure == "mystery" else "UNCHARTED")
+	var kind_label := UiKit.label(heading, 11, _graph_color(node))
 	kind_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	copy.add_child(kind_label)
-	var detail_text := "CHAMBER"
-	if is_combat:
+	var detail_text := "CHAMBER" if revealed else (
+			"UNKNOWN ENCOUNTER" if disclosure == "mystery" else "FATE VEILED")
+	if revealed and is_combat:
 		detail_text = str(GameState.enemies.get(str(node.enemy), {}).get("name", "Unknown"))
-	elif node.has("event_id"):
+	elif revealed and node.has("event_id"):
 		detail_text = str(node.event_id).replace("_", " ")
 	var detail := UiKit.label(detail_text.to_upper(), 9, UiKit.COLOR_TEXT_DIM)
 	detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -184,10 +196,19 @@ func _emit_node(id: String) -> void:
 	node_selected.emit(id)
 
 
+func disclosure_state(node_id: String) -> String:
+	for node in graph_nodes:
+		if str(node.id) != node_id: continue
+		if bool(node.get("visited", false)) or node_id == graph_current: return "revealed"
+		if node_id in graph_reachable: return "mystery"
+		return "fog"
+	return "fog"
+
+
 func _graph_color(node: Dictionary) -> Color:
 	if str(node.id) == graph_current: return Color("74e990")
 	if bool(node.visited): return Color("6f8a68")
-	if str(node.id) in graph_reachable: return _node_color(str(node.kind), 0)
+	if str(node.id) in graph_reachable: return Color("f0c55e")
 	return Color("5e5264")
 
 
