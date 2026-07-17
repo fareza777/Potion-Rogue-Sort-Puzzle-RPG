@@ -29,6 +29,14 @@ func _ready() -> void:
 			func(v: float) -> void: AudioManager.set_music_volume(v))
 	music_row.name = "MusicRow"
 	rows.add_child(music_row)
+	var preview_row := HBoxContainer.new(); preview_row.name = "MusicPreviewRow"
+	preview_row.alignment = BoxContainer.ALIGNMENT_CENTER; preview_row.add_theme_constant_override("separation", 14)
+	var music_state := UiKit.label("MUSIC READY", 14, Color("78d3ff")); music_state.custom_minimum_size.x = 190
+	preview_row.add_child(music_state)
+	var preview := UiKit.button("PREVIEW MUSIC", Vector2(220, 48), Color("78d3ff")); preview.add_theme_font_size_override("font_size", 15)
+	preview.pressed.connect(func():
+		var layer := AudioManager.preview_music(); music_state.text = layer.replace("_", " ").to_upper())
+	preview_row.add_child(preview); rows.add_child(preview_row)
 	var sound_row := _make_slider_row("SOUND EFFECTS", "sfx", "sound",
 			func(v: float) -> void: AudioManager.set_sfx_volume(v))
 	sound_row.name = "SoundRow"

@@ -17,6 +17,8 @@ var _current_music := ""
 var _sfx_players: Array[AudioStreamPlayer] = []
 var _next_player := 0
 var _combat_layer := "explore"
+var _stem_players: Array[AudioStreamPlayer] = []
+var _preview_index := 0
 
 
 func _ready() -> void:
@@ -33,6 +35,10 @@ func _ready() -> void:
 		music_player.volume_db = -80.0
 		add_child(music_player)
 		_music_players.append(music_player)
+	for i in 2:
+		var stem := AudioStreamPlayer.new()
+		stem.bus = "Music"; stem.volume_db = -8.0 if i == 0 else -11.0
+		add_child(stem); _stem_players.append(stem)
 	set_music_volume(float(SaveSystem.setting("music")))
 	set_sfx_volume(float(SaveSystem.setting("sfx")))
 
@@ -51,6 +57,9 @@ func play_music(track: String) -> void:
 	if _current_music == track and _music_players[_active_music_player].playing:
 		return
 	crossfade_music(track)
+	var layer := "boss_phase_1" if track == "boss" else "explore"
+	_combat_layer = layer
+	_play_layer_stems(layer)
 
 
 func set_combat_layer(layer: String) -> void:
@@ -58,6 +67,23 @@ func set_combat_layer(layer: String) -> void:
 	_combat_layer = layer
 	var track := "boss" if layer in ["elite", "boss_phase_1", "boss_phase_2", "boss_phase_3"] else "dungeon"
 	crossfade_music(track, 0.65)
+	_play_layer_stems(layer)
+
+
+func current_combat_layer() -> String:
+	return _combat_layer
+
+
+func music_is_audible() -> bool:
+	return float(SaveSystem.setting("music")) > 0.001 and not _current_music.is_empty()
+
+
+func preview_music() -> String:
+	var layers := ["explore", "battle", "elite", "boss_phase_2"]
+	var current := layers.find(_combat_layer)
+	_preview_index = (maxi(current, -1) + 1) % layers.size()
+	set_combat_layer(layers[_preview_index])
+	return str(layers[_preview_index])
 
 
 func crossfade_music(track: String, duration := 0.8) -> void:
@@ -70,11 +96,11 @@ func crossfade_music(track: String, duration := 0.8) -> void:
 	_active_music_player = 1 - _active_music_player
 	var incoming := _music_players[_active_music_player]
 	incoming.stream = stream
-	incoming.volume_db = -36.0
+	incoming.volume_db = -30.0
 	incoming.play()
 	_current_music = track
 	_music_tween = create_tween().set_parallel(true)
-	_music_tween.tween_property(incoming, "volume_db", 0.0, duration)
+	_music_tween.tween_property(incoming, "volume_db", 2.5, duration)
 	if previous.playing:
 		_music_tween.tween_property(previous, "volume_db", -36.0, duration)
 		_music_tween.chain().tween_callback(previous.stop)
@@ -85,6 +111,7 @@ func stop_music() -> void:
 	for player in _music_players:
 		player.stop()
 		player.volume_db = -80.0
+	for stem in _stem_players: stem.stop()
 
 
 func vibrate(ms := 30) -> void:
@@ -222,4 +249,53 @@ func _make_drone(freqs: Array, duration: float, volume: float) -> AudioStreamWAV
 	stream.data = bytes
 	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
 	stream.loop_end = frames
+	return stream
+
+
+func _play_layer_stems(layer: String) -> void:
+	if _stem_players.size() < 2: return
+	_stem_players[0].stream = _make_melodic_stem(layer)
+	_stem_players[1].stream = _make_percussion_stem(layer)
+	for stem in _stem_players: stem.play()
+
+
+func _layer_profile(layer: String) -> Dictionary:
+	match layer:
+		"battle": return {"tempo": 92.0, "root": 73.42, "energy": 0.13}
+		"elite": return {"tempo": 108.0, "root": 65.41, "energy": 0.16}
+		"boss_phase_1": return {"tempo": 116.0, "root": 61.74, "energy": 0.17}
+		"boss_phase_2": return {"tempo": 128.0, "root": 61.74, "energy": 0.19}
+		"boss_phase_3": return {"tempo": 142.0, "root": 58.27, "energy": 0.21}
+		_: return {"tempo": 72.0, "root": 82.41, "energy": 0.10}
+
+
+func _make_melodic_stem(layer: String) -> AudioStreamWAV:
+	var profile := _layer_profile(layer); var duration := 8.0
+	var frames := int(SAMPLE_RATE * duration); var bytes := PackedByteArray(); bytes.resize(frames * 2)
+	var beat := 60.0 / float(profile.tempo); var ratios := [1.0, 1.2, 1.5, 1.333]
+	for i in frames:
+		var t := float(i) / SAMPLE_RATE; var note := int(t / beat) % ratios.size()
+		var phase := fmod(t, beat) / beat; var envelope := pow(1.0 - phase, 2.2)
+		var frequency := float(profile.root) * float(ratios[note])
+		var value := (sin(TAU * frequency * t) + sin(TAU * frequency * 2.0 * t) * 0.22) \
+				* envelope * float(profile.energy)
+		bytes.encode_s16(i * 2, int(clampf(value, -0.8, 0.8) * 32000.0))
+	var stream := AudioStreamWAV.new(); stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = SAMPLE_RATE; stream.data = bytes; stream.loop_mode = AudioStreamWAV.LOOP_FORWARD; stream.loop_end = frames
+	return stream
+
+
+func _make_percussion_stem(layer: String) -> AudioStreamWAV:
+	var profile := _layer_profile(layer); var duration := 8.0
+	var frames := int(SAMPLE_RATE * duration); var bytes := PackedByteArray(); bytes.resize(frames * 2)
+	var beat := 60.0 / float(profile.tempo)
+	for i in frames:
+		var t := float(i) / SAMPLE_RATE; var phase := fmod(t, beat) / beat
+		var kick := sin(TAU * (78.0 - phase * 38.0) * t) * exp(-phase * 15.0)
+		var subdivision := fmod(t, beat * 0.5) / (beat * 0.5)
+		var tick := (1.0 if sin(TAU * 3400.0 * t) > 0 else -1.0) * exp(-subdivision * 30.0)
+		var value := (kick * 0.55 + tick * 0.08) * float(profile.energy)
+		bytes.encode_s16(i * 2, int(clampf(value, -0.8, 0.8) * 32000.0))
+	var stream := AudioStreamWAV.new(); stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = SAMPLE_RATE; stream.data = bytes; stream.loop_mode = AudioStreamWAV.LOOP_FORWARD; stream.loop_end = frames
 	return stream

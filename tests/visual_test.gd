@@ -230,6 +230,8 @@ func _ready() -> void:
 		check(ResourceLoader.exists(audio_path), "loadable ambient: " + audio_path)
 	check(AudioManager.has_method("crossfade_music"), "ambient crossfade interface")
 	check(AudioManager.has_method("set_combat_layer"), "layered combat music interface")
+	check(AudioManager.has_method("preview_music"), "music preview interface")
+	check(settings_source.contains('name = "MusicPreviewRow"'), "settings exposes music preview row")
 	check(fx.has_method("play_combo"), "combo spectacle interface")
 	check(fx.has_method("play_ultimate"), "ultimate spectacle interface")
 	check(fx.has_method("play_phase_transition"), "boss phase spectacle interface")
