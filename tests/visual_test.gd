@@ -189,6 +189,9 @@ func _ready() -> void:
 	var battle_source := FileAccess.get_file_as_string("res://src/ui/battle_screen.gd")
 	check(battle_source.contains("RunState.current_area()"), "battle renders current area identity")
 	check(not battle_source.contains('enemy_id == "fire_golem"'), "battle supports every authored boss")
+	check(battle_source.contains('"Next Expedition"'), "boss clear offers the newly unlocked expedition")
+	check(battle_source.contains('func _go_to_area_select()'), "battle exposes campaign navigation")
+	check(battle_source.contains('"Replay Area"'), "boss clear keeps area replayable")
 	check(battle_source.contains('name = "EnemyVitalBar"'),
 			"battle exposes framed enemy vital bar")
 	check(battle_source.contains('name = "PlayerVitalBar"'),

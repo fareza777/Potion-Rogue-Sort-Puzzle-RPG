@@ -724,13 +724,27 @@ func _on_battle_won() -> void:
 	AudioManager.stop_music()
 	var was_last := RunState.is_last_battle()
 	var was_elite := str(RunState.current_battle().get("kind", "battle")) == "elite"
-	RunState.complete_battle(battle.player_hp, battle.crystals_reward)
+	var campaign_result := RunState.complete_battle(battle.player_hp, battle.crystals_reward)
 	if was_last:
-		_show_overlay("Boss Defeated!",
-				"You conquered the %s!\nCrystals earned this run: %d\nTotal crystals: %d"
-				% [str(RunState.run_config.get("area_name", "dungeon")),
-					RunState.run_crystals, SaveSystem.crystals()],
-				[["Main Menu", _go_to_menu]])
+		var area_name := str(RunState.current_area().get("name", "expedition"))
+		var first_reward := int(campaign_result.get("reward", 0))
+		var unlocked_id := str(campaign_result.get("unlocked_area", ""))
+		var unlocked_copy := ""
+		if not unlocked_id.is_empty():
+			unlocked_copy = "\nNEW EXPEDITION UNLOCKED: %s" % str(
+					GameState.area(unlocked_id).get("name", unlocked_id)).to_upper()
+		var reward_copy := "\nFirst-clear bonus: +%d crystals" % first_reward if first_reward > 0 else ""
+		var title := "Campaign Conquered!" if bool(campaign_result.get("campaign_complete", false)) \
+				else ("Area Conquered!" if bool(campaign_result.get("first_clear", false)) else "Boss Defeated!")
+		var actions: Array = []
+		if not unlocked_id.is_empty():
+			actions.append(["Next Expedition", _go_to_area_select])
+		actions.append(["Replay Area", _replay_area])
+		actions.append(["Main Menu", _go_to_menu])
+		_show_overlay(title,
+				"You conquered %s!\nRun crystals: %d%s%s\nTotal crystals: %d"
+				% [area_name, RunState.run_crystals, reward_copy, unlocked_copy,
+					SaveSystem.crystals()], actions)
 	elif was_elite:
 		_show_relic_choice()
 	else:
@@ -855,8 +869,16 @@ func _on_restart_pressed() -> void:
 
 
 func _start_new_run() -> void:
-	RunState.start_new_run()
-	get_tree().change_scene_to_file("res://scenes/map.tscn")
+	get_tree().change_scene_to_file("res://scenes/area_select.tscn")
+
+
+func _replay_area() -> void:
+	RunState.pending_area_id = RunState.area_id
+	get_tree().change_scene_to_file("res://scenes/kit_select.tscn")
+
+
+func _go_to_area_select() -> void:
+	get_tree().change_scene_to_file("res://scenes/area_select.tscn")
 
 
 func _go_to_menu() -> void:
