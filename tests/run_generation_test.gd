@@ -19,6 +19,7 @@ func _ready() -> void:
 		assert_check(_has_safe_route(graph), "continuous safe route")
 		assert_check(_floor_cadence_is_combat_heavy(graph), "combat-heavy floor cadence")
 		assert_check(_every_route_has_three_battles(graph), "every route has three battles")
+		assert_check(_enemy_progression_is_ordered(graph), "enemy progression follows floor depth")
 		assert_check(_contracts_are_compatible(graph), "compatible contracts")
 		signatures[JSON.stringify(nodes)] = true
 	assert_check(signatures.size() > 1900, "cross-seed route variation")
@@ -89,6 +90,19 @@ func _contracts_are_compatible(graph: Dictionary) -> bool:
 			if guards.is_empty(): return false
 		if objective == "cleanse" and "cursed_layer" not in contract.modifier_ids and "corruption" not in contract.modifier_ids:
 			return false
+	return true
+
+func _enemy_progression_is_ordered(graph: Dictionary) -> bool:
+	for node in graph.nodes:
+		var floor := int(node.floor)
+		var kind := str(node.kind)
+		if kind not in ["battle", "elite"]: continue
+		var enemy_id := str(node.enemy)
+		var tier := int(GameState.enemies.get(enemy_id, {}).get("tier", 0))
+		if floor == 1 and enemy_id not in ["slime", "skeleton"]: return false
+		if floor == 2 and tier != 1: return false
+		if floor in [3, 4] and tier != (3 if kind == "elite" else 2): return false
+		if floor == 5 and tier != (4 if kind == "elite" else 3): return false
 	return true
 
 func _test_events() -> void:

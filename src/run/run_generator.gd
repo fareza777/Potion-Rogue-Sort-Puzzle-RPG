@@ -53,9 +53,14 @@ func _lanes_for_floor(rng: RandomNumberGenerator, expanded: bool) -> Array[int]:
 
 
 func _enemy_for_floor(floor: int, kind: String, rng: RandomNumberGenerator) -> String:
-	var target_tier := clampi(1 + int((floor - 1) / 2), 1, 3)
+	if kind not in ["battle", "elite"]: return "slime"
+	if floor <= 1:
+		var classics := ["slime", "skeleton"]
+		return classics[rng.randi_range(0, classics.size() - 1)]
+	var target_tier := 1
+	if floor in [3, 4]: target_tier = 2
+	elif floor >= 5: target_tier = 3
 	if kind == "elite": target_tier = mini(target_tier + 1, 4)
-	if floor >= 4 and rng.randf() < 0.35: target_tier = mini(target_tier + 1, 4)
 	var candidates: Array[String] = []
 	var ids: Array = GameState.enemies.keys()
 	ids.sort()
