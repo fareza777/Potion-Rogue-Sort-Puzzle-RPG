@@ -1,0 +1,183 @@
+{
+	"salamander_salt": {
+		"name": "Salamander Salt",
+		"description": "Salamander Salt alters red damage.",
+		"tags": [
+			"fire"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "red_damage",
+				"op": "multiply",
+				"value": 1.25
+			}
+		]
+	},
+	"moss_agate": {
+		"name": "Moss Agate",
+		"description": "Moss Agate alters green heal.",
+		"tags": [
+			"heal"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "green_heal",
+				"op": "multiply",
+				"value": 1.25
+			}
+		]
+	},
+	"storm_pearl": {
+		"name": "Storm Pearl",
+		"description": "Storm Pearl alters blue shield.",
+		"tags": [
+			"shield"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "blue_shield",
+				"op": "multiply",
+				"value": 1.25
+			}
+		]
+	},
+	"widows_ichor": {
+		"name": "Widow's Ichor",
+		"description": "Widow's Ichor alters purple damage.",
+		"tags": [
+			"poison"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "purple_damage",
+				"op": "multiply",
+				"value": 1.3
+			}
+		]
+	},
+	"rainbow_dust": {
+		"name": "Rainbow Dust",
+		"description": "Rainbow Dust alters potion power.",
+		"tags": [
+			"wild",
+			"combo"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "potion_power",
+				"op": "multiply",
+				"value": 1.15
+			}
+		]
+	},
+	"ether_crystal": {
+		"name": "Ether Crystal",
+		"description": "Ether Crystal alters mana gain.",
+		"tags": [
+			"skill"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "mana_gain",
+				"op": "add",
+				"value": 8
+			}
+		]
+	},
+	"war_drums": {
+		"name": "War Drums",
+		"description": "War Drums alters combo charge.",
+		"tags": [
+			"combo"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "combo_charge",
+				"op": "multiply",
+				"value": 1.3
+			}
+		]
+	},
+	"kingsfoil": {
+		"name": "Kingsfoil",
+		"description": "Kingsfoil alters post battle heal.",
+		"tags": [
+			"heal"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "post_battle_heal",
+				"op": "add",
+				"value": 8
+			}
+		]
+	},
+	"black_iron": {
+		"name": "Black Iron",
+		"description": "Black Iron alters damage reduction.",
+		"tags": [
+			"defense"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "damage_reduction",
+				"op": "add",
+				"value": 3
+			}
+		]
+	},
+	"lucky_spore": {
+		"name": "Lucky Spore",
+		"description": "Lucky Spore alters crit chance.",
+		"tags": [
+			"utility"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "crit_chance",
+				"op": "add",
+				"value": 0.15
+			}
+		]
+	},
+	"bottomless_cork": {
+		"name": "Bottomless Cork",
+		"description": "Bottomless Cork alters extra undos.",
+		"tags": [
+			"utility"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "extra_undos",
+				"op": "add",
+				"value": 2
+			}
+		]
+	},
+	"gilded_ash": {
+		"name": "Gilded Ash",
+		"description": "Gilded Ash alters crystal bonus.",
+		"tags": [
+			"economy"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "crystal_bonus",
+				"op": "multiply",
+				"value": 1.5
+			}
+		]
+	}
+}

@@ -1,0 +1,369 @@
+{
+	"emberheart": {
+		"name": "Emberheart",
+		"description": "Emberheart alters red damage.",
+		"tags": [
+			"fire"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "red_damage",
+				"op": "add",
+				"value": 4
+			}
+		]
+	},
+	"scorching_glass": {
+		"name": "Scorching Glass",
+		"description": "Scorching Glass alters red damage.",
+		"tags": [
+			"fire"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "red_damage",
+				"op": "multiply",
+				"value": 1.15
+			}
+		]
+	},
+	"phoenix_draft": {
+		"name": "Phoenix Draft",
+		"description": "Phoenix Draft alters post battle heal.",
+		"tags": [
+			"fire",
+			"heal"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "post_battle_heal",
+				"op": "add",
+				"value": 4
+			}
+		]
+	},
+	"cinder_echo": {
+		"name": "Cinder Echo",
+		"description": "Cinder Echo alters combo charge.",
+		"tags": [
+			"fire",
+			"combo"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "combo_charge",
+				"op": "add",
+				"value": 5
+			}
+		]
+	},
+	"verdant_bloom": {
+		"name": "Verdant Bloom",
+		"description": "Verdant Bloom alters green heal.",
+		"tags": [
+			"heal"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "green_heal",
+				"op": "add",
+				"value": 5
+			}
+		]
+	},
+	"living_vial": {
+		"name": "Living Vial",
+		"description": "Living Vial alters green heal.",
+		"tags": [
+			"heal"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "green_heal",
+				"op": "multiply",
+				"value": 1.18
+			}
+		]
+	},
+	"barkskin_brew": {
+		"name": "Barkskin Brew",
+		"description": "Barkskin Brew alters start shield.",
+		"tags": [
+			"heal",
+			"shield"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "start_shield",
+				"op": "add",
+				"value": 5
+			}
+		]
+	},
+	"renewal_spore": {
+		"name": "Renewal Spore",
+		"description": "Renewal Spore alters max hp.",
+		"tags": [
+			"heal"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "max_hp",
+				"op": "add",
+				"value": 8
+			}
+		]
+	},
+	"azure_shell": {
+		"name": "Azure Shell",
+		"description": "Azure Shell alters blue shield.",
+		"tags": [
+			"shield"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "blue_shield",
+				"op": "add",
+				"value": 5
+			}
+		]
+	},
+	"mirror_tonic": {
+		"name": "Mirror Tonic",
+		"description": "Mirror Tonic alters blue shield.",
+		"tags": [
+			"shield"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "blue_shield",
+				"op": "multiply",
+				"value": 1.2
+			}
+		]
+	},
+	"frozen_reserve": {
+		"name": "Frozen Reserve",
+		"description": "Frozen Reserve alters enemy delay.",
+		"tags": [
+			"shield",
+			"control"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "enemy_delay",
+				"op": "add",
+				"value": 1
+			}
+		]
+	},
+	"warding_current": {
+		"name": "Warding Current",
+		"description": "Warding Current alters max shield.",
+		"tags": [
+			"shield"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "max_shield",
+				"op": "add",
+				"value": 8
+			}
+		]
+	},
+	"nightshade": {
+		"name": "Nightshade",
+		"description": "Nightshade alters purple damage.",
+		"tags": [
+			"poison"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "purple_damage",
+				"op": "add",
+				"value": 2
+			}
+		]
+	},
+	"lingering_venom": {
+		"name": "Lingering Venom",
+		"description": "Lingering Venom alters purple turns.",
+		"tags": [
+			"poison"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "purple_turns",
+				"op": "add",
+				"value": 1
+			}
+		]
+	},
+	"toxic_bloom": {
+		"name": "Toxic Bloom",
+		"description": "Toxic Bloom alters purple damage.",
+		"tags": [
+			"poison"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "purple_damage",
+				"op": "multiply",
+				"value": 1.2
+			}
+		]
+	},
+	"void_tincture": {
+		"name": "Void Tincture",
+		"description": "Void Tincture alters wild mana.",
+		"tags": [
+			"poison",
+			"wild"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "wild_mana",
+				"op": "add",
+				"value": 5
+			}
+		]
+	},
+	"quick_distill": {
+		"name": "Quick Distill",
+		"description": "Quick Distill alters mana gain.",
+		"tags": [
+			"skill"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "mana_gain",
+				"op": "add",
+				"value": 4
+			}
+		]
+	},
+	"arcane_reflux": {
+		"name": "Arcane Reflux",
+		"description": "Arcane Reflux alters skill cost.",
+		"tags": [
+			"skill"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "skill_cost",
+				"op": "multiply",
+				"value": 0.9
+			}
+		]
+	},
+	"volatile_focus": {
+		"name": "Volatile Focus",
+		"description": "Volatile Focus alters crit chance.",
+		"tags": [
+			"fire",
+			"skill"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "crit_chance",
+				"op": "add",
+				"value": 0.1
+			}
+		]
+	},
+	"deep_pockets": {
+		"name": "Deep Pockets",
+		"description": "Deep Pockets alters crystal bonus.",
+		"tags": [
+			"economy"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "crystal_bonus",
+				"op": "add",
+				"value": 2
+			}
+		]
+	},
+	"second_chance": {
+		"name": "Second Chance",
+		"description": "Second Chance alters extra undos.",
+		"tags": [
+			"utility"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "extra_undos",
+				"op": "add",
+				"value": 1
+			}
+		]
+	},
+	"iron_stomach": {
+		"name": "Iron Stomach",
+		"description": "Iron Stomach alters damage reduction.",
+		"tags": [
+			"defense"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "damage_reduction",
+				"op": "add",
+				"value": 1
+			}
+		]
+	},
+	"prismatic_core": {
+		"name": "Prismatic Core",
+		"description": "Prismatic Core alters combo charge.",
+		"tags": [
+			"combo",
+			"wild"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "combo_charge",
+				"op": "multiply",
+				"value": 1.25
+			}
+		]
+	},
+	"perfect_measure": {
+		"name": "Perfect Measure",
+		"description": "Perfect Measure alters potion power.",
+		"tags": [
+			"combo"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "potion_power",
+				"op": "multiply",
+				"value": 1.1
+			}
+		]
+	}
+}

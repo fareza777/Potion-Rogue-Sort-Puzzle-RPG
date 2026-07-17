@@ -1,17 +1,272 @@
 {
 	"molten_core": {
 		"name": "Molten Core",
-		"description": "A shard of living magma. Fire Potions deal +8 damage.",
-		"stat": "red_damage", "add": 8
+		"description": "Molten Core alters red damage.",
+		"tags": [
+			"fire"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "red_damage",
+				"op": "add",
+				"value": 8
+			}
+		]
 	},
 	"guardian_idol": {
 		"name": "Guardian Idol",
-		"description": "An ancient ward. Start every battle with 10 shield.",
-		"stat": "start_shield", "add": 10
+		"description": "Guardian Idol alters start shield.",
+		"tags": [
+			"shield"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "start_shield",
+				"op": "add",
+				"value": 10
+			}
+		]
 	},
 	"chrono_amulet": {
 		"name": "Chrono Amulet",
-		"description": "Time bends around you. Enemies need 1 extra move to attack.",
-		"stat": "enemy_delay", "add": 1
+		"description": "Chrono Amulet alters enemy delay.",
+		"tags": [
+			"control"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "enemy_delay",
+				"op": "add",
+				"value": 1
+			}
+		]
+	},
+	"witchs_ladle": {
+		"name": "Witch's Ladle",
+		"description": "Witch's Ladle alters green heal.",
+		"tags": [
+			"heal"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "green_heal",
+				"op": "add",
+				"value": 7
+			}
+		]
+	},
+	"serpent_fang": {
+		"name": "Serpent Fang",
+		"description": "Serpent Fang alters purple damage.",
+		"tags": [
+			"poison"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "purple_damage",
+				"op": "add",
+				"value": 3
+			}
+		]
+	},
+	"blue_dragon_scale": {
+		"name": "Blue Dragon Scale",
+		"description": "Blue Dragon Scale alters blue shield.",
+		"tags": [
+			"shield"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "blue_shield",
+				"op": "add",
+				"value": 7
+			}
+		]
+	},
+	"cracked_hourglass": {
+		"name": "Cracked Hourglass",
+		"description": "Cracked Hourglass alters mana gain.",
+		"tags": [
+			"skill"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "mana_gain",
+				"op": "add",
+				"value": 6
+			}
+		]
+	},
+	"ruby_eye": {
+		"name": "Ruby Eye",
+		"description": "Ruby Eye alters crit chance.",
+		"tags": [
+			"fire"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "crit_chance",
+				"op": "add",
+				"value": 0.12
+			}
+		]
+	},
+	"moonwell_flask": {
+		"name": "Moonwell Flask",
+		"description": "Moonwell Flask alters max hp.",
+		"tags": [
+			"heal"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "max_hp",
+				"op": "add",
+				"value": 12
+			}
+		]
+	},
+	"alchemists_coin": {
+		"name": "Alchemist's Coin",
+		"description": "Alchemist's Coin alters crystal bonus.",
+		"tags": [
+			"economy"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "crystal_bonus",
+				"op": "add",
+				"value": 4
+			}
+		]
+	},
+	"echo_bell": {
+		"name": "Echo Bell",
+		"description": "Echo Bell alters combo charge.",
+		"tags": [
+			"combo"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "combo_charge",
+				"op": "add",
+				"value": 8
+			}
+		]
+	},
+	"obsidian_thimble": {
+		"name": "Obsidian Thimble",
+		"description": "Obsidian Thimble alters damage reduction.",
+		"tags": [
+			"defense"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "damage_reduction",
+				"op": "add",
+				"value": 2
+			}
+		]
+	},
+	"wildheart_seed": {
+		"name": "Wildheart Seed",
+		"description": "Wildheart Seed alters wild mana.",
+		"tags": [
+			"wild"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "wild_mana",
+				"op": "add",
+				"value": 7
+			}
+		]
+	},
+	"saints_thread": {
+		"name": "Saint's Thread",
+		"description": "Saint's Thread alters post battle heal.",
+		"tags": [
+			"heal"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "post_battle_heal",
+				"op": "add",
+				"value": 7
+			}
+		]
+	},
+	"glass_key": {
+		"name": "Glass Key",
+		"description": "Glass Key alters potion power.",
+		"tags": [
+			"combo"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "potion_power",
+				"op": "multiply",
+				"value": 1.12
+			}
+		]
+	},
+	"bone_dice": {
+		"name": "Bone Dice",
+		"description": "Bone Dice alters extra undos.",
+		"tags": [
+			"utility"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "extra_undos",
+				"op": "add",
+				"value": 1
+			}
+		]
+	},
+	"void_compass": {
+		"name": "Void Compass",
+		"description": "Void Compass alters purple turns.",
+		"tags": [
+			"poison"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "purple_turns",
+				"op": "add",
+				"value": 2
+			}
+		]
+	},
+	"sunken_crown": {
+		"name": "Sunken Crown",
+		"description": "Sunken Crown alters max shield.",
+		"tags": [
+			"shield"
+		],
+		"repeatable": false,
+		"effects": [
+			{
+				"stat": "max_shield",
+				"op": "add",
+				"value": 15
+			}
+		]
 	}
 }

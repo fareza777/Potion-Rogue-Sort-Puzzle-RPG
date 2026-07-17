@@ -7,6 +7,7 @@ var _checks := 0
 func _ready() -> void:
 	_test_combos()
 	_test_skills()
+	_test_rewards()
 	print("---")
 	print("%d checks, %d failures" % [_checks, _failures])
 	get_tree().quit(1 if _failures > 0 else 0)
@@ -79,6 +80,29 @@ func _test_skills() -> void:
 	check(void_brewer.ultimate_ready() and void_brewer.consume_ultimate(),
 			"ultimate charge can be consumed at full")
 	board.free()
+
+
+func _test_rewards() -> void:
+	var mutations := GameState.load_data_file("mutations.json", {})
+	var relics := GameState.load_data_file("relics.json", {})
+	var catalysts := GameState.load_data_file("catalysts.json", {})
+	check(mutations.size() == 24, "content includes twenty-four mutations")
+	check(relics.size() == 18, "content includes eighteen relics")
+	check(catalysts.size() == 12, "content includes twelve catalysts")
+	var generator := RewardGenerator.new()
+	var build := {"tags": ["fire"], "owned": []}
+	var first := generator.choices("mutation", 3, 4412, build)
+	var second := generator.choices("mutation", 3, 4412, build)
+	check(first == second, "reward choices are deterministic by seed")
+	check(first.size() == 3 and first[0] != first[1] and first[1] != first[2]
+			and first[0] != first[2], "reward draft contains three unique choices")
+	RunState.mutation_ids = ["emberheart"]
+	RunState.relic_ids = ["molten_core"]
+	RunState.catalyst_ids = ["salamander_salt"]
+	var value := RunState.resolve_effect_value("red_damage", 20.0,
+			[{"stat": "red_damage", "op": "add", "value": 5}])
+	check(is_equal_approx(value, 45.0),
+			"effects stack base, mutation, relic, catalyst, then temporary")
 
 
 func check(condition: bool, what: String) -> void:

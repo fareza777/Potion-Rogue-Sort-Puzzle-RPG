@@ -23,12 +23,16 @@ var active := false
 var kit_id := "ember_adept"
 var mutation_ids: Array = []
 var catalyst_ids: Array = []
+var mutation_pool: Dictionary = {}
+var catalyst_pool: Dictionary = {}
 
 
 func _ready() -> void:
 	run_config = GameState.load_data_file("run.json", DEFAULT_RUN)
 	upgrade_pool = GameState.load_data_file("upgrades.json", {})
 	relic_pool = GameState.load_data_file("relics.json", {})
+	mutation_pool = GameState.load_data_file("mutations.json", {})
+	catalyst_pool = GameState.load_data_file("catalysts.json", {})
 	perma_pool = GameState.load_data_file("perma_upgrades.json", {})
 
 
@@ -75,6 +79,41 @@ func stat(stat_name: String, base: float) -> float:
 		if str(relic.get("stat", "")) == stat_name:
 			value += float(relic.get("add", 0))
 	return value
+
+
+## Applies build effects in the stable order mutation -> relic -> catalyst -> temporary.
+func resolve_effect_value(stat_name: String, base: float,
+		temporary_effects: Array = []) -> float:
+	var value := base
+	for group in [
+			_effects_for(mutation_ids, mutation_pool),
+			_effects_for(relic_ids, relic_pool),
+			_effects_for(catalyst_ids, catalyst_pool),
+			temporary_effects,
+	]:
+		for effect in group:
+			if str(effect.get("stat", "")) != stat_name:
+				continue
+			match str(effect.get("op", "")):
+				"add": value += float(effect.get("value", 0.0))
+				"multiply": value *= float(effect.get("value", 1.0))
+				"replace": value = float(effect.get("value", value))
+	return value
+
+
+func _effects_for(ids: Array, pool: Dictionary) -> Array:
+	var effects: Array = []
+	for id in ids:
+		for effect in pool.get(id, {}).get("effects", []):
+			if str(effect.get("op", "")) in ["add", "multiply", "replace",
+					"on_complete", "on_absorb", "on_kill"]:
+				effects.append(effect)
+	return effects
+
+
+func reward_build() -> Dictionary:
+	var tags: Array = GameState.kits.get(kit_id, {}).get("tags", []).duplicate()
+	return {"tags": tags, "owned": mutation_ids + relic_ids + catalyst_ids}
 
 
 ## Total bonus for a stat from purchased permanent upgrade levels.
