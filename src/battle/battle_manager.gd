@@ -307,6 +307,16 @@ func empower_enemy_attack(multiplier: float) -> void:
 	stats_changed.emit()
 
 
+func heal_enemy(amount: int) -> int:
+	var healed := mini(maxi(amount, 0), enemy_max_hp - enemy_hp)
+	enemy_hp += healed; stats_changed.emit(); return healed
+
+
+func shatter_player_shield(amount: int) -> int:
+	var removed := mini(shield, maxi(amount, 0))
+	shield -= removed; stats_changed.emit(); return removed
+
+
 func complete_enemy_action(intent_id: String) -> void:
 	enemy_action_resolved.emit(intent_id)
 

@@ -19,6 +19,7 @@ func _content_contracts() -> void:
 	check(GameState.load_data_file("upgrades.json", {}).size() >= 10, "ten supporting upgrades")
 	check(GameState.load_data_file("events.json", {}).size() == 6, "six authored events")
 	check(GameState.load_data_file("bosses.json", {}).fire_golem.phases.size() == 3, "one three-phase boss")
+	check(GameState.enemies.size() == 27, "twenty-seven enemy roster")
 	var slime: Dictionary = GameState.enemies.slime
 	check(int(slime.attack) <= int(GameState.player.max_hp * 0.1) and int(slime.attack_every) >= 4,
 			"first encounter stays inside onboarding damage band")

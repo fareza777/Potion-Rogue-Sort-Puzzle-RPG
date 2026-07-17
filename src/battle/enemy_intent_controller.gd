@@ -78,6 +78,10 @@ func resolve(battle: BattleManager, board: PuzzleBoard) -> void:
 					battle.request_board_hazard(command)
 			"enrage":
 				battle.empower_enemy_attack(float(action.get("multiplier", 1.25)))
+			"heal":
+				battle.heal_enemy(int(action.get("amount", 0)))
+			"shield_break":
+				battle.shatter_player_shield(int(action.get("amount", 0)))
 	battle.complete_enemy_action(intent_id)
 
 

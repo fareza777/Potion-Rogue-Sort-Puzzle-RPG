@@ -9,6 +9,7 @@ func _ready() -> void:
 	_test_contract_validation()
 	_test_objectives()
 	_test_enemy_intents()
+	_test_expanded_roster()
 	print("---")
 	print("%d checks, %d failures" % [_checks, _failures])
 	get_tree().quit(1 if _failures > 0 else 0)
@@ -143,6 +144,28 @@ func _fresh_battle(enemy_id: String) -> BattleManager:
 	add_child(battle)
 	battle.setup(enemy_id)
 	return battle
+
+
+func _test_expanded_roster() -> void:
+	check(GameState.enemies.size() == 27, "roster contains twenty-seven enemies")
+	for family in ["crypt", "fungal", "arcane", "infernal"]:
+		var illustrated := 0
+		for enemy in GameState.enemies.values():
+			if str(enemy.get("family", "")) == family and enemy.has("atlas"):
+				illustrated += 1
+		check(illustrated == 5, family + " atlas contains five new enemies")
+	for enemy_id in GameState.enemies:
+		var enemy: Dictionary = GameState.enemies[enemy_id]
+		check(int(enemy.get("tier", 0)) in [1, 2, 3, 4], "enemy tier: " + str(enemy_id))
+		check(not str(enemy.get("family", "")).is_empty(), "enemy family: " + str(enemy_id))
+	var effect_battle := _fresh_battle("slime")
+	effect_battle.shield = 12
+	check(effect_battle.shatter_player_shield(10) == 10 and effect_battle.shield == 2,
+			"shatter intent removes previewed shield")
+	effect_battle.enemy_hp = 30
+	check(effect_battle.heal_enemy(8) == 8 and effect_battle.enemy_hp == 38,
+			"drain and heal intents restore enemy vitality")
+	effect_battle.free()
 
 
 func check(condition: bool, what: String) -> void:
