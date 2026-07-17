@@ -158,6 +158,13 @@ func _ready() -> void:
 		var choice := route_contract.get_node_or_null("GraphNode_choice") as Control
 		check(choice != null and choice.find_children("*", "TextureRect", true, false).is_empty(),
 				"mystery node does not render enemy portrait")
+	var map_source := FileAccess.get_file_as_string("res://src/ui/map_screen.gd")
+	check(map_source.contains('name = "BackToHallButton"'), "map exposes Back to Hall action")
+	check(map_source.contains('func _return_to_hall()'), "map exposes Hall navigation handler")
+	check(map_source.contains('change_scene_to_file("res://scenes/main_menu.tscn")'),
+			"map Hall action returns to main menu")
+	check(not map_source.contains("RunState.active = false"), "map Hall action preserves active run")
+	check(map_source.contains("UNCHARTED ROUTE"), "map explains fog-of-war legend")
 	route_contract.free()
 	var vital_bar := OrnateResourceBar.new()
 	check(vital_bar.has_method("configure"), "ornate bar configuration interface")

@@ -37,9 +37,7 @@ func _ready() -> void:
 		route_control.configure(RunState.battles(), RunState.battle_index)
 
 	root.add_child(_make_status_panel())
-	var hint := UiKit.label("SELECT ONE OF THE GLOWING PATHS", 16, UiKit.COLOR_GOLD)
-	hint.custom_minimum_size = Vector2(0, 34)
-	root.add_child(hint)
+	root.add_child(_make_route_legend())
 	if not SaveSystem.is_tutorial_done() and SaveSystem.tutorial_step() >= 9:
 		tutorial_director = TutorialDirector.new(); tutorial_director.configure()
 		var tutorial := Tutorial.new(); add_child(tutorial)
@@ -57,15 +55,53 @@ func _on_node_selected(node_id: String) -> void:
 		get_tree().change_scene_to_file("res://scenes/event.tscn")
 
 
+func _return_to_hall() -> void:
+	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+
+
 func _make_header() -> PanelContainer:
 	var header := UiKit.textured_panel("res://assets/art/ui/battle_panel.png", 10)
-	header.custom_minimum_size = Vector2(0, 78)
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", -2)
-	header.add_child(box)
-	box.add_child(UiKit.title_label(str(RunState.run_config.get("area_name", "Shadow Crypt")).to_upper(), 31))
-	box.add_child(UiKit.label("FLOOR I  -  CHOOSE YOUR PATH  -  SEED #%s" % str(abs(RunState.run_seed)), 13, UiKit.COLOR_TEXT_DIM))
+	header.custom_minimum_size = Vector2(0, 84)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	header.add_child(row)
+	var copy := VBoxContainer.new()
+	copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	copy.add_theme_constant_override("separation", -3)
+	row.add_child(copy)
+	var title := UiKit.title_label(str(RunState.run_config.get("area_name", "Shadow Crypt")).to_upper(), 29)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	copy.add_child(title)
+	var floor := int(RunState.current_node().get("floor", 0)) + 1
+	var subtitle := UiKit.label("DEPTH %s OF VII  •  CHOOSE YOUR FATE" % _roman(floor), 12, UiKit.COLOR_TEXT_DIM)
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	copy.add_child(subtitle)
+	var back := UiKit.button("BACK TO HALL", Vector2(164, 48), UiKit.COLOR_GOLD)
+	back.name = "BackToHallButton"
+	back.add_theme_font_size_override("font_size", 16)
+	back.tooltip_text = "Return to Hall — run progress is saved"
+	back.pressed.connect(_return_to_hall)
+	row.add_child(back)
 	return header
+
+
+func _make_route_legend() -> PanelContainer:
+	var panel := UiKit.textured_panel("res://assets/art/ui/battle_panel.png", 8)
+	panel.name = "RouteLegend"
+	panel.custom_minimum_size = Vector2(0, 46)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 18)
+	panel.add_child(row)
+	row.add_child(UiKit.label("?  UNCHARTED ROUTE", 13, Color("bca7ca")))
+	row.add_child(UiKit.label("✦", 12, UiKit.COLOR_GOLD))
+	row.add_child(UiKit.label("CHOOSE A GLOWING PATH TO REVEAL IT", 13, UiKit.COLOR_GOLD))
+	return panel
+
+
+func _roman(value: int) -> String:
+	var numerals := ["I", "II", "III", "IV", "V", "VI", "VII"]
+	return numerals[clampi(value - 1, 0, numerals.size() - 1)]
 
 
 func _make_status_panel() -> PanelContainer:

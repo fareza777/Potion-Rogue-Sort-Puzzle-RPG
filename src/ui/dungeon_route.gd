@@ -155,7 +155,7 @@ func _populate_graph_card(button: Button, node: Dictionary) -> void:
 	kind_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	copy.add_child(kind_label)
 	var detail_text := "CHAMBER" if revealed else (
-			"UNKNOWN ENCOUNTER" if disclosure == "mystery" else "FATE VEILED")
+			"FATE UNKNOWN" if disclosure == "mystery" else "FATE VEILED")
 	if revealed and is_combat:
 		detail_text = str(GameState.enemies.get(str(node.enemy), {}).get("name", "Unknown"))
 	elif revealed and node.has("event_id"):
