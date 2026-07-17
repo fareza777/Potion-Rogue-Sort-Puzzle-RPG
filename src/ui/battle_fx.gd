@@ -124,6 +124,23 @@ func warning_pulse(target: Control) -> void:
 		tween.parallel().tween_property(target, "modulate", Color.WHITE, 0.14)
 
 
+func play_combo(level: int, color: Color) -> void:
+	var center := get_viewport_rect().size * 0.5
+	_ring(center, color, 70.0 + level * 12.0)
+	_burst(center, color, 5 if reduced_effects else 10 + level * 4, 90.0, true)
+
+
+func play_ultimate(_id: String) -> void:
+	var center := get_viewport_rect().size * 0.5
+	for index in (1 if reduced_effects else 3):
+		_ring(center, Color("ffd36b"), 80.0 + index * 34.0)
+	_burst(center, Color("d56cff"), 10 if reduced_effects else 34, 180.0, true)
+
+
+func play_phase_transition(_id: String) -> void:
+	play_combo(3, Color("ff663d"))
+
+
 func _quadratic(a: Vector2, b: Vector2, c: Vector2, t: float) -> Vector2:
 	var inverse := 1.0 - t
 	return inverse * inverse * a + 2.0 * inverse * t * b + t * t * c

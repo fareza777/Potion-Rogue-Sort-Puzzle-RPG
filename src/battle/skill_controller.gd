@@ -50,6 +50,7 @@ func gain_ultimate(amount: int) -> void:
 	if not was_ready and ultimate_ready(): ultimate_became_ready.emit()
 
 func ultimate_ready() -> bool: return _ultimate >= 100
+func ultimate_charge() -> int: return _ultimate
 func consume_ultimate() -> bool:
 	if not ultimate_ready(): return false
 	_ultimate = 0

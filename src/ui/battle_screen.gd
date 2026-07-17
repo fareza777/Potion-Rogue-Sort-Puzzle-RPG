@@ -28,6 +28,18 @@ var overlay_choices: VBoxContainer
 var overlay_buttons: HBoxContainer
 var battle_fx: BattleFx
 var _layout_profile: Dictionary
+var objective_controller: ObjectiveController
+var intent_controller: EnemyIntentController
+var modifier_controller: ModifierController
+var combo_resolver: ComboResolver
+var skill_controller: SkillController
+var objective_label: Label
+var intent_label: Label
+var mana_bar: ProgressBar
+var mana_label: Label
+var combo_label: Label
+var skill_button: Button
+var ultimate_button: Button
 
 
 func _ready() -> void:
@@ -62,6 +74,7 @@ func _ready() -> void:
 
 	var entry := RunState.current_battle()
 	battle.setup(str(entry.get("enemy", "slime")))
+	_setup_tactical_controllers(str(entry.get("enemy", "slime")))
 	enemy_display.configure_enemy(str(entry.get("enemy", "slime")),
 			battle.enemy_shape, battle.enemy_color)
 	enemy_display.play_intro()
@@ -74,6 +87,113 @@ func _ready() -> void:
 		var tutorial := Tutorial.new()
 		tutorial.setup(board, battle)
 		_insert_above_board(tutorial)
+	_refresh()
+
+
+func _setup_tactical_controllers(enemy_id: String) -> void:
+	var contract: Dictionary = RunState.current_contract()
+	objective_controller = ObjectiveController.new()
+	var objective_id := str(contract.get("objective_id", "defeat"))
+	objective_controller.configure(objective_id, GameState.objectives.get(objective_id, {}))
+	objective_controller.progress_changed.connect(_on_objective_progress)
+	objective_controller.completed.connect(func():
+		_set_message("OPTIONAL OBJECTIVE COMPLETE  +15 mana")
+		skill_controller.gain_mana(15))
+	intent_controller = EnemyIntentController.new()
+	intent_controller.configure(enemy_id, GameState.enemies.get(enemy_id, {}), RunState.run_seed + RunState.battle_index)
+	intent_controller.set_battle_values(battle.enemy_attack, 0.0, battle.attack_every)
+	battle.intent_controller = intent_controller
+	battle.intent_board = board
+	modifier_controller = ModifierController.new()
+	var modifier_ids: Array[String] = []
+	for id in contract.get("modifier_ids", []): modifier_ids.append(str(id))
+	modifier_controller.configure(modifier_ids, RunState.run_seed + 71, board)
+	modifier_controller.curse_cleansed.connect(objective_controller.on_curse_cleansed)
+	combo_resolver = ComboResolver.new()
+	combo_resolver.combo_resolved.connect(_on_depth_combo)
+	skill_controller = SkillController.new()
+	skill_controller.configure(RunState.kit_id, board)
+	skill_controller.mana_changed.connect(_on_mana_changed)
+	board.move_made.connect(_on_tactical_move)
+	board.tube_completed.connect(_on_depth_potion_completed)
+	battle.enemy_action_resolved.connect(_on_intent_resolved)
+
+
+func _on_objective_progress(current: int, target: int) -> void:
+	if objective_label != null:
+		objective_label.text = "OBJECTIVE  %s  %d/%d" % [objective_controller.label, current, target]
+
+
+func _on_tactical_move() -> void:
+	modifier_controller.after_move()
+	_refresh_tactical_hud()
+
+
+func _on_depth_potion_completed(color: String) -> void:
+	objective_controller.on_potion_completed(color)
+	modifier_controller.on_potion_completed(color)
+	skill_controller.gain_mana(18 if color == "wild" else 25)
+	skill_controller.tick_cooldowns()
+	var result := combo_resolver.push_potion(color)
+	if not result.is_empty(): skill_controller.gain_ultimate(int(result.get("charge", 0)))
+	_refresh_tactical_hud()
+
+
+func _on_depth_combo(combo_id: String, _payload: Dictionary) -> void:
+	battle_fx.play_combo(combo_resolver.history().size(), Color("c871ff"))
+	_set_message(str(GameState.combos.get(combo_id, {}).get("name", combo_id.capitalize())))
+
+
+func _on_intent_resolved(_id: String) -> void:
+	objective_controller.on_enemy_attacked()
+	modifier_controller.after_enemy_action()
+	_refresh_tactical_hud()
+
+
+func _on_mana_changed(_current: int, _maximum: int) -> void:
+	_refresh_tactical_hud()
+
+
+func _refresh_tactical_hud() -> void:
+	if intent_controller == null or skill_controller == null or intent_label == null: return
+	intent_controller.set_battle_values(battle.enemy_attack, 0.0, battle.moves_until_attack)
+	var preview := intent_controller.preview()
+	intent_label.text = "NEXT  %s  %d dmg  •  %d moves" % [str(preview.label), int(preview.damage_max), battle.moves_until_attack]
+	mana_bar.value = skill_controller.mana
+	mana_label.text = "MANA  %d/100" % skill_controller.mana
+	var history := combo_resolver.history(); var slots: Array[String] = []
+	for color in history: slots.append(str(color).substr(0, 1).to_upper())
+	while slots.size() < 3: slots.push_front("◇")
+	combo_label.text = "  ".join(slots)
+	var kit: Dictionary = GameState.kits.get(RunState.kit_id, {})
+	skill_button.text = str(kit.get("active", "skill")).replace("_", " ").to_upper()
+	skill_button.disabled = not skill_controller.can_cast(str(kit.get("active", "")))
+	ultimate_button.text = "ULT %d%%" % skill_controller.ultimate_charge()
+	ultimate_button.disabled = not skill_controller.ultimate_ready()
+
+
+func _on_skill_pressed() -> void:
+	var kit: Dictionary = GameState.kits.get(RunState.kit_id, {})
+	var skill_id := str(kit.get("active", "")); var target := {}
+	if skill_id == "transmute":
+		for index in board.tubes.size():
+			if not board.tubes[index].contents.is_empty(): target = {"tube": index}; break
+	var result := skill_controller.cast(skill_id, target)
+	if not bool(result.get("ok", false)): return
+	match skill_id:
+		"flash_boil": battle.deal_skill_damage(16)
+		"purify":
+			battle.shield = mini(battle.max_shield, battle.shield + 12)
+			RunState.cleanse_curse(1)
+	battle_fx.play_combo(2, Color("6edcff")); _set_message("ACTIVE SKILL — " + skill_id.replace("_", " ").to_upper())
+	_refresh()
+
+
+func _on_ultimate_pressed() -> void:
+	if not skill_controller.consume_ultimate(): return
+	battle_fx.play_ultimate(RunState.kit_id)
+	battle.deal_skill_damage(38)
+	_set_message("ULTIMATE BREW UNLEASHED!")
 	_refresh()
 
 
@@ -113,6 +233,7 @@ func _build_ui() -> void:
 	var player_panel := _build_player_panel()
 	player_panel.name = "StatusBand"
 	root.add_child(player_panel)
+	root.add_child(_build_tactical_hud())
 	root.add_child(_build_turn_banner())
 
 	message_label = UiKit.label("", 20, UiKit.COLOR_GOLD)
@@ -126,6 +247,7 @@ func _build_ui() -> void:
 	board.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(board)
 	board.apply_layout_profile(_layout_profile)
+	root.add_child(_build_power_strip())
 
 	var controls := _build_button_row()
 	controls.name = "ControlsBand"
@@ -232,6 +354,38 @@ func _build_player_panel() -> PanelContainer:
 	player_status_label = UiKit.label("", 13, UiKit.COLOR_POISON)
 	player_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(player_status_label)
+	return panel
+
+
+func _build_tactical_hud() -> PanelContainer:
+	var panel := UiKit.textured_panel("res://assets/art/ui/battle_panel.png", 8)
+	panel.name = "ObjectivePanel"
+	panel.custom_minimum_size = Vector2(0, 58)
+	var row := HBoxContainer.new(); row.add_theme_constant_override("separation", 10)
+	panel.add_child(row)
+	objective_label = UiKit.label("OBJECTIVE", 13, UiKit.COLOR_GOLD)
+	objective_label.name = "ObjectiveText"; objective_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT; row.add_child(objective_label)
+	intent_label = UiKit.label("INTENT", 13, UiKit.COLOR_FIRE)
+	intent_label.name = "EnemyIntent"; intent_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	intent_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT; row.add_child(intent_label)
+	return panel
+
+
+func _build_power_strip() -> PanelContainer:
+	var panel := PanelContainer.new(); panel.custom_minimum_size = Vector2(0, 76)
+	var row := HBoxContainer.new(); row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 12); panel.add_child(row)
+	var mana_stack := VBoxContainer.new(); mana_stack.custom_minimum_size = Vector2(190, 60)
+	mana_label = UiKit.label("MANA 0/100", 13, Color("73d9ff")); mana_stack.add_child(mana_label)
+	mana_bar = UiKit.bar(Color("368ed8"), 18); mana_bar.name = "ManaMeter"; mana_bar.max_value = 100
+	mana_stack.add_child(mana_bar); row.add_child(mana_stack)
+	combo_label = UiKit.label("◇  ◇  ◇", 18, Color("d998ff")); combo_label.name = "ComboSlots"
+	combo_label.custom_minimum_size = Vector2(125, 0); row.add_child(combo_label)
+	skill_button = UiKit.button("SKILL", Vector2(125, 54), Color("70d9ff")); skill_button.name = "SkillButton"
+	skill_button.add_theme_font_size_override("font_size", 16); skill_button.pressed.connect(_on_skill_pressed); row.add_child(skill_button)
+	ultimate_button = UiKit.button("ULT", Vector2(105, 54), Color("ffb84d")); ultimate_button.name = "UltimateButton"
+	ultimate_button.add_theme_font_size_override("font_size", 16); ultimate_button.pressed.connect(_on_ultimate_pressed); row.add_child(ultimate_button)
 	return panel
 
 
@@ -389,6 +543,7 @@ func _refresh() -> void:
 
 	undo_count_label.text = str(undo_left)
 	undo_button.disabled = undo_left <= 0 or not board.can_undo() or battle.battle_over
+	_refresh_tactical_hud()
 
 
 func _set_message(text: String) -> void:
@@ -501,6 +656,7 @@ func _on_tube_lock_requested(moves: int) -> void:
 # --- Run flow ----------------------------------------------------------------
 
 func _on_battle_won() -> void:
+	objective_controller.on_enemy_defeated()
 	board.enabled = false
 	enemy_display.play_defeat()
 	AudioManager.play("victory")

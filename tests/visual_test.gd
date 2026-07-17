@@ -145,6 +145,10 @@ func _ready() -> void:
 			"battle exposes framed enemy vital bar")
 	check(battle_source.contains('name = "PlayerVitalBar"'),
 			"battle exposes framed player vital bar")
+	for tactical_name in ["ObjectivePanel", "EnemyIntent", "ManaMeter",
+			"ComboSlots", "SkillButton", "UltimateButton"]:
+		check(battle_source.contains('name = "' + tactical_name + '"'),
+				"battle exposes tactical " + tactical_name)
 	for component_name in ["EncounterHeader", "WarningPlaque", "ActionPedestal"]:
 		check(battle_source.contains('name = "' + component_name + '"'),
 				"battle exposes premium " + component_name)

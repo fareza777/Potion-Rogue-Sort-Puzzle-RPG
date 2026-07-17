@@ -36,6 +36,8 @@ var enemy_armor := 0
 var enemy_attack := 0
 var attack_every := 3
 var moves_until_attack := 3
+var intent_controller: EnemyIntentController
+var intent_board: PuzzleBoard
 var crystals_reward := 5
 
 var _enemy_crit_chance := 0.0
@@ -236,7 +238,12 @@ func _enemy_turn() -> void:
 			return
 		_try_last_remedy()
 
-	resolve_enemy_attack()
+	if intent_controller != null:
+		intent_controller.set_battle_values(enemy_attack, _enemy_crit_chance, attack_every)
+		intent_controller.resolve(self, intent_board)
+		intent_controller.advance()
+	else:
+		resolve_enemy_attack()
 	if battle_over:
 		return
 
@@ -301,6 +308,14 @@ func empower_enemy_attack(multiplier: float) -> void:
 
 func complete_enemy_action(intent_id: String) -> void:
 	enemy_action_resolved.emit(intent_id)
+
+
+func deal_skill_damage(amount: int) -> int:
+	if battle_over: return 0
+	var dealt := _damage_enemy(maxi(amount, 0), false)
+	stats_changed.emit()
+	_check_victory()
+	return dealt
 
 
 ## Last Remedy upgrade: once per battle, dropping below 20% HP auto-heals.
