@@ -5,13 +5,16 @@ extends Node
 ## so a bad save can never crash the game.
 
 const SAVE_PATH := "user://save.json"
-const SAVE_VERSION := 2
+const SAVE_VERSION := 3
 
 const DEFAULT_DATA := {
 	"version": SAVE_VERSION,
 	"crystals": 0,
 	"perma": {},
 	"tutorial_done": false,
+	"tutorial_state": "new",
+	"tutorial_step": 0,
+	"tutorial_skipped": false,
 	"settings": {"music": 0.8, "sfx": 0.8, "vibration": true, "assist_mode": false},
 	"stats": {"runs_started": 0, "runs_won": 0, "battles_won": 0},
 	"active_run": {},
@@ -56,6 +59,11 @@ func migrate(source: Dictionary) -> Dictionary:
 			migrated["legacy_run_compensated"] = true
 		legacy_run["active"] = false
 		migrated["active_run"] = legacy_run
+	if int(migrated.get("version", 1)) < 3:
+		var was_done := bool(migrated.get("tutorial_done", false))
+		migrated["tutorial_state"] = "complete" if was_done else "new"
+		migrated["tutorial_step"] = 0
+		migrated["tutorial_skipped"] = false
 	var settings: Dictionary = migrated.get("settings", {})
 	if not settings.has("assist_mode"): settings["assist_mode"] = false
 	migrated["settings"] = settings
@@ -127,7 +135,40 @@ func is_tutorial_done() -> bool:
 
 
 func mark_tutorial_done() -> void:
+	complete_tutorial()
+
+
+func tutorial_step() -> int:
+	return int(data.get("tutorial_step", 0))
+
+
+func set_tutorial_step(step: int) -> void:
+	data["tutorial_state"] = "active"
+	data["tutorial_step"] = maxi(step, 0)
+	save()
+
+
+func complete_tutorial() -> void:
 	data["tutorial_done"] = true
+	data["tutorial_state"] = "complete"
+	data["tutorial_step"] = 0
+	data["tutorial_skipped"] = false
+	save()
+
+
+func skip_tutorial() -> void:
+	data["tutorial_done"] = true
+	data["tutorial_state"] = "skipped"
+	data["tutorial_skipped"] = true
+	data["tutorial_step"] = 0
+	save()
+
+
+func replay_tutorial() -> void:
+	data["tutorial_done"] = false
+	data["tutorial_state"] = "active"
+	data["tutorial_skipped"] = false
+	data["tutorial_step"] = 0
 	save()
 
 

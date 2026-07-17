@@ -1,0 +1,14 @@
+{
+	"steps": [
+		{"id":"welcome","action":"intro","target":"ArenaBand","title":"Your first expedition","body":"Sort four matching layers into one flask. A completed potion activates immediately."},
+		{"id":"enemy","action":"inspect_enemy","target":"EnemyVitalBar","title":"Defeat the guardian","body":"Reduce Enemy Vitality to zero. Armor absorbs direct damage, but poison bypasses it."},
+		{"id":"intent","action":"inspect_intent","target":"EnemyIntent","title":"Read the next move","body":"This card reveals what the enemy will do, its damage, and how many pours remain."},
+		{"id":"source","action":"select_source","target":"TutorialSource","title":"Pick up a flask","body":"Tap the glowing flask. You always pour the connected color from the top."},
+		{"id":"target","action":"select_target","target":"TutorialTarget","title":"Pour onto a match","body":"Tap the second glowing flask. Colors must match, or the destination must be empty."},
+		{"id":"undo","action":"undo","target":"UndoAction","title":"Mistakes are reversible","body":"Undo restores the previous pour and also restores the enemy countdown."},
+		{"id":"complete","action":"complete_potion","target":"PotionBoardBand","title":"Complete a potion","body":"Build four layers of one color. Red damages, green heals, blue shields, and purple poisons."},
+		{"id":"mana","action":"gain_mana","target":"ManaMeter","title":"Brewing creates mana","body":"Each completed potion fills this meter. Mana powers your brewer's active skill."},
+		{"id":"skill","action":"cast_skill","target":"SkillButton","title":"Cast your active skill","body":"Use the lit skill button. Your starting kit changes this ability and its play style."},
+		{"id":"path","action":"choose_path","target":"DungeonRoute","title":"Choose your route","body":"Glowing nodes are reachable. Compare battles, events, shops, and safe campfires before choosing."}
+	]
+}
