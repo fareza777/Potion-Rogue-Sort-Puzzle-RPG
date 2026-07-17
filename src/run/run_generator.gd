@@ -2,8 +2,7 @@ class_name RunGenerator
 extends RefCounted
 
 const FLOOR_COUNT := 7
-const SAFE_KINDS := ["battle", "event", "shop", "treasure", "campfire"]
-const REGULAR_KINDS := ["battle", "battle", "battle", "event", "shop", "treasure", "campfire", "elite"]
+const NONCOMBAT_KINDS := ["event", "event", "shop", "treasure", "campfire"]
 const INTRO_MODIFIERS := ["hidden_layer", "frozen_tube"]
 const ADVANCED_MODIFIERS := ["cursed_layer", "volatile_liquid", "wild_essence", "chain_lock", "corruption", "unstable_flask"]
 
@@ -18,21 +17,12 @@ func generate(seed: int) -> Dictionary:
 		var candidate := rng.randi_range(1, 5)
 		if candidate not in expanded_floors:
 			expanded_floors.append(candidate)
-	var previous_safe_lane := 1
 	for floor in range(1, 6):
 		var lanes := _lanes_for_floor(rng, floor in expanded_floors)
-		var safe_lane: int = lanes[rng.randi_range(0, lanes.size() - 1)]
-		# Keep a continuous non-elite route within one lane step.
-		var nearest_distance := 99
-		for lane in lanes:
-			var distance: int = absi(int(lane) - previous_safe_lane)
-			if distance < nearest_distance:
-				nearest_distance = distance
-				safe_lane = int(lane)
-		previous_safe_lane = safe_lane
+		var noncombat_slot := rng.randi_range(0, lanes.size() - 1) if floor in [2, 4] else -1
 		for slot in lanes.size():
 			var lane: int = int(lanes[slot])
-			var kind := str(SAFE_KINDS[rng.randi_range(0, SAFE_KINDS.size() - 1)]) if lane == safe_lane else str(REGULAR_KINDS[rng.randi_range(0, REGULAR_KINDS.size() - 1)])
+			var kind := _kind_for_node(floor, slot, noncombat_slot, rng)
 			var enemy := _enemy_for_floor(floor, kind, rng)
 			var created := _node("f%d_l%d" % [floor, lane], floor, lane, kind, enemy)
 			_decorate_contract(created, rng)
@@ -43,6 +33,15 @@ func generate(seed: int) -> Dictionary:
 	nodes.append(boss)
 	_link_floors(nodes)
 	return {"seed": seed, "nodes": nodes, "start": "f0_l1", "boss": "f6_boss"}
+
+
+func _kind_for_node(floor: int, slot: int, noncombat_slot: int,
+		rng: RandomNumberGenerator) -> String:
+	if slot == noncombat_slot:
+		return str(NONCOMBAT_KINDS[rng.randi_range(0, NONCOMBAT_KINDS.size() - 1)])
+	if floor >= 3 and rng.randf() < 0.18:
+		return "elite"
+	return "battle"
 
 
 func _lanes_for_floor(rng: RandomNumberGenerator, expanded: bool) -> Array[int]:

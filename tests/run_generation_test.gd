@@ -17,6 +17,8 @@ func _ready() -> void:
 		assert_check(reachable.has(graph.boss), "boss reachable")
 		assert_check(reachable.size() == nodes.size(), "all choices reachable")
 		assert_check(_has_safe_route(graph), "continuous safe route")
+		assert_check(_floor_cadence_is_combat_heavy(graph), "combat-heavy floor cadence")
+		assert_check(_every_route_has_three_battles(graph), "every route has three battles")
 		assert_check(_contracts_are_compatible(graph), "compatible contracts")
 		signatures[JSON.stringify(nodes)] = true
 	assert_check(signatures.size() > 1900, "cross-seed route variation")
@@ -49,6 +51,33 @@ func _has_safe_route(graph: Dictionary) -> bool:
 			var key := "%s:%s" % [next_id, elite]
 			if not seen.has(key): seen[key] = true; queue.append({"id":str(next_id), "last_elite":elite})
 	return false
+
+func _floor_cadence_is_combat_heavy(graph: Dictionary) -> bool:
+	for floor in range(1, 6):
+		var floor_nodes: Array = graph.nodes.filter(func(n: Dictionary) -> bool: return int(n.floor) == floor)
+		var noncombat := floor_nodes.filter(func(n: Dictionary) -> bool: return str(n.kind) not in ["battle", "elite"])
+		if floor in [1, 3, 5] and not noncombat.is_empty(): return false
+		if floor in [2, 4] and noncombat.size() != 1: return false
+	return true
+
+func _every_route_has_three_battles(graph: Dictionary) -> bool:
+	var by_id := {}; for node in graph.nodes: by_id[str(node.id)] = node
+	return _route_cadence_ok(str(graph.start), by_id, str(graph.boss), 0, 0)
+
+func _route_cadence_ok(id: String, by_id: Dictionary, boss_id: String,
+		combat_count: int, noncombat_streak: int) -> bool:
+	var node: Dictionary = by_id[id]
+	var kind := str(node.kind)
+	if kind in ["battle", "elite"]:
+		combat_count += 1; noncombat_streak = 0
+	elif kind not in ["start", "boss"]:
+		noncombat_streak += 1
+	if noncombat_streak > 1: return false
+	if id == boss_id: return combat_count >= 3
+	for next_id in node.links:
+		if not _route_cadence_ok(str(next_id), by_id, boss_id, combat_count, noncombat_streak):
+			return false
+	return true
 
 func _contracts_are_compatible(graph: Dictionary) -> bool:
 	for node in graph.nodes:
