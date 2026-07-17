@@ -1,0 +1,7 @@
+{
+	"floors": 7,
+	"lanes": 3,
+	"kinds": ["battle", "elite", "event", "shop", "treasure", "campfire"],
+	"intro_modifiers": ["hidden_layer", "frozen_tube"],
+	"advanced_modifiers": ["cursed_layer", "volatile_liquid", "wild_essence", "chain_lock", "corruption", "unstable_flask"]
+}

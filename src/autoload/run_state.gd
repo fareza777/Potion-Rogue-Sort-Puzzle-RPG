@@ -25,6 +25,10 @@ var mutation_ids: Array = []
 var catalyst_ids: Array = []
 var mutation_pool: Dictionary = {}
 var catalyst_pool: Dictionary = {}
+var run_graph: Dictionary = {}
+var current_node_id := ""
+var run_seed := 0
+var resolved_event_ids: Array = []
 
 
 func _ready() -> void:
@@ -45,6 +49,10 @@ func start_new_run(selected_kit := "ember_adept") -> void:
 	kit_id = selected_kit if GameState.kits.has(selected_kit) else "ember_adept"
 	mutation_ids = []
 	catalyst_ids = []
+	resolved_event_ids = []
+	run_seed = int(Time.get_unix_time_from_system())
+	run_graph = RunGenerator.new().generate(run_seed)
+	current_node_id = str(run_graph.get("start", "f0_l1"))
 	active = true
 	SaveSystem.bump_stat("runs_started")
 
@@ -54,6 +62,9 @@ func battles() -> Array:
 
 
 func current_battle() -> Dictionary:
+	var node := current_node()
+	if not node.is_empty():
+		return {"enemy": node.get("enemy", "slime"), "kind": node.get("kind", "battle")}
 	var list := battles()
 	return list[clampi(battle_index, 0, list.size() - 1)]
 
@@ -63,7 +74,34 @@ func is_boss_battle() -> bool:
 
 
 func is_last_battle() -> bool:
+	if not run_graph.is_empty():
+		return str(current_node().get("kind", "")) == "boss"
 	return battle_index >= battles().size() - 1
+
+
+func current_node() -> Dictionary:
+	for node in run_graph.get("nodes", []):
+		if str(node.get("id", "")) == current_node_id:
+			return node
+	return {}
+
+
+func current_contract() -> Dictionary:
+	return current_node().get("contract", {})
+
+
+func reachable_node_ids() -> Array[String]:
+	var result: Array[String] = []
+	for id in current_node().get("links", []): result.append(str(id))
+	return result
+
+
+func select_node(id: String) -> bool:
+	if id not in reachable_node_ids(): return false
+	var current := current_node()
+	current["visited"] = true
+	current_node_id = id
+	return true
 
 
 ## Effective value of a named stat: base + permanent upgrades (crystal shop)
