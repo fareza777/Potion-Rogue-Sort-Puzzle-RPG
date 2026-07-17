@@ -171,8 +171,7 @@ static func enemy_portrait(enemy_id: String,
 		min_size := Vector2(300, 300)) -> TextureRect:
 	var portrait := TextureRect.new()
 	portrait.custom_minimum_size = min_size
-	portrait.texture = VisualRegistry.texture_or_null(
-			str(VisualRegistry.enemy(enemy_id).get("sprite", "")))
+	portrait.texture = VisualRegistry.enemy_texture(enemy_id)
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	portrait.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS

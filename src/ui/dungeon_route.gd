@@ -186,7 +186,7 @@ func _make_medallion(index: int, entry: Dictionary) -> Control:
 
 	var portrait := TextureRect.new()
 	portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT, Control.PRESET_MODE_MINSIZE, 8)
-	portrait.texture = VisualRegistry.texture_or_null(str(VisualRegistry.enemy(enemy_id).get("sprite", "")))
+	portrait.texture = VisualRegistry.enemy_texture(enemy_id)
 	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	portrait.modulate = Color.WHITE if index <= current_index else Color(0.52, 0.47, 0.58, 0.86)

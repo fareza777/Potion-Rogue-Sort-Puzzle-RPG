@@ -41,7 +41,7 @@ func configure_enemy(enemy_id: String, fallback_shape: String, color_hex: String
 	body_color = Color(color_hex)
 	_ensure_sprite_nodes()
 	var config := VisualRegistry.enemy(enemy_id)
-	_body_texture.texture = VisualRegistry.texture_or_null(str(config.get("sprite", "")))
+	_body_texture.texture = VisualRegistry.enemy_texture(enemy_id)
 	_shadow_texture.texture = VisualRegistry.texture_or_null(str(config.get("shadow", "")))
 	_sprite_root.visible = _body_texture.texture != null
 	_shadow_texture.visible = _shadow_texture.texture != null

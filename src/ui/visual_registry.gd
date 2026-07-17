@@ -84,7 +84,31 @@ static func enemy(enemy_id: String) -> Dictionary:
 	var result := ENEMY_DEFAULT.duplicate(true)
 	var override: Dictionary = ENEMIES.get(enemy_id, {})
 	result.merge(override, true)
+	var data: Dictionary = GameState.enemies.get(enemy_id, {})
+	if data.has("atlas"):
+		result["atlas"] = str(data.atlas)
+		result["atlas_cell"] = data.get("atlas_cell", [0, 0])
+		result["motion_profile"] = str(data.get("motion_profile", "elastic"))
+		result["scale"] = float(data.get("sprite_scale", 1.0))
 	return result
+
+
+static func enemy_texture(enemy_id: String) -> Texture2D:
+	var config := enemy(enemy_id)
+	var atlas_path := str(config.get("atlas", ""))
+	if not atlas_path.is_empty() and ResourceLoader.exists(atlas_path):
+		var source := load(atlas_path) as Texture2D
+		if source == null: return null
+		var cell: Array = config.get("atlas_cell", [0, 0])
+		var region_width := float(source.get_width()) / 5.0
+		var texture := AtlasTexture.new()
+		texture.atlas = source
+		texture.region = Rect2(float(cell[0]) * region_width,
+				float(cell[1]) * float(source.get_height()), region_width,
+				float(source.get_height()))
+		texture.filter_clip = true
+		return texture
+	return texture_or_null(str(config.get("sprite", "")))
 
 
 static func potion(color: String) -> Dictionary:
@@ -116,6 +140,10 @@ static func missing_runtime_assets() -> PackedStringArray:
 			var path := str(config.get(key, ""))
 			if not path.is_empty() and not ResourceLoader.exists(path):
 				result.append(path)
+	for enemy_id in GameState.enemies:
+		var atlas_path := str(GameState.enemies[enemy_id].get("atlas", ""))
+		if not atlas_path.is_empty() and not ResourceLoader.exists(atlas_path):
+			result.append(atlas_path)
 	for background_id in BACKGROUNDS:
 		var path := background(str(background_id))
 		if not path.is_empty() and not ResourceLoader.exists(path):

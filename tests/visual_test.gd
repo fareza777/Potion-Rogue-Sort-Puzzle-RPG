@@ -12,8 +12,8 @@ func _ready() -> void:
 	for enemy_id in GameState.enemies:
 		var enemy_style := VisualRegistry.enemy(str(enemy_id))
 		check(not enemy_style.is_empty(), "enemy mapping: " + str(enemy_id))
-		check(str(enemy_style.get("sprite", "")) != "",
-				"enemy sprite path: " + str(enemy_id))
+		check(VisualRegistry.enemy_texture(str(enemy_id)) != null,
+				"enemy texture resolves: " + str(enemy_id))
 		check(str(enemy_style.get("motion_profile", "")) in [
 			"elastic", "brittle", "pounce", "heavy", "caster", "inferno",
 		], "enemy motion profile: " + str(enemy_id))
