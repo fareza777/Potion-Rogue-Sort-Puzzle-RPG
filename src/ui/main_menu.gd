@@ -58,6 +58,9 @@ func _build_interface() -> void:
 	new_run.pressed.connect(_on_new_run_pressed)
 	commands.add_child(new_run)
 	var continue_run := _command_button("CONTINUE", Color("2696e8"))
+	continue_run.disabled = not RunState.active
+	if not RunState.active:
+		continue_run.text = "NO ACTIVE RUN"
 	continue_run.pressed.connect(_on_continue_pressed)
 	commands.add_child(continue_run)
 	var upgrades := _command_button("UPGRADES", Color("52a83f"))
@@ -183,8 +186,9 @@ func _nav_button(text: String, scene_path: String, starts_run := false) -> Butto
 	if not scene_path.is_empty():
 		button.pressed.connect(func() -> void:
 			if starts_run and not RunState.active:
-				RunState.start_new_run()
-			get_tree().change_scene_to_file(scene_path))
+				get_tree().change_scene_to_file("res://scenes/area_select.tscn")
+			else:
+				get_tree().change_scene_to_file(scene_path))
 	return button
 
 
@@ -204,10 +208,10 @@ func _add_readability_scrims() -> void:
 
 
 func _on_new_run_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/kit_select.tscn")
+	get_tree().change_scene_to_file("res://scenes/area_select.tscn")
 
 
 func _on_continue_pressed() -> void:
 	if not RunState.active:
-		RunState.start_new_run()
+		return
 	get_tree().change_scene_to_file("res://scenes/map.tscn")

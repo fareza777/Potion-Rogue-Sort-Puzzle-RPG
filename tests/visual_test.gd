@@ -53,7 +53,7 @@ func _ready() -> void:
 		check(ResourceLoader.exists(path), "loadable art: " + path)
 	check(ProjectSettings.get_setting("application/config/icon", "") ==
 			"res://assets/art/app_icon.png", "branded application icon configured")
-	for scene_path in ["res://scenes/main_menu.tscn", "res://scenes/kit_select.tscn",
+	for scene_path in ["res://scenes/main_menu.tscn", "res://scenes/area_select.tscn", "res://scenes/kit_select.tscn",
 			"res://scenes/map.tscn",
 			"res://scenes/battle.tscn", "res://scenes/shop.tscn",
 			"res://scenes/settings.tscn", "res://scenes/credits.tscn",
@@ -165,6 +165,14 @@ func _ready() -> void:
 			"map Hall action returns to main menu")
 	check(not map_source.contains("RunState.active = false"), "map Hall action preserves active run")
 	check(map_source.contains("UNCHARTED ROUTE"), "map explains fog-of-war legend")
+	check(not map_source.contains("if not RunState.active:\n\t\tRunState.start_new_run()"),
+			"map never silently starts a run")
+	var menu_source_campaign := FileAccess.get_file_as_string("res://src/ui/main_menu.gd")
+	check(menu_source_campaign.contains('change_scene_to_file("res://scenes/area_select.tscn")'),
+			"New Run routes through expedition selection")
+	var area_source := FileAccess.get_file_as_string("res://src/ui/area_select_screen.gd")
+	check(area_source.contains("SaveSystem.is_area_unlocked"), "expedition selection respects campaign locks")
+	check(area_source.contains("RunState.pending_area_id"), "expedition selection carries chosen area")
 	route_contract.free()
 	var vital_bar := OrnateResourceBar.new()
 	check(vital_bar.has_method("configure"), "ornate bar configuration interface")

@@ -7,9 +7,11 @@ var tutorial_director: TutorialDirector
 
 func _ready() -> void:
 	if not RunState.active:
-		RunState.start_new_run()
+		get_tree().change_scene_to_file("res://scenes/area_select.tscn")
+		return
 	set_anchors_preset(Control.PRESET_FULL_RECT)
-	UiKit.battle_background(self, "res://assets/art/backgrounds/shadow_crypt_battle.png")
+	UiKit.battle_background(self, str(RunState.current_area().get("background",
+			"res://assets/art/backgrounds/shadow_crypt_battle.png")))
 	var shade := ColorRect.new()
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	shade.color = Color(0.01, 0.005, 0.025, 0.42)
@@ -69,7 +71,7 @@ func _make_header() -> PanelContainer:
 	copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	copy.add_theme_constant_override("separation", -3)
 	row.add_child(copy)
-	var title := UiKit.title_label(str(RunState.run_config.get("area_name", "Shadow Crypt")).to_upper(), 29)
+	var title := UiKit.title_label(str(RunState.current_area().get("name", "Shadow Crypt")).to_upper(), 29)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	copy.add_child(title)
 	var floor := int(RunState.current_node().get("floor", 0)) + 1
