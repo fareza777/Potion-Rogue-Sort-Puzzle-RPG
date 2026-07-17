@@ -17,6 +17,7 @@ const COLOR_MAP := {
 
 ## Liquid colors from bottom (index 0) to top.
 var contents: Array[String] = []
+var layer_effects: Array = []
 var capacity := CAPACITY:
 	set(value):
 		capacity = clampi(value, 1, 8)
@@ -82,7 +83,53 @@ func is_complete() -> bool:
 
 func set_contents(new_contents: Array[String]) -> void:
 	contents = new_contents.duplicate()
+	layer_effects.clear()
+	for i in contents.size():
+		layer_effects.append([])
 	queue_redraw()
+
+
+func add_layer_effect(index: int, effect: String) -> bool:
+	_sync_layer_effects()
+	if index < 0 or index >= contents.size():
+		return false
+	var effects: Array = layer_effects[index]
+	if not effect in effects:
+		effects.append(effect)
+	queue_redraw()
+	return true
+
+
+func remove_layer_effect(index: int, effect: String) -> bool:
+	_sync_layer_effects()
+	if index < 0 or index >= contents.size():
+		return false
+	var effects: Array = layer_effects[index]
+	var removed := effect in effects
+	effects.erase(effect)
+	queue_redraw()
+	return removed
+
+
+func has_layer_effect(index: int, effect: String) -> bool:
+	_sync_layer_effects()
+	return index >= 0 and index < layer_effects.size() \
+			and effect in (layer_effects[index] as Array)
+
+
+func effect_count(effect: String) -> int:
+	_sync_layer_effects()
+	var count := 0
+	for effects in layer_effects:
+		count += 1 if effect in (effects as Array) else 0
+	return count
+
+
+func _sync_layer_effects() -> void:
+	while layer_effects.size() < contents.size():
+		layer_effects.append([])
+	while layer_effects.size() > contents.size():
+		layer_effects.pop_back()
 
 
 func flash_complete() -> void:
@@ -132,6 +179,10 @@ func _draw() -> void:
 	for i in contents.size():
 		var style := VisualRegistry.potion(contents[i])
 		var color: Color = style.get("color", COLOR_MAP.get(contents[i], Color.WHITE))
+		if has_layer_effect(i, "hidden"):
+			color = Color("282337")
+		elif contents[i] == "wild":
+			color = Color("f4c95d")
 		var seg_top := body_bottom - seg_h * float(i + 1)
 		var liquid_rect := Rect2(inner_left, seg_top + 1.0, inner_w, seg_h - 2.0)
 		draw_rect(liquid_rect, color.darkened(0.12))
@@ -146,6 +197,12 @@ func _draw() -> void:
 		var bubble_r := maxf(1.5, w * 0.025)
 		draw_circle(Vector2(inner_left + inner_w * (0.67 if i % 2 == 0 else 0.78),
 				seg_top + seg_h * 0.55), bubble_r, Color(1, 1, 1, 0.28))
+		if has_layer_effect(i, "cursed"):
+			draw_line(Vector2(inner_left + 3, seg_top + 3),
+					Vector2(inner_left + inner_w - 3, seg_top + seg_h - 3),
+					Color("d46cff"), 3.0, true)
+		if has_layer_effect(i, "volatile"):
+			draw_rect(liquid_rect.grow(-2), Color("ff9b42"), false, 3.0)
 
 	# The painted frame supplies bronze, scratches and high-quality glass edges.
 	if _bottle_texture != null:

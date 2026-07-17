@@ -9,6 +9,7 @@ signal tube_selected
 signal board_refilled
 signal invalid_move
 signal tube_locked
+signal curse_cleansed(count: int)
 signal pour_presented(from_global: Vector2, to_global: Vector2, color: String, count: int)
 
 const COLORS: Array[String] = ["red", "green", "blue", "purple"]
@@ -99,7 +100,9 @@ func legal_moves() -> Array[Vector2i]:
 			if destination.is_locked() or destination.free_space() <= 0:
 				continue
 			if destination.contents.is_empty() \
-					or destination.top_color() == source.top_color():
+					or destination.top_color() == source.top_color() \
+					or destination.top_color() == "wild" \
+					or source.top_color() == "wild":
 				result.append(Vector2i(from_index, to_index))
 	return result
 
@@ -123,6 +126,7 @@ func apply_board_command(command: Dictionary) -> bool:
 			if tube.free_space() <= 0:
 				return false
 			tube.contents.append(str(command.get("color", "")))
+			tube.layer_effects.append([])
 			tube.queue_redraw()
 		"reveal_top":
 			tube.queue_redraw()
@@ -201,6 +205,7 @@ func undo() -> bool:
 	var count: int = move["count"]
 	for i in count:
 		from_tube.contents.append(to_tube.contents.pop_back())
+		from_tube.layer_effects.append(to_tube.layer_effects.pop_back())
 	from_tube.queue_redraw()
 	to_tube.queue_redraw()
 	_deselect()
@@ -272,27 +277,45 @@ func _try_pour(from_tube: PotionTube, to_tube: PotionTube) -> bool:
 	if from_tube.contents.is_empty() or to_tube.free_space() == 0:
 		return false
 	var color := from_tube.top_color()
-	if not to_tube.contents.is_empty() and to_tube.top_color() != color:
+	var destination_color := to_tube.top_color()
+	if not to_tube.contents.is_empty() and destination_color != color \
+			and destination_color != "wild" and color != "wild":
 		return false
+	var poured_color := destination_color if color == "wild" \
+			and not destination_color.is_empty() else color
+	if destination_color == "wild" and color != "wild":
+		for index in range(to_tube.contents.size() - 1, -1, -1):
+			if to_tube.contents[index] != "wild":
+				break
+			to_tube.contents[index] = color
+		poured_color = color
 
 	var count: int = mini(from_tube.top_run_count(), to_tube.free_space())
 	var from_global := from_tube.global_position + from_tube.size * 0.5
 	var to_global := to_tube.global_position + to_tube.size * 0.5
 	for i in count:
-		to_tube.contents.append(from_tube.contents.pop_back())
+		var moved_color: String = from_tube.contents.pop_back()
+		var moved_effects: Array = from_tube.layer_effects.pop_back()
+		to_tube.contents.append(poured_color if moved_color == "wild" \
+				and poured_color != "wild" else moved_color)
+		to_tube.layer_effects.append(moved_effects)
 	from_tube.queue_redraw()
 	to_tube.queue_redraw()
 
 	_undo_stack.append({"from": from_tube, "to": to_tube, "count": count})
 	_tick_locks()
 	move_made.emit()
-	pour_presented.emit(from_global, to_global, color, count)
+	pour_presented.emit(from_global, to_global, poured_color, count)
 
 	if to_tube.is_complete():
 		_undo_stack.clear()
 		var completed_color := to_tube.top_color()
+		var cursed_count := to_tube.effect_count("cursed")
 		_flash_and_empty(to_tube)
-		tube_completed.emit(completed_color)
+		if cursed_count > 0:
+			curse_cleansed.emit(cursed_count)
+		else:
+			tube_completed.emit(completed_color)
 	return true
 
 
