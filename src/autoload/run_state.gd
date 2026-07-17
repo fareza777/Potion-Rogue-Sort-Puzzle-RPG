@@ -103,7 +103,42 @@ func select_node(id: String) -> bool:
 	var current := current_node()
 	current["visited"] = true
 	current_node_id = id
+	SaveSystem.save_run_boundary(serialize_boundary())
 	return true
+
+
+func serialize_boundary() -> Dictionary:
+	return {"version": 2, "active": active, "seed": run_seed,
+		"graph": run_graph.duplicate(true), "current_node_id": current_node_id,
+		"kit_id": kit_id, "player_hp": player_hp, "run_crystals": run_crystals,
+		"mutations": mutation_ids.duplicate(), "relics": relic_ids.duplicate(),
+		"catalysts": catalyst_ids.duplicate(), "upgrades": upgrade_ids.duplicate(),
+		"resolved_events": resolved_event_ids.duplicate(), "active_curses": active_curses}
+
+
+func resume_from_save(saved: Dictionary) -> bool:
+	if int(saved.get("version", 0)) != 2 or not bool(saved.get("active", false)): return false
+	if typeof(saved.get("graph", null)) != TYPE_DICTIONARY: return false
+	var loaded_kit := str(saved.get("kit_id", "ember_adept"))
+	kit_id = loaded_kit if GameState.kits.has(loaded_kit) else "ember_adept"
+	run_seed = int(saved.get("seed", 0)); run_graph = saved.graph.duplicate(true)
+	current_node_id = str(saved.get("current_node_id", ""))
+	if current_node().is_empty(): return false
+	player_hp = int(saved.get("player_hp", -1)); run_crystals = maxi(int(saved.get("run_crystals", 0)), 0)
+	mutation_ids = _valid_ids(saved.get("mutations", []), mutation_pool)
+	relic_ids = _valid_ids(saved.get("relics", []), relic_pool)
+	catalyst_ids = _valid_ids(saved.get("catalysts", []), catalyst_pool)
+	upgrade_ids = _valid_ids(saved.get("upgrades", []), upgrade_pool)
+	resolved_event_ids = saved.get("resolved_events", []).duplicate()
+	active_curses = maxi(int(saved.get("active_curses", 0)), 0); active = true
+	return true
+
+
+func _valid_ids(raw_ids: Array, pool: Dictionary) -> Array:
+	var result: Array = []
+	for id in raw_ids:
+		if pool.has(str(id)) and str(id) not in result: result.append(str(id))
+	return result
 
 
 ## Effective value of a named stat: base + permanent upgrades (crystal shop)
@@ -118,6 +153,12 @@ func stat(stat_name: String, base: float) -> float:
 		var relic: Dictionary = relic_pool.get(id, {})
 		if str(relic.get("stat", "")) == stat_name:
 			value += float(relic.get("add", 0))
+		for effect in relic.get("effects", []):
+			if str(effect.get("stat", "")) != stat_name: continue
+			match str(effect.get("op", "")):
+				"add": value += float(effect.get("value", 0))
+				"multiply": value *= float(effect.get("value", 1))
+				"replace": value = float(effect.get("value", value))
 	return value
 
 

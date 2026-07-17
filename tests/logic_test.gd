@@ -183,7 +183,7 @@ func _test_relics_and_perma() -> void:
 	RunState.pick_relic("molten_core")
 	check(int(RunState.stat("red_damage", 20)) == 28, "relic adds to stat pipeline")
 	var relic_choices := RunState.roll_relic_choices()
-	check(relic_choices.size() == 2 and not "molten_core" in relic_choices,
+	check(relic_choices.size() == 3 and not "molten_core" in relic_choices,
 			"owned relics excluded from choices")
 
 	SaveSystem.data["perma"] = {"fire_affinity": 3}

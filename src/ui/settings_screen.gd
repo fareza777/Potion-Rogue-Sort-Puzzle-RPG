@@ -36,6 +36,10 @@ func _ready() -> void:
 	var vibration_row := _make_vibration_row()
 	vibration_row.name = "VibrationRow"
 	rows.add_child(vibration_row)
+	var assist_row := _make_toggle_row("ASSIST MODE", "assist_mode",
+			"Adds one warning move. Rewards stay unchanged.")
+	assist_row.name = "AssistModeRow"
+	rows.add_child(assist_row)
 
 	var separator := HSeparator.new()
 	separator.modulate = Color("8a6d3b")
@@ -111,6 +115,21 @@ func _make_vibration_row() -> HBoxContainer:
 		SaveSystem.set_setting("vibration", on)
 		AudioManager.vibrate(40))
 	row.add_child(vib)
+	return row
+
+
+func _make_toggle_row(title: String, key: String, description: String) -> HBoxContainer:
+	var row := HBoxContainer.new(); row.custom_minimum_size.y = 92
+	var copy := VBoxContainer.new(); copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var label := UiKit.label(title, 21, UiKit.COLOR_GOLD); label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	copy.add_child(label)
+	var detail := UiKit.label(description, 13, UiKit.COLOR_TEXT_DIM)
+	detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT; detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	copy.add_child(detail); row.add_child(copy)
+	var toggle := CheckButton.new(); toggle.custom_minimum_size = Vector2(96, 58)
+	toggle.button_pressed = bool(SaveSystem.setting(key))
+	toggle.toggled.connect(func(on: bool): SaveSystem.set_setting(key, on))
+	row.add_child(toggle)
 	return row
 
 

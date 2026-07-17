@@ -5,15 +5,18 @@ extends Node
 ## so a bad save can never crash the game.
 
 const SAVE_PATH := "user://save.json"
-const SAVE_VERSION := 1
+const SAVE_VERSION := 2
 
 const DEFAULT_DATA := {
 	"version": SAVE_VERSION,
 	"crystals": 0,
 	"perma": {},
 	"tutorial_done": false,
-	"settings": {"music": 0.8, "sfx": 0.8, "vibration": true},
+	"settings": {"music": 0.8, "sfx": 0.8, "vibration": true, "assist_mode": false},
 	"stats": {"runs_started": 0, "runs_won": 0, "battles_won": 0},
+	"active_run": {},
+	"legacy_run_compensated": false,
+	"early_defeat_streak": 0,
 }
 
 var data: Dictionary = {}
@@ -35,13 +38,29 @@ func load_save() -> void:
 	if typeof(parsed) != TYPE_DICTIONARY:
 		push_warning("Save file corrupt, starting fresh.")
 		return
+	parsed = migrate(parsed)
 	# Merge over defaults so keys missing from older saves keep default values.
-	for key in parsed:
-		data[key] = parsed[key]
+	for key in parsed: data[key] = parsed[key]
 	for key in DEFAULT_DATA["settings"]:
 		if not (data["settings"] as Dictionary).has(key):
 			data["settings"][key] = DEFAULT_DATA["settings"][key]
 	data["version"] = SAVE_VERSION
+
+
+func migrate(source: Dictionary) -> Dictionary:
+	var migrated := source.duplicate(true)
+	if int(migrated.get("version", 1)) < 2:
+		var legacy_run: Dictionary = migrated.get("active_run", {})
+		if bool(legacy_run.get("active", false)) and not bool(migrated.get("legacy_run_compensated", false)):
+			migrated["crystals"] = int(migrated.get("crystals", 0)) + 10
+			migrated["legacy_run_compensated"] = true
+		legacy_run["active"] = false
+		migrated["active_run"] = legacy_run
+	var settings: Dictionary = migrated.get("settings", {})
+	if not settings.has("assist_mode"): settings["assist_mode"] = false
+	migrated["settings"] = settings
+	migrated["version"] = SAVE_VERSION
+	return migrated
 
 
 func save() -> void:
@@ -117,3 +136,14 @@ func bump_stat(stat_name: String, amount := 1) -> void:
 	stats[stat_name] = int(stats.get(stat_name, 0)) + amount
 	data["stats"] = stats
 	save()
+
+
+func save_run_boundary(run_data: Dictionary) -> void:
+	data["active_run"] = run_data.duplicate(true)
+	save()
+
+
+func record_early_defeat(early: bool) -> int:
+	data["early_defeat_streak"] = int(data.get("early_defeat_streak", 0)) + 1 if early else 0
+	save()
+	return int(data.early_defeat_streak)

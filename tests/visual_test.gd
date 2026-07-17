@@ -208,7 +208,7 @@ func _ready() -> void:
 			"hall ambient particles reduced-effects interface")
 	ambient.free()
 	var settings_source := FileAccess.get_file_as_string("res://src/ui/settings_screen.gd")
-	for row_name in ["MusicRow", "SoundRow", "VibrationRow"]:
+	for row_name in ["MusicRow", "SoundRow", "VibrationRow", "AssistModeRow"]:
 		check(settings_source.contains('name = "' + row_name + '"'),
 				"settings exposes aligned " + row_name)
 	var route := DungeonRoute.new()

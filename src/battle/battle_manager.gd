@@ -80,7 +80,8 @@ func setup(new_enemy_id: String) -> void:
 	enemy_hp = enemy_max_hp
 	enemy_armor = int(e.get("armor", 0))
 	enemy_attack = int(e.get("attack", 8))
-	attack_every = int(e.get("attack_every", 3)) + int(RunState.stat("enemy_delay", 0.0))
+	attack_every = int(e.get("attack_every", 3)) + int(RunState.stat("enemy_delay", 0.0)) \
+			+ (1 if bool(SaveSystem.setting("assist_mode")) else 0)
 	moves_until_attack = attack_every
 	crystals_reward = int(e.get("crystals", 5))
 

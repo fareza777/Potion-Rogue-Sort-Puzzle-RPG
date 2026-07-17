@@ -679,6 +679,7 @@ func _on_tube_lock_requested(moves: int) -> void:
 
 func _on_battle_won() -> void:
 	objective_controller.on_enemy_defeated()
+	SaveSystem.record_early_defeat(false)
 	board.enabled = false
 	enemy_display.play_defeat()
 	AudioManager.play("victory")
@@ -745,11 +746,21 @@ func _on_battle_lost() -> void:
 	AudioManager.stop_music()
 	AudioManager.vibrate(120)
 	var kept := RunState.fail_run()
+	var floor := int(RunState.current_node().get("floor", RunState.battle_index))
+	var streak := SaveSystem.record_early_defeat(floor <= 2)
+	var actions: Array = [["New Run", _start_new_run], ["Main Menu", _go_to_menu]]
+	if streak >= 2 and floor <= 2 and not bool(SaveSystem.setting("assist_mode")):
+		actions.push_front(["Enable Assist", _enable_assist])
 	_show_overlay("Defeated...",
 			"You fell in battle %d of %d.\nEnemies defeated: %d\nCrystals kept: %d\nTotal crystals: %d"
 			% [RunState.battle_index + 1, RunState.battles().size(),
 				RunState.battle_index, kept, SaveSystem.crystals()],
-			[["New Run", _start_new_run], ["Main Menu", _go_to_menu]])
+			actions)
+
+
+func _enable_assist() -> void:
+	SaveSystem.set_setting("assist_mode", true)
+	_start_new_run()
 
 
 func _show_pause() -> void:
