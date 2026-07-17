@@ -40,6 +40,7 @@ var mana_label: Label
 var combo_label: Label
 var skill_button: Button
 var ultimate_button: Button
+var boss_phase_controller: BossPhaseController
 
 
 func _ready() -> void:
@@ -104,6 +105,10 @@ func _setup_tactical_controllers(enemy_id: String) -> void:
 	intent_controller.set_battle_values(battle.enemy_attack, 0.0, battle.attack_every)
 	battle.intent_controller = intent_controller
 	battle.intent_board = board
+	if enemy_id == "fire_golem":
+		boss_phase_controller = BossPhaseController.new()
+		boss_phase_controller.phase_changed.connect(_on_boss_phase_changed)
+		boss_phase_controller.configure(enemy_id, battle.enemy_max_hp)
 	modifier_controller = ModifierController.new()
 	var modifier_ids: Array[String] = []
 	for id in contract.get("modifier_ids", []): modifier_ids.append(str(id))
@@ -596,6 +601,23 @@ func _on_enemy_damaged(amount: int) -> void:
 	AudioManager.play("enemy_hit")
 	UiKit.float_text(self, _enemy_center() + Vector2(randf_range(-40, 40), -20),
 			"-%d" % amount, UiKit.COLOR_FIRE, 40)
+	if boss_phase_controller != null:
+		boss_phase_controller.update_hp(battle.enemy_hp)
+
+
+func _on_boss_phase_changed(index: int, config: Dictionary) -> void:
+	board.enabled = false
+	battle_fx.play_phase_transition(str(config.get("id", "phase")))
+	_set_message("PHASE %d — %s" % [index + 1, str(config.get("title", "INFERNO"))])
+	if int(config.get("armor", 0)) > 0: battle.add_enemy_armor(int(config.armor))
+	if int(config.get("attack_interval_delta", 0)) != 0:
+		battle.attack_every = maxi(2, battle.attack_every + int(config.attack_interval_delta))
+	if str(config.get("modifier", "")) != "":
+		var ids: Array[String] = modifier_controller.active_ids.duplicate()
+		ids.append(str(config.modifier)); modifier_controller.configure(ids, RunState.run_seed + index, board)
+	var delay := 0.35 if bool(ProjectSettings.get_setting("potion_rogue/reduced_effects", false)) else 1.2
+	get_tree().create_timer(delay).timeout.connect(func():
+		if not battle.battle_over: board.enabled = true)
 
 
 func _on_combo_triggered(text: String) -> void:
