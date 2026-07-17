@@ -7,10 +7,15 @@ const INTRO_MODIFIERS := ["hidden_layer", "frozen_tube"]
 const ADVANCED_MODIFIERS := ["cursed_layer", "volatile_liquid", "wild_essence", "chain_lock", "corruption", "unstable_flask"]
 
 
-func generate(seed: int) -> Dictionary:
+func generate(seed: int, area_id := "shadow_crypt") -> Dictionary:
+	var area := GameState.area(area_id)
+	if area.is_empty():
+		area_id = "shadow_crypt"
+		area = GameState.area(area_id)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
-	var nodes: Array = [_node("f0_l1", 0, 1, "start", "slime")]
+	var intro_pool: Array = area.get("enemy_pools", {}).get("intro", ["slime"])
+	var nodes: Array = [_node("f0_l1", 0, 1, "start", str(intro_pool[0]), area)]
 	var expanded_floors: Array[int] = []
 	var extra_count := rng.randi_range(0, 3)
 	while expanded_floors.size() < extra_count:
@@ -23,16 +28,16 @@ func generate(seed: int) -> Dictionary:
 		for slot in lanes.size():
 			var lane: int = int(lanes[slot])
 			var kind := _kind_for_node(floor, slot, noncombat_slot, rng)
-			var enemy := _enemy_for_floor(floor, kind, rng)
-			var created := _node("f%d_l%d" % [floor, lane], floor, lane, kind, enemy)
+			var enemy := _enemy_for_floor(floor, kind, rng, area)
+			var created := _node("f%d_l%d" % [floor, lane], floor, lane, kind, enemy, area)
 			_decorate_contract(created, rng)
 			_decorate_event(created, rng)
 			nodes.append(created)
-	var boss := _node("f6_boss", 6, 1, "boss", "fire_golem")
+	var boss := _node("f6_boss", 6, 1, "boss", str(area.get("boss", "fire_golem")), area)
 	boss.contract.objective_id = "defeat"
 	nodes.append(boss)
 	_link_floors(nodes)
-	return {"seed": seed, "nodes": nodes, "start": "f0_l1", "boss": "f6_boss"}
+	return {"seed": seed, "area_id": area_id, "nodes": nodes, "start": "f0_l1", "boss": "f6_boss"}
 
 
 func _kind_for_node(floor: int, slot: int, noncombat_slot: int,
@@ -52,29 +57,22 @@ func _lanes_for_floor(rng: RandomNumberGenerator, expanded: bool) -> Array[int]:
 	return [int(picked[0]), int(picked[1])]
 
 
-func _enemy_for_floor(floor: int, kind: String, rng: RandomNumberGenerator) -> String:
-	if kind not in ["battle", "elite"]: return "slime"
-	if floor <= 1:
-		var classics := ["slime", "skeleton"]
-		return classics[rng.randi_range(0, classics.size() - 1)]
-	var target_tier := 1
-	if floor in [3, 4]: target_tier = 2
-	elif floor >= 5: target_tier = 3
-	if kind == "elite": target_tier = mini(target_tier + 1, 4)
-	var candidates: Array[String] = []
-	var ids: Array = GameState.enemies.keys()
-	ids.sort()
-	for raw_id in ids:
-		var id := str(raw_id)
-		if id == "fire_golem": continue
-		if int(GameState.enemies[id].get("tier", 1)) == target_tier:
-			candidates.append(id)
-	if candidates.is_empty(): return "slime"
-	return candidates[rng.randi_range(0, candidates.size() - 1)]
+func _enemy_for_floor(floor: int, kind: String, rng: RandomNumberGenerator,
+		area: Dictionary) -> String:
+	if kind not in ["battle", "elite"]:
+		return str((area.get("enemy_pools", {}).get("intro", ["slime"]) as Array)[0])
+	var pool_name := "elite" if kind == "elite" else (
+			"intro" if floor <= 1 else "tier_1" if floor == 2 else
+			"tier_2" if floor in [3, 4] else "tier_3")
+	var candidates: Array = area.get("enemy_pools", {}).get(pool_name, [])
+	if candidates.is_empty():
+		candidates = area.get("enemy_pools", {}).get("intro", ["slime"])
+	return str(candidates[rng.randi_range(0, candidates.size() - 1)])
 
 
-func _node(id: String, floor: int, lane: int, kind: String, enemy: String) -> Dictionary:
-	var budget := ThreatBudget.new().for_node(floor, kind)
+func _node(id: String, floor: int, lane: int, kind: String, enemy: String,
+		area: Dictionary) -> Dictionary:
+	var budget := ThreatBudget.new().for_node(floor, kind, area.get("threat_multiplier", 1.0))
 	return {"id": id, "floor": floor, "lane": lane, "kind": kind,
 		"enemy": enemy, "links": [], "visited": false,
 		"contract": {"enemy_id": enemy, "objective_id": "defeat",

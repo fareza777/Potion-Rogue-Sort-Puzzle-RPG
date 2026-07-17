@@ -23,9 +23,30 @@ func _ready() -> void:
 		assert_check(_contracts_are_compatible(graph), "compatible contracts")
 		signatures[JSON.stringify(nodes)] = true
 	assert_check(signatures.size() > 1900, "cross-seed route variation")
+	_test_area_identity()
 	_test_events()
 	print("---\n%d checks, %d failures" % [checks, failures])
 	get_tree().quit(1 if failures else 0)
+
+func _test_area_identity() -> void:
+	for area_id in GameState.area_ids():
+		var area := GameState.area(area_id)
+		for seed in range(120):
+			var graph := RunGenerator.new().generate(seed, area_id)
+			assert_check(str(graph.get("area_id", "")) == area_id, "graph retains area identity")
+			var boss: Dictionary = graph.nodes.filter(func(n: Dictionary) -> bool: return n.kind == "boss")[0]
+			assert_check(str(boss.enemy) == str(area.boss), "graph uses authored area boss")
+			for node in graph.nodes:
+				if str(node.kind) not in ["battle", "elite"]: continue
+				var pool_name := "elite" if str(node.kind) == "elite" else (
+						"intro" if int(node.floor) == 1 else "tier_1" if int(node.floor) == 2 else
+						"tier_2" if int(node.floor) in [3, 4] else "tier_3")
+				assert_check(str(node.enemy) in area.enemy_pools[pool_name],
+						"enemy belongs to authored area/depth pool")
+				var expected_scale: float = (1.0 + max(0, int(node.floor) - 1) * 0.12 +
+						(0.22 if str(node.kind) == "elite" else 0.0)) * float(area.threat_multiplier)
+				assert_check(is_equal_approx(float(node.contract.threat.enemy_scale), expected_scale),
+						"area threat multiplier is applied")
 
 func _reachable(graph: Dictionary) -> Dictionary:
 	var by_id := {}; for n in graph.nodes: by_id[n.id] = n
@@ -93,16 +114,15 @@ func _contracts_are_compatible(graph: Dictionary) -> bool:
 	return true
 
 func _enemy_progression_is_ordered(graph: Dictionary) -> bool:
+	var area := GameState.area(str(graph.get("area_id", "shadow_crypt")))
 	for node in graph.nodes:
 		var floor := int(node.floor)
 		var kind := str(node.kind)
 		if kind not in ["battle", "elite"]: continue
-		var enemy_id := str(node.enemy)
-		var tier := int(GameState.enemies.get(enemy_id, {}).get("tier", 0))
-		if floor == 1 and enemy_id not in ["slime", "skeleton"]: return false
-		if floor == 2 and tier != 1: return false
-		if floor in [3, 4] and tier != (3 if kind == "elite" else 2): return false
-		if floor == 5 and tier != (4 if kind == "elite" else 3): return false
+		var pool_name := "elite" if kind == "elite" else (
+				"intro" if floor == 1 else "tier_1" if floor == 2 else
+				"tier_2" if floor in [3, 4] else "tier_3")
+		if str(node.enemy) not in area.enemy_pools[pool_name]: return false
 	return true
 
 func _test_events() -> void:

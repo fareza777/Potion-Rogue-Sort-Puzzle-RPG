@@ -30,6 +30,8 @@ var current_node_id := ""
 var run_seed := 0
 var resolved_event_ids: Array = []
 var active_curses := 0
+var area_id := "shadow_crypt"
+var pending_area_id := "shadow_crypt"
 
 
 func _ready() -> void:
@@ -39,9 +41,10 @@ func _ready() -> void:
 	mutation_pool = GameState.load_data_file("mutations.json", {})
 	catalyst_pool = GameState.load_data_file("catalysts.json", {})
 	perma_pool = GameState.load_data_file("perma_upgrades.json", {})
+	pending_area_id = SaveSystem.selected_area()
 
 
-func start_new_run(selected_kit := "ember_adept") -> void:
+func start_new_run(selected_kit := "ember_adept", selected_area_id := "") -> void:
 	battle_index = 0
 	player_hp = -1
 	upgrade_ids = []
@@ -52,11 +55,20 @@ func start_new_run(selected_kit := "ember_adept") -> void:
 	catalyst_ids = []
 	resolved_event_ids = []
 	active_curses = 0
+	var requested_area := selected_area_id if not selected_area_id.is_empty() else pending_area_id
+	area_id = requested_area if SaveSystem.is_area_unlocked(requested_area) else "shadow_crypt"
+	pending_area_id = area_id
+	SaveSystem.set_selected_area(area_id)
 	run_seed = int(Time.get_unix_time_from_system() * 1000000.0) ^ Time.get_ticks_usec()
-	run_graph = RunGenerator.new().generate(run_seed)
+	run_graph = RunGenerator.new().generate(run_seed, area_id)
 	current_node_id = str(run_graph.get("start", "f0_l1"))
 	active = true
 	SaveSystem.bump_stat("runs_started")
+	SaveSystem.record_area_depth(area_id, 0)
+
+
+func current_area() -> Dictionary:
+	return GameState.area(area_id)
 
 
 func battles() -> Array:
@@ -108,7 +120,7 @@ func select_node(id: String) -> bool:
 
 
 func serialize_boundary() -> Dictionary:
-	return {"version": 2, "active": active, "seed": run_seed,
+	return {"version": 3, "active": active, "seed": run_seed, "area_id": area_id,
 		"graph": run_graph.duplicate(true), "current_node_id": current_node_id,
 		"kit_id": kit_id, "player_hp": player_hp, "run_crystals": run_crystals,
 		"mutations": mutation_ids.duplicate(), "relics": relic_ids.duplicate(),
@@ -117,8 +129,11 @@ func serialize_boundary() -> Dictionary:
 
 
 func resume_from_save(saved: Dictionary) -> bool:
-	if int(saved.get("version", 0)) != 2 or not bool(saved.get("active", false)): return false
+	if int(saved.get("version", 0)) not in [2, 3] or not bool(saved.get("active", false)): return false
 	if typeof(saved.get("graph", null)) != TYPE_DICTIONARY: return false
+	var loaded_area := str(saved.get("area_id", "shadow_crypt"))
+	area_id = loaded_area if not GameState.area(loaded_area).is_empty() else "shadow_crypt"
+	pending_area_id = area_id
 	var loaded_kit := str(saved.get("kit_id", "ember_adept"))
 	kit_id = loaded_kit if GameState.kits.has(loaded_kit) else "ember_adept"
 	run_seed = int(saved.get("seed", 0)); run_graph = saved.graph.duplicate(true)
@@ -311,7 +326,7 @@ func relic_description(id: String) -> String:
 
 
 ## Called by the battle screen after a victory.
-func complete_battle(hp_left: int, crystals_reward: int) -> void:
+func complete_battle(hp_left: int, crystals_reward: int) -> Dictionary:
 	var max_hp := int(stat("max_hp", float(GameState.player.get("max_hp", 50))))
 	player_hp = mini(hp_left + int(stat("post_battle_heal", 0.0)), max_hp)
 	run_crystals += crystals_reward + int(stat("crystal_bonus", 0.0))
@@ -320,8 +335,11 @@ func complete_battle(hp_left: int, crystals_reward: int) -> void:
 		active = false
 		SaveSystem.add_crystals(run_crystals)
 		SaveSystem.bump_stat("runs_won")
+		return SaveSystem.complete_area(area_id)
 	else:
 		battle_index += 1
+		SaveSystem.record_area_depth(area_id, int(current_node().get("floor", battle_index)))
+	return {}
 
 
 ## Called on defeat: half the crystals are kept. Returns the amount kept.
