@@ -204,8 +204,7 @@ func _add_readability_scrims() -> void:
 
 
 func _on_new_run_pressed() -> void:
-	RunState.start_new_run()
-	get_tree().change_scene_to_file("res://scenes/map.tscn")
+	get_tree().change_scene_to_file("res://scenes/kit_select.tscn")
 
 
 func _on_continue_pressed() -> void:

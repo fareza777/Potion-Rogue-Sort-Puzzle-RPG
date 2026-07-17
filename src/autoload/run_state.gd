@@ -20,6 +20,9 @@ var upgrade_pool: Dictionary = {}
 var relic_pool: Dictionary = {}
 var perma_pool: Dictionary = {}
 var active := false
+var kit_id := "ember_adept"
+var mutation_ids: Array = []
+var catalyst_ids: Array = []
 
 
 func _ready() -> void:
@@ -29,12 +32,15 @@ func _ready() -> void:
 	perma_pool = GameState.load_data_file("perma_upgrades.json", {})
 
 
-func start_new_run() -> void:
+func start_new_run(selected_kit := "ember_adept") -> void:
 	battle_index = 0
 	player_hp = -1
 	upgrade_ids = []
 	relic_ids = []
 	run_crystals = 0
+	kit_id = selected_kit if GameState.kits.has(selected_kit) else "ember_adept"
+	mutation_ids = []
+	catalyst_ids = []
 	active = true
 	SaveSystem.bump_stat("runs_started")
 

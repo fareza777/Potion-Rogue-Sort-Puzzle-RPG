@@ -46,6 +46,10 @@ func _test_combos() -> void:
 
 
 func _test_skills() -> void:
+	RunState.start_new_run("void_brewer")
+	check(RunState.kit_id == "void_brewer", "new run persists selected starting kit")
+	RunState.start_new_run("missing_kit")
+	check(RunState.kit_id == "ember_adept", "invalid starting kit uses ember fallback")
 	var ember := SkillController.new()
 	ember.configure("ember_adept")
 	ember.gain_mana(150)
