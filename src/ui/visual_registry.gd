@@ -85,10 +85,16 @@ static func enemy(enemy_id: String) -> Dictionary:
 	var override: Dictionary = ENEMIES.get(enemy_id, {})
 	result.merge(override, true)
 	var data: Dictionary = GameState.enemies.get(enemy_id, {})
-	if data.has("atlas"):
+	result["motion_profile"] = str(data.get("motion_profile",
+			result.get("motion_profile", "elastic")))
+	if data.has("sprite"):
+		result["sprite"] = str(data.sprite)
+		result.erase("atlas")
+		result.erase("atlas_cell")
+	elif data.has("atlas"):
 		result["atlas"] = str(data.atlas)
 		result["atlas_cell"] = data.get("atlas_cell", [0, 0])
-		result["motion_profile"] = str(data.get("motion_profile", "elastic"))
+	if data.has("sprite") or data.has("atlas"):
 		var profile := str(data.get("motion_profile", "elastic"))
 		var generated_scale := 1.12
 		if profile == "caster": generated_scale = 1.18
@@ -145,9 +151,10 @@ static func missing_runtime_assets() -> PackedStringArray:
 			if not path.is_empty() and not ResourceLoader.exists(path):
 				result.append(path)
 	for enemy_id in GameState.enemies:
-		var atlas_path := str(GameState.enemies[enemy_id].get("atlas", ""))
-		if not atlas_path.is_empty() and not ResourceLoader.exists(atlas_path):
-			result.append(atlas_path)
+		for key in ["sprite", "atlas"]:
+			var enemy_path := str(GameState.enemies[enemy_id].get(key, ""))
+			if not enemy_path.is_empty() and not ResourceLoader.exists(enemy_path):
+				result.append(enemy_path)
 	for background_id in BACKGROUNDS:
 		var path := background(str(background_id))
 		if not path.is_empty() and not ResourceLoader.exists(path):

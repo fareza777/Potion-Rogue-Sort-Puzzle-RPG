@@ -87,82 +87,82 @@
 	},
 	"bone_rat": {
 		"name":"Bone Rat","family":"crypt","tier":1,"shape":"beast","motion_profile":"pounce","color":"d9c69f","hp":55,"attack":5,"attack_every":4,
-		"atlas":"res://assets/art/enemies/atlas_crypt.png","atlas_cell":[0,0],"intent_pool":[{"id":"attack","weight":4},{"id":"double_strike","weight":1}],"crystals":4
+		"sprite":"res://assets/art/enemies/generated/bone_rat.png","intent_pool":[{"id":"attack","weight":4},{"id":"double_strike","weight":1}],"crystals":4
 	},
 	"grave_archer": {
 		"name":"Grave Archer","family":"crypt","tier":1,"shape":"skeleton","motion_profile":"brittle","color":"c7d0bd","hp":62,"attack":6,"attack_every":4,
-		"atlas":"res://assets/art/enemies/atlas_crypt.png","atlas_cell":[1,0],"intent_pool":[{"id":"attack","weight":4},{"id":"weaken","weight":1}],"crystals":5
+		"sprite":"res://assets/art/enemies/generated/grave_archer.png","intent_pool":[{"id":"attack","weight":4},{"id":"weaken","weight":1}],"crystals":5
 	},
 	"wailing_spirit": {
 		"name":"Wailing Spirit","family":"crypt","tier":2,"shape":"mage","motion_profile":"caster","color":"83b7e8","hp":74,"attack":7,"attack_every":4,
-		"atlas":"res://assets/art/enemies/atlas_crypt.png","atlas_cell":[2,0],"intent_pool":[{"id":"attack","weight":3},{"id":"drain","weight":2}],"crystals":7
+		"sprite":"res://assets/art/enemies/generated/wailing_spirit.png","intent_pool":[{"id":"attack","weight":3},{"id":"drain","weight":2}],"crystals":7
 	},
 	"crypt_knight": {
 		"name":"Crypt Knight","family":"crypt","tier":3,"shape":"skeleton","motion_profile":"heavy","color":"a59c91","hp":108,"attack":11,"attack_every":4,"armor":14,
-		"atlas":"res://assets/art/enemies/atlas_crypt.png","atlas_cell":[3,0],"intent_pool":[{"id":"attack","weight":3},{"id":"guard","weight":2},{"id":"shatter","weight":1}],"crystals":12
+		"sprite":"res://assets/art/enemies/generated/crypt_knight.png","intent_pool":[{"id":"attack","weight":3},{"id":"guard","weight":2},{"id":"shatter","weight":1}],"crystals":12
 	},
 	"ossuary_priest": {
 		"name":"Ossuary Priest","family":"crypt","tier":3,"shape":"mage","motion_profile":"caster","color":"e0c587","hp":96,"attack":9,"attack_every":3,
-		"atlas":"res://assets/art/enemies/atlas_crypt.png","atlas_cell":[4,0],"intent_pool":[{"id":"attack","weight":2},{"id":"heal","weight":2},{"id":"corruption","weight":1}],"crystals":13
+		"sprite":"res://assets/art/enemies/generated/ossuary_priest.png","intent_pool":[{"id":"attack","weight":2},{"id":"heal","weight":2},{"id":"corruption","weight":1}],"crystals":13
 	},
 	"sporeling": {
 		"name":"Sporeling","family":"fungal","tier":1,"shape":"slime","motion_profile":"elastic","color":"9bcc62","hp":58,"attack":5,"attack_every":4,
-		"atlas":"res://assets/art/enemies/atlas_fungal.png","atlas_cell":[0,0],"intent_pool":[{"id":"attack","weight":4},{"id":"poison","weight":1}],"crystals":4
+		"sprite":"res://assets/art/enemies/generated/sporeling.png","intent_pool":[{"id":"attack","weight":4},{"id":"poison","weight":1}],"crystals":4
 	},
 	"myconid_brute": {
 		"name":"Myconid Brute","family":"fungal","tier":2,"shape":"golem","motion_profile":"heavy","color":"bf7955","hp":92,"attack":9,"attack_every":4,
-		"atlas":"res://assets/art/enemies/atlas_fungal.png","atlas_cell":[1,0],"intent_pool":[{"id":"attack","weight":4},{"id":"enrage","weight":1}],"crystals":9
+		"sprite":"res://assets/art/enemies/generated/myconid_brute.png","intent_pool":[{"id":"attack","weight":4},{"id":"enrage","weight":1}],"crystals":9
 	},
 	"rotcap_shaman": {
 		"name":"Rotcap Shaman","family":"fungal","tier":2,"shape":"mage","motion_profile":"caster","color":"b05ac7","hp":78,"attack":7,"attack_every":3,
-		"atlas":"res://assets/art/enemies/atlas_fungal.png","atlas_cell":[2,0],"intent_pool":[{"id":"poison","weight":2},{"id":"heal","weight":1},{"id":"attack","weight":2}],"crystals":9
+		"sprite":"res://assets/art/enemies/generated/rotcap_shaman.png","intent_pool":[{"id":"poison","weight":2},{"id":"heal","weight":1},{"id":"attack","weight":2}],"crystals":9
 	},
 	"mossback_toad": {
 		"name":"Mossback Toad","family":"fungal","tier":2,"shape":"beast","motion_profile":"pounce","color":"6eaa55","hp":88,"attack":8,"attack_every":4,
-		"atlas":"res://assets/art/enemies/atlas_fungal.png","atlas_cell":[3,0],"intent_pool":[{"id":"attack","weight":3},{"id":"shatter","weight":1}],"crystals":8
+		"sprite":"res://assets/art/enemies/generated/mossback_toad.png","intent_pool":[{"id":"attack","weight":3},{"id":"shatter","weight":1}],"crystals":8
 	},
 	"bloom_horror": {
 		"name":"Bloom Horror","family":"fungal","tier":4,"shape":"golem","motion_profile":"heavy","color":"e05a8e","hp":138,"attack":13,"attack_every":3,
-		"atlas":"res://assets/art/enemies/atlas_fungal.png","atlas_cell":[4,0],"intent_pool":[{"id":"attack","weight":2},{"id":"poison","weight":2},{"id":"heal","weight":1}],"crystals":18
+		"sprite":"res://assets/art/enemies/generated/bloom_horror.png","intent_pool":[{"id":"attack","weight":2},{"id":"poison","weight":2},{"id":"heal","weight":1}],"crystals":18
 	},
 	"rune_wisp": {
 		"name":"Rune Wisp","family":"arcane","tier":1,"shape":"mage","motion_profile":"caster","color":"62c9ff","hp":56,"attack":5,"attack_every":4,
-		"atlas":"res://assets/art/enemies/atlas_arcane.png","atlas_cell":[0,0],"intent_pool":[{"id":"attack","weight":4},{"id":"lock","weight":1}],"crystals":5
+		"sprite":"res://assets/art/enemies/generated/rune_wisp.png","intent_pool":[{"id":"attack","weight":4},{"id":"lock","weight":1}],"crystals":5
 	},
 	"mimic_flask": {
 		"name":"Mimic Flask","family":"arcane","tier":2,"shape":"slime","motion_profile":"elastic","color":"b56cff","hp":76,"attack":8,"attack_every":4,
-		"atlas":"res://assets/art/enemies/atlas_arcane.png","atlas_cell":[1,0],"intent_pool":[{"id":"attack","weight":3},{"id":"drain","weight":1},{"id":"corruption","weight":1}],"crystals":8
+		"sprite":"res://assets/art/enemies/generated/mimic_flask.png","intent_pool":[{"id":"attack","weight":3},{"id":"drain","weight":1},{"id":"corruption","weight":1}],"crystals":8
 	},
 	"clockwork_imp": {
 		"name":"Clockwork Imp","family":"arcane","tier":2,"shape":"beast","motion_profile":"pounce","color":"d7a64d","hp":82,"attack":9,"attack_every":3,
-		"atlas":"res://assets/art/enemies/atlas_arcane.png","atlas_cell":[2,0],"intent_pool":[{"id":"double_strike","weight":2},{"id":"attack","weight":3}],"crystals":9
+		"sprite":"res://assets/art/enemies/generated/clockwork_imp.png","intent_pool":[{"id":"double_strike","weight":2},{"id":"attack","weight":3}],"crystals":9
 	},
 	"void_acolyte": {
 		"name":"Void Acolyte","family":"arcane","tier":3,"shape":"mage","motion_profile":"caster","color":"734ccc","hp":98,"attack":10,"attack_every":3,
-		"atlas":"res://assets/art/enemies/atlas_arcane.png","atlas_cell":[3,0],"intent_pool":[{"id":"corruption","weight":2},{"id":"drain","weight":2},{"id":"attack","weight":2}],"crystals":13
+		"sprite":"res://assets/art/enemies/generated/void_acolyte.png","intent_pool":[{"id":"corruption","weight":2},{"id":"drain","weight":2},{"id":"attack","weight":2}],"crystals":13
 	},
 	"prism_sentinel": {
 		"name":"Prism Sentinel","family":"arcane","tier":4,"shape":"golem","motion_profile":"heavy","color":"72d6dc","hp":142,"attack":12,"attack_every":3,"armor":18,
-		"atlas":"res://assets/art/enemies/atlas_arcane.png","atlas_cell":[4,0],"intent_pool":[{"id":"guard","weight":2},{"id":"shatter","weight":2},{"id":"attack","weight":3}],"crystals":19
+		"sprite":"res://assets/art/enemies/generated/prism_sentinel.png","intent_pool":[{"id":"guard","weight":2},{"id":"shatter","weight":2},{"id":"attack","weight":3}],"crystals":19
 	},
 	"cinder_hound": {
 		"name":"Cinder Hound","family":"infernal","tier":2,"shape":"beast","motion_profile":"pounce","color":"ef6f3d","hp":84,"attack":9,"attack_every":3,
-		"atlas":"res://assets/art/enemies/atlas_infernal.png","atlas_cell":[0,0],"intent_pool":[{"id":"attack","weight":3},{"id":"double_strike","weight":2}],"crystals":9
+		"sprite":"res://assets/art/enemies/generated/cinder_hound.png","intent_pool":[{"id":"attack","weight":3},{"id":"double_strike","weight":2}],"crystals":9
 	},
 	"ash_harpy": {
 		"name":"Ash Harpy","family":"infernal","tier":2,"shape":"beast","motion_profile":"pounce","color":"dc8b66","hp":80,"attack":8,"attack_every":3,
-		"atlas":"res://assets/art/enemies/atlas_infernal.png","atlas_cell":[1,0],"intent_pool":[{"id":"attack","weight":3},{"id":"weaken","weight":2}],"crystals":10
+		"sprite":"res://assets/art/enemies/generated/ash_harpy.png","intent_pool":[{"id":"attack","weight":3},{"id":"weaken","weight":2}],"crystals":10
 	},
 	"magma_beetle": {
 		"name":"Magma Beetle","family":"infernal","tier":3,"shape":"golem","motion_profile":"heavy","color":"e85a2f","hp":112,"attack":11,"attack_every":4,"armor":12,
-		"atlas":"res://assets/art/enemies/atlas_infernal.png","atlas_cell":[2,0],"intent_pool":[{"id":"guard","weight":2},{"id":"attack","weight":4}],"crystals":13
+		"sprite":"res://assets/art/enemies/generated/magma_beetle.png","intent_pool":[{"id":"guard","weight":2},{"id":"attack","weight":4}],"crystals":13
 	},
 	"flame_wraith": {
 		"name":"Flame Wraith","family":"infernal","tier":3,"shape":"mage","motion_profile":"inferno","color":"ff9648","hp":102,"attack":12,"attack_every":3,
-		"atlas":"res://assets/art/enemies/atlas_infernal.png","atlas_cell":[3,0],"intent_pool":[{"id":"drain","weight":1},{"id":"enrage","weight":1},{"id":"attack","weight":3}],"crystals":14
+		"sprite":"res://assets/art/enemies/generated/flame_wraith.png","intent_pool":[{"id":"drain","weight":1},{"id":"enrage","weight":1},{"id":"attack","weight":3}],"crystals":14
 	},
 	"furnace_titan": {
 		"name":"Furnace Titan","family":"infernal","tier":4,"shape":"fire_golem","motion_profile":"inferno","color":"ff5a2f","hp":148,"attack":14,"attack_every":4,"armor":16,
-		"atlas":"res://assets/art/enemies/atlas_infernal.png","atlas_cell":[4,0],"intent_pool":[{"id":"attack","weight":3},{"id":"shatter","weight":2},{"id":"enrage","weight":1}],"crystals":21
+		"sprite":"res://assets/art/enemies/generated/furnace_titan.png","intent_pool":[{"id":"attack","weight":3},{"id":"shatter","weight":2},{"id":"enrage","weight":1}],"crystals":21
 	}
 }

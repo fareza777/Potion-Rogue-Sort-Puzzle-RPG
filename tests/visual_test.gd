@@ -4,6 +4,12 @@ extends Node
 
 var _failures := 0
 var _checks := 0
+const GENERATED_ENEMIES := [
+	"bone_rat", "grave_archer", "wailing_spirit", "crypt_knight", "ossuary_priest",
+	"sporeling", "myconid_brute", "rotcap_shaman", "mossback_toad", "bloom_horror",
+	"rune_wisp", "mimic_flask", "clockwork_imp", "void_acolyte", "prism_sentinel",
+	"cinder_hound", "ash_harpy", "magma_beetle", "flame_wraith", "furnace_titan",
+]
 
 
 func _ready() -> void:
@@ -14,6 +20,13 @@ func _ready() -> void:
 		check(not enemy_style.is_empty(), "enemy mapping: " + str(enemy_id))
 		check(VisualRegistry.enemy_texture(str(enemy_id)) != null,
 				"enemy texture resolves: " + str(enemy_id))
+		if str(enemy_id) in GENERATED_ENEMIES:
+			check(not str(enemy_style.get("sprite", "")).is_empty(),
+					"generated enemy has individual sprite: " + str(enemy_id))
+			check(str(enemy_style.get("atlas", "")).is_empty(),
+					"generated enemy avoids runtime atlas: " + str(enemy_id))
+			check(not (VisualRegistry.enemy_texture(str(enemy_id)) is AtlasTexture),
+					"generated enemy texture is not sliced: " + str(enemy_id))
 		check(str(enemy_style.get("motion_profile", "")) in [
 			"elastic", "brittle", "pounce", "heavy", "caster", "inferno",
 		], "enemy motion profile: " + str(enemy_id))
