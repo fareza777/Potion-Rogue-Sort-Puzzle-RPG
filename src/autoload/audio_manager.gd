@@ -240,6 +240,14 @@ func _build_sounds() -> void:
 				_make_drone([55.0, 68.8, 82.5], 6.0, 0.10)),
 		"astral_boss": _load_ambient("res://assets/audio/astral_boss.wav",
 				_make_drone([49.0, 73.5, 98.0], 5.0, 0.14)),
+		"frost": _load_ambient("res://assets/audio/frost_ambient.ogg",
+				_make_drone([41.25, 61.875, 82.5], 8.0, 0.10)),
+		"frost_boss": _load_ambient("res://assets/audio/frost_boss.ogg",
+				_make_drone([49.0, 73.5, 98.0], 6.0, 0.14)),
+		"abyss": _load_ambient("res://assets/audio/abyss_ambient.ogg",
+				_make_drone([36.56, 54.84, 73.12], 8.0, 0.10)),
+		"abyss_boss": _load_ambient("res://assets/audio/abyss_boss.ogg",
+				_make_drone([36.56, 48.75, 73.12], 6.0, 0.14)),
 	}
 
 
@@ -251,6 +259,8 @@ func _load_ambient(path: String, fallback: AudioStreamWAV) -> AudioStream:
 		stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
 		stream.loop_begin = 0
 		stream.loop_end = int(stream.mix_rate * stream.get_length())
+	elif stream is AudioStreamOggVorbis:
+		stream.loop = true
 	return stream
 
 

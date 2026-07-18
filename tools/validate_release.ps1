@@ -1,9 +1,9 @@
 param(
     [string]$ProjectRoot = (Split-Path -Parent $PSScriptRoot),
     [string]$ApkPath = "builds/PotionRogue-v12-debug.apk",
-	[int]$MaxApkMB = 200,
 	[int]$MaxAssetMB = 8,
 	[int]$MaxAudioMB = 12,
+	[int]$MaxApkMB = 70,
 	[int]$MaxImageDimension = 4096,
 	[switch]$RunBalance,
 	[int]$MaxBalanceSeconds = 900

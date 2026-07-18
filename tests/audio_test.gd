@@ -29,6 +29,21 @@ func _ready() -> void:
 			AudioManager.call("_play_layer_stems", "boss_phase_1")
 			check(int(AudioManager.call("stem_cache_size")) == cached and cached <= 12,
 					"repeated layers reuse stems within a fixed cache budget")
+		for realm in ["frost", "abyss"]:
+			var ambient_path := "res://assets/audio/%s_ambient.ogg" % realm
+			var boss_path := "res://assets/audio/%s_boss.ogg" % realm
+			check(ResourceLoader.exists(ambient_path) and ResourceLoader.exists(boss_path),
+					"%s OGG ambience and boss assets load" % realm)
+			AudioManager.call("set_area", realm)
+			AudioManager.set_combat_layer("battle")
+			check(str(AudioManager.get("_current_music")) == realm and AudioManager.music_is_audible(),
+					"%s battle routes to audible area score" % realm)
+			var ambient_stream: AudioStream = AudioManager.get("_music_streams").get(realm)
+			check(ambient_stream != null and ambient_stream.get("loop") == true,
+					"%s ambience loops seamlessly" % realm)
+			AudioManager.set_combat_layer("boss_phase_2")
+			check(str(AudioManager.get("_current_music")) == realm + "_boss",
+					"%s boss crossfades to its boss score" % realm)
 	var preview := AudioManager.preview_music()
 	check(preview != "battle" and AudioManager.current_combat_layer() == preview, "settings preview cycles soundtrack")
 	SaveSystem.data.settings.music = 0.0; AudioManager.set_music_volume(0.0)
