@@ -48,6 +48,9 @@ func _ready() -> void:
 		tube.tapped.connect(_on_tube_tapped)
 		grid.add_child(tube)
 		tubes.append(tube)
+	for i in tubes.size():
+		tubes[i].focus_neighbor_left = tubes[i].get_path_to(tubes[(i - 1 + tubes.size()) % tubes.size()])
+		tubes[i].focus_neighbor_right = tubes[i].get_path_to(tubes[(i + 1) % tubes.size()])
 
 	generate_board()
 

@@ -15,7 +15,8 @@ const DEFAULT_DATA := {
 	"tutorial_state": "new",
 	"tutorial_step": 0,
 	"tutorial_skipped": false,
-	"settings": {"music": 0.8, "sfx": 0.8, "vibration": true, "assist_mode": false},
+	"settings": {"music": 0.8, "sfx": 0.8, "vibration": true, "assist_mode": false,
+		"color_patterns": true, "reduced_effects": false},
 	"stats": {"runs_started": 0, "runs_won": 0, "battles_won": 0},
 	"active_run": {},
 	"legacy_run_compensated": false,
@@ -85,6 +86,8 @@ func migrate(source: Dictionary) -> Dictionary:
 	migrated["run_history"] = history
 	var settings: Dictionary = migrated.get("settings", {})
 	if not settings.has("assist_mode"): settings["assist_mode"] = false
+	if not settings.has("color_patterns"): settings["color_patterns"] = true
+	if not settings.has("reduced_effects"): settings["reduced_effects"] = false
 	migrated["settings"] = settings
 	migrated["version"] = SAVE_VERSION
 	return migrated

@@ -45,6 +45,15 @@ var tutorial_director: TutorialDirector
 var tutorial_overlay: Tutorial
 
 
+func _unhandled_key_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		if overlay != null and overlay.visible:
+			_hide_overlay()
+		else:
+			_show_pause()
+		get_viewport().set_input_as_handled()
+
+
 func _ready() -> void:
 	# Allow running this scene directly (F6 / screenshot tool) without a run.
 	if not RunState.active:
