@@ -48,9 +48,6 @@ func _ready() -> void:
 			"Adds one warning move. Rewards stay unchanged.")
 	assist_row.name = "AssistModeRow"
 	rows.add_child(assist_row)
-	var pattern_row := _make_toggle_row("COLOR PATTERNS", "color_patterns",
-			"Adds flame, leaf, wave and spiral marks to every potion layer.")
-	pattern_row.name = "ColorPatternRow"; rows.add_child(pattern_row)
 	var reduced_row := _make_toggle_row("REDUCED EFFECTS", "reduced_effects",
 			"Shorter flashes, no camera shake, and fewer particles.")
 	reduced_row.name = "ReducedEffectsRow"; rows.add_child(reduced_row)

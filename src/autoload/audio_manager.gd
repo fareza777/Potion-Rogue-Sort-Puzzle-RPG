@@ -1,13 +1,12 @@
 extends Node
 ## Autoload: AudioManager
-## Placeholder audio: every SFX and the music loops are synthesized at startup
-## (no asset files), so they can be swapped for real audio later by replacing
-## the streams in _build_sounds(). Manages Music/SFX buses, saved volume
-## settings and handheld vibration.
+## Layered area ambience plus synthesized responsive combat stems and SFX.
+## Manages Music/SFX buses, saved volume settings and handheld vibration.
 
 const SAMPLE_RATE := 22050
 const SFX_POOL_SIZE := 6
 const STEM_CACHE_LIMIT := 12
+const AMBIENT_GAIN_DB := 8.0
 
 var _sfx: Dictionary = {}
 var _music_streams: Dictionary = {}
@@ -40,7 +39,7 @@ func _ready() -> void:
 		_music_players.append(music_player)
 	for i in 2:
 		var stem := AudioStreamPlayer.new()
-		stem.bus = "Music"; stem.volume_db = -8.0 if i == 0 else -11.0
+		stem.bus = "Music"; stem.volume_db = -2.0 if i == 0 else -5.0
 		add_child(stem); _stem_players.append(stem)
 	set_music_volume(float(SaveSystem.setting("music")))
 	set_sfx_volume(float(SaveSystem.setting("sfx")))
@@ -66,11 +65,15 @@ func play_music(track: String) -> void:
 
 
 func set_combat_layer(layer: String) -> void:
-	if layer == _combat_layer and not _current_music.is_empty(): return
-	_combat_layer = layer
 	var is_boss := layer in ["boss_phase_1", "boss_phase_2", "boss_phase_3"]
 	var track := (_area_music + "_boss") if is_boss and _music_streams.has(_area_music + "_boss") else (
 			"boss" if is_boss else _area_music)
+	var active_player := _music_players[_active_music_player]
+	var stems_playing := _stem_players.size() == 2 \
+			and _stem_players[0].playing and _stem_players[1].playing
+	if layer == _combat_layer and _current_music == track and active_player.playing and stems_playing:
+		return
+	_combat_layer = layer
 	crossfade_music(track, 0.65)
 	_play_layer_stems(layer)
 
@@ -87,8 +90,13 @@ func stem_cache_size() -> int:
 	return _stem_cache.size()
 
 
+func ambient_gain_db() -> float:
+	return AMBIENT_GAIN_DB
+
+
 func music_is_audible() -> bool:
-	return float(SaveSystem.setting("music")) > 0.001 and not _current_music.is_empty()
+	return float(SaveSystem.setting("music")) > 0.001 and not _current_music.is_empty() \
+			and _music_players[_active_music_player].playing
 
 
 func preview_music() -> String:
@@ -109,11 +117,11 @@ func crossfade_music(track: String, duration := 0.8) -> void:
 	_active_music_player = 1 - _active_music_player
 	var incoming := _music_players[_active_music_player]
 	incoming.stream = stream
-	incoming.volume_db = -30.0
+	incoming.volume_db = -24.0
 	incoming.play()
 	_current_music = track
 	_music_tween = create_tween().set_parallel(true)
-	_music_tween.tween_property(incoming, "volume_db", 2.5, duration)
+	_music_tween.tween_property(incoming, "volume_db", AMBIENT_GAIN_DB, duration)
 	if previous.playing:
 		_music_tween.tween_property(previous, "volume_db", -36.0, duration)
 		_music_tween.chain().tween_callback(previous.stop)

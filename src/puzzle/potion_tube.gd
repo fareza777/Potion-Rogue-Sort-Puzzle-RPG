@@ -207,8 +207,6 @@ func _draw() -> void:
 					Color("d46cff"), 3.0, true)
 		if has_layer_effect(i, "volatile"):
 			draw_rect(liquid_rect.grow(-2), Color("ff9b42"), false, 3.0)
-		if bool(SaveSystem.setting("color_patterns")):
-			_draw_color_pattern(contents[i], liquid_rect, Color(1, 1, 1, 0.72))
 
 	# The painted frame supplies bronze, scratches and high-quality glass edges.
 	if _bottle_texture != null:
@@ -233,22 +231,3 @@ func _draw() -> void:
 		draw_string(ThemeDB.fallback_font, lock_c + Vector2(-5, 40), turns_label,
 				HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color.WHITE)
 	draw_set_transform(Vector2.ZERO)
-
-
-func _draw_color_pattern(color_id: String, rect: Rect2, ink: Color) -> void:
-	var center := rect.get_center()
-	match color_id:
-		"red":
-			draw_line(center + Vector2(-7, 5), center + Vector2(0, -7), ink, 2.2, true)
-			draw_line(center + Vector2(0, -7), center + Vector2(7, 5), ink, 2.2, true)
-		"green":
-			draw_arc(center, 7.0, 0.2, PI - 0.2, 12, ink, 2.2, true)
-			draw_line(center + Vector2(0, 0), center + Vector2(0, 8), ink, 2.2, true)
-		"blue":
-			draw_line(center + Vector2(-8, 2), center + Vector2(-3, -3), ink, 2.2, true)
-			draw_line(center + Vector2(-3, -3), center + Vector2(2, 2), ink, 2.2, true)
-			draw_line(center + Vector2(2, 2), center + Vector2(7, -3), ink, 2.2, true)
-		"purple":
-			draw_arc(center, 7.0, 0, TAU * 0.78, 16, ink, 2.2, true)
-		"wild":
-			draw_circle(center, 4.0, ink, false, 2.0, true)

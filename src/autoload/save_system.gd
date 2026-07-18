@@ -5,7 +5,7 @@ extends Node
 ## so a bad save can never crash the game.
 
 const SAVE_PATH := "user://save.json"
-const SAVE_VERSION := 5
+const SAVE_VERSION := 6
 
 const DEFAULT_DATA := {
 	"version": SAVE_VERSION,
@@ -16,7 +16,7 @@ const DEFAULT_DATA := {
 	"tutorial_step": 0,
 	"tutorial_skipped": false,
 	"settings": {"music": 0.8, "sfx": 0.8, "vibration": true, "assist_mode": false,
-		"color_patterns": true, "reduced_effects": false},
+		"color_patterns": false, "reduced_effects": false},
 	"stats": {"runs_started": 0, "runs_won": 0, "battles_won": 0},
 	"active_run": {},
 	"legacy_run_compensated": false,
@@ -81,12 +81,16 @@ func migrate(source: Dictionary) -> Dictionary:
 		migrated["mastery"] = migrated.get("mastery", {})
 		migrated["daily"] = migrated.get("daily", {"last_claim":"", "best_depth":0})
 		migrated["run_history"] = migrated.get("run_history", [])
+	if int(migrated.get("version", 1)) < 6:
+		var migrated_settings: Dictionary = migrated.get("settings", {})
+		migrated_settings["color_patterns"] = false
+		migrated["settings"] = migrated_settings
 	var history: Array = migrated.get("run_history", [])
 	if history.size() > 20: history.resize(20)
 	migrated["run_history"] = history
 	var settings: Dictionary = migrated.get("settings", {})
 	if not settings.has("assist_mode"): settings["assist_mode"] = false
-	if not settings.has("color_patterns"): settings["color_patterns"] = true
+	if not settings.has("color_patterns"): settings["color_patterns"] = false
 	if not settings.has("reduced_effects"): settings["reduced_effects"] = false
 	migrated["settings"] = settings
 	migrated["version"] = SAVE_VERSION
