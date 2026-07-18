@@ -16,8 +16,8 @@ static func generate(seed: int, requested_band: String, color_count := 4,
 	for attempt in MAX_ATTEMPTS:
 		var state := _template_state(rng, color_count, capacity, tube_count) \
 				if attempt == 0 else _shuffled_state(rng, color_count, capacity, tube_count)
-		var analysis := BoardSolver.analyze(state)
-		if not _is_playable(state, analysis):
+		var analysis := BoardSolver.analyze(state, 50000, capacity)
+		if not _is_playable(state, analysis, capacity):
 			continue
 		var distance := absi(int(analysis.estimated_moves) - target)
 		if distance < best_distance:
@@ -33,9 +33,9 @@ static func generate(seed: int, requested_band: String, color_count := 4,
 			"estimated_moves": -1, "visited_states": 0}, "attempt": -1}
 
 
-static func remix(state: Array, seed: int, requested_band := "standard") -> Dictionary:
+static func remix(state: Array, seed: int, requested_band := "standard",
+		capacity := BoardSolver.DEFAULT_CAPACITY) -> Dictionary:
 	var colors := _colors_in(state)
-	var capacity := _capacity_of(state)
 	var tube_count := state.size()
 	var unique_colors: Array[String] = []
 	for color in colors:
@@ -46,7 +46,7 @@ static func remix(state: Array, seed: int, requested_band := "standard") -> Dict
 				tube_count)
 		if bool(generated.analysis.solvable):
 			generated.state = _rename_colors(generated.state, unique_colors)
-			generated.analysis = BoardSolver.analyze(generated.state)
+			generated.analysis = BoardSolver.analyze(generated.state, 50000, capacity)
 			return generated
 
 	var rng := RandomNumberGenerator.new()
@@ -56,8 +56,8 @@ static func remix(state: Array, seed: int, requested_band := "standard") -> Dict
 	var best_distance := 1_000_000
 	for attempt in MAX_ATTEMPTS:
 		var candidate := _shuffle_units(rng, colors, capacity, tube_count)
-		var analysis := BoardSolver.analyze(candidate)
-		if not _is_playable(candidate, analysis):
+		var analysis := BoardSolver.analyze(candidate, 50000, capacity)
+		if not _is_playable(candidate, analysis, capacity):
 			continue
 		var distance := absi(int(analysis.estimated_moves) - target)
 		if distance < best_distance:
@@ -65,7 +65,12 @@ static func remix(state: Array, seed: int, requested_band := "standard") -> Dict
 			best_distance = distance
 		if BoardDifficulty.band(int(analysis.estimated_moves)) == requested_band:
 			return best
-	return best
+	if not best.is_empty():
+		return best
+	var fallback := _copy_state(state)
+	return {"state": fallback,
+			"analysis": BoardSolver.analyze(fallback, 50000, capacity),
+			"attempt": -1}
 
 
 static func _template_state(rng: RandomNumberGenerator, color_count: int,
@@ -156,21 +161,13 @@ static func _colors_in(state: Array) -> Array[String]:
 	return result
 
 
-static func _capacity_of(state: Array) -> int:
-	var capacity := 1
-	for tube in state:
-		if typeof(tube) == TYPE_ARRAY:
-			capacity = maxi(capacity, tube.size())
-	return capacity
-
-
-static func _is_playable(state: Array, analysis: Dictionary) -> bool:
+static func _is_playable(state: Array, analysis: Dictionary, capacity: int) -> bool:
 	return bool(analysis.get("solvable", false)) \
-			and int(analysis.get("estimated_moves", -1)) > 0 and not _has_complete_tube(state)
+			and int(analysis.get("estimated_moves", -1)) > 0 \
+			and not _has_complete_tube(state, capacity)
 
 
-static func _has_complete_tube(state: Array) -> bool:
-	var capacity := _capacity_of(state)
+static func _has_complete_tube(state: Array, capacity: int) -> bool:
 	for tube in state:
 		if tube.size() != capacity:
 			continue
@@ -183,6 +180,13 @@ static func _has_complete_tube(state: Array) -> bool:
 		if complete:
 			return true
 	return false
+
+
+static func _copy_state(state: Array) -> Array:
+	var copy: Array = []
+	for raw_tube in state:
+		copy.append(raw_tube.duplicate() if typeof(raw_tube) == TYPE_ARRAY else [])
+	return copy
 
 
 static func _target_moves(requested_band: String) -> int:

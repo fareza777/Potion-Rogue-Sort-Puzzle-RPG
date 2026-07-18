@@ -225,6 +225,14 @@ func generate_board() -> void:
 	_apply_factory_result(BoardFactory.generate(int(randi()), "standard", COLORS.size(),
 			PotionTube.CAPACITY, tubes.size()))
 
+
+func remix_board(seed := int(randi()), band := "standard") -> void:
+	_undo_stack.clear()
+	_deselect()
+	_apply_factory_result(BoardFactory.remix(export_state(), seed, band,
+			PotionTube.CAPACITY))
+
+
 func _apply_factory_result(result: Dictionary) -> void:
 	var layouts: Array = result.get("state", [])
 	for index in tubes.size():

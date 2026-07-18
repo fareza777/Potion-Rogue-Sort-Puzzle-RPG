@@ -1047,7 +1047,7 @@ func _on_undo_pressed() -> void:
 func _on_restart_pressed() -> void:
 	if battle.battle_over:
 		return
-	board.generate_board()
+	board.remix_board()
 	battle.on_move()
 	_set_message("Potions remixed — 1 move spent")
 	_checkpoint_encounter()
