@@ -9,8 +9,7 @@ func _ready() -> void:
 	var authored := 0
 	for enemy_id in enemies:
 		var signature_data: Dictionary = enemies[enemy_id].get("signature", {})
-		if str(signature_data.get("id", "")) in ["mark", "seal", "hunt", "corrupt",
-				"siphon", "split", "shift", "ward"]:
+		if str(signature_data.get("id", "")) in EnemySignatureController.VALID_IDS:
 			authored += 1
 	check(authored == enemies.size(), "every enemy owns a valid puzzle signature")
 	var path := "res://src/battle/enemy_signature_controller.gd"

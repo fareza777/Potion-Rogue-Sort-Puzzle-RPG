@@ -1,6 +1,8 @@
 extends Control
 ## Full-height illustrated dungeon route with persistent run status and CTA.
 
+const AREA_GRAMMAR := preload("res://src/run/area_grammar.gd")
+
 var route_control: DungeonRoute
 var tutorial_director: TutorialDirector
 
@@ -78,7 +80,9 @@ func _make_header() -> PanelContainer:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	copy.add_child(title)
 	var floor := int(RunState.current_node().get("floor", 0)) + 1
-	var subtitle := UiKit.label("DEPTH %s OF VII  •  CHOOSE YOUR FATE" % _roman(floor), 12, UiKit.COLOR_TEXT_DIM)
+	var run_length := int(AREA_GRAMMAR.for_area(RunState.area_id).get("run_length", 7))
+	var subtitle := UiKit.label("DEPTH %s OF %s  •  CHOOSE YOUR FATE" % [
+			_roman(floor), _roman(run_length)], 12, UiKit.COLOR_TEXT_DIM)
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	copy.add_child(subtitle)
 	var back := UiKit.button("BACK TO HALL", Vector2(164, 48), UiKit.COLOR_GOLD)
@@ -105,8 +109,15 @@ func _make_route_legend() -> PanelContainer:
 
 
 func _roman(value: int) -> String:
-	var numerals := ["I", "II", "III", "IV", "V", "VI", "VII"]
-	return numerals[clampi(value - 1, 0, numerals.size() - 1)]
+	var remaining := maxi(value, 1)
+	var result := ""
+	var values := [10, 9, 5, 4, 1]
+	var numerals := ["X", "IX", "V", "IV", "I"]
+	for index in values.size():
+		while remaining >= values[index]:
+			result += numerals[index]
+			remaining -= values[index]
+	return result
 
 
 func _make_status_panel() -> PanelContainer:

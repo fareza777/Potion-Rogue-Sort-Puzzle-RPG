@@ -39,6 +39,10 @@ func can_rematch(area_id: String) -> bool:
 
 
 func ascension_unlocked() -> bool:
+	# Preview/prototype players who already earned Ascension keep it when the
+	# campaign grows from three realms to five.
+	if SaveSystem.max_ascension() > 0:
+		return true
 	for area_id in GameState.area_ids():
 		if area_id not in SaveSystem.completed_areas():
 			return false

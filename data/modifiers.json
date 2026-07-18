@@ -6,5 +6,9 @@
 	"wild_essence": {"name": "Wild Essence", "tier": "standard"},
 	"chain_lock": {"name": "Chain Lock", "tier": "advanced"},
 	"corruption": {"name": "Corruption", "tier": "advanced"},
-	"unstable_flask": {"name": "Unstable Flask", "tier": "advanced"}
+	"unstable_flask": {"name": "Unstable Flask", "tier": "advanced"},
+	"permafrost": {"name":"Permafrost","tier":"standard","description":"One disclosed flask begins chilled and thaws after a completed potion."},
+	"brittle_glass": {"name":"Brittle Glass","tier":"standard","description":"Invalid pours briefly add one point of visible enemy pressure; no flask is destroyed."},
+	"rising_tide": {"name":"Rising Tide","tier":"advanced","description":"In three moves, disclosed eligible flask tops rotate only when the solver accepts the result.","countdown":3},
+	"abyssal_ink": {"name":"Abyssal Ink","tier":"standard","description":"One disclosed top layer is dimmed while selection outlines and color labels remain visible."}
 }

@@ -10,8 +10,9 @@ func _ready() -> void:
 	check(GameState.has_method("area_ids"), "game state exposes ordered area ids")
 	if GameState.has_method("area_ids") and GameState.get("areas") is Dictionary:
 		var ids: Array[String] = GameState.call("area_ids")
-		check(ids == ["shadow_crypt", "verdant_catacombs", "astral_foundry"],
-				"campaign has three ordered expeditions")
+		check(ids == ["shadow_crypt", "verdant_catacombs", "astral_foundry",
+				"frostbound_reliquary", "abyssal_apothecary"],
+				"campaign has five ordered expeditions")
 		var backgrounds := {}
 		var previous_threat := 0.0
 		for id in ids:

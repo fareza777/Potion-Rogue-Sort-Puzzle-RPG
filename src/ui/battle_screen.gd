@@ -122,6 +122,7 @@ func _capture_encounter() -> Dictionary:
 		"objective": objective_controller.snapshot(),
 		"intent": intent_controller.snapshot(),
 		"signature": signature_controller.snapshot(),
+		"modifier": modifier_controller.snapshot(),
 		"combo": combo_resolver.snapshot(),
 		"boss_phase": boss_phase_controller.snapshot() if boss_phase_controller != null else {},
 	}
@@ -138,12 +139,14 @@ func _restore_encounter(snapshot: Dictionary) -> bool:
 	objective_controller.restore(snapshot.get("objective", {}))
 	intent_controller.restore(snapshot.get("intent", {}))
 	signature_controller.restore(snapshot.get("signature", {}))
+	modifier_controller.restore(snapshot.get("modifier", {}), board)
 	combo_resolver.restore(snapshot.get("combo", {}))
 	if boss_phase_controller != null:
 		var boss_data: Dictionary = snapshot.get("boss_phase", {})
-		boss_phase_controller.configure(battle.enemy_id, battle.enemy_max_hp,
-				int(boss_data.get("phase_index", -1)),
-				boss_data.get("applied_phase_actions", []))
+		if not boss_phase_controller.restore(boss_data):
+			boss_phase_controller.configure(battle.enemy_id, battle.enemy_max_hp,
+					int(boss_data.get("phase_index", -1)),
+					boss_data.get("applied_phase_actions", []))
 	return true
 
 
@@ -200,6 +203,12 @@ func _setup_tactical_controllers(enemy_id: String) -> void:
 	for id in contract.get("modifier_ids", []): modifier_ids.append(str(id))
 	modifier_controller.configure(modifier_ids, RunState.run_seed + 71, board)
 	modifier_controller.curse_cleansed.connect(objective_controller.on_curse_cleansed)
+	board.invalid_move.connect(func() -> void:
+		var pressure := modifier_controller.on_invalid_pour()
+		if pressure > 0:
+			battle.moves_until_attack = maxi(battle.moves_until_attack - pressure, 1)
+			_set_message("BRITTLE GLASS  •  ENEMY PRESSURE +1")
+			_refresh())
 	combo_resolver = ComboResolver.new()
 	combo_resolver.combo_resolved.connect(_on_depth_combo)
 	skill_controller = SkillController.new()
@@ -781,9 +790,12 @@ func _on_boss_phase_changed(index: int, config: Dictionary) -> void:
 	if str(config.get("modifier", "")) != "":
 		var ids: Array[String] = modifier_controller.active_ids.duplicate()
 		ids.append(str(config.modifier)); modifier_controller.configure(ids, RunState.run_seed + index, board)
+	if bool(config.get("release_chilled", false)):
+		modifier_controller.release_permafrost()
 	var board_action := boss_phase_controller.pending_board_action()
 	if not board_action.is_empty():
-		_apply_boss_board_action(board_action)
+		if not _apply_boss_board_action(board_action):
+			_set_message("%s FIZZLES  •  BOARD REMAINS SOLVABLE" % board_action.to_upper())
 	var delay := 0.35 if bool(ProjectSettings.get_setting("potion_rogue/reduced_effects", false)) else 1.2
 	get_tree().create_timer(delay).timeout.connect(func():
 		if not battle.battle_over: board.enabled = true)
@@ -810,6 +822,32 @@ func _apply_boss_board_action(action: String) -> bool:
 						continue
 					if board.try_board_commands([
 							{"type": "swap_top", "tube": first, "other": second}]):
+						return true
+		"frost_bind":
+			for index in board.tubes.size():
+				if not board.tubes[index].contents.is_empty() and not board.tubes[index].is_locked():
+					if board.try_board_commands([{"type":"lock_tube", "tube":index,
+							"moves":1}]):
+						return true
+		"tidal_rotate":
+			var targets: Array = []
+			for index in board.tubes.size():
+				if not board.tubes[index].contents.is_empty() and not board.tubes[index].is_locked():
+					targets.append(index)
+					if targets.size() == 3:
+						break
+			if targets.size() >= 2:
+				var commands: Array[Dictionary] = [{"type":"rotate_top", "tubes":targets}]
+				return board.try_board_commands(commands)
+		"mutate_pair":
+			for first in board.tubes.size():
+				if board.tubes[first].contents.is_empty():
+					continue
+				for second in range(first + 1, board.tubes.size()):
+					if board.tubes[second].contents.is_empty():
+						continue
+					if board.try_board_commands([{"type":"swap_top", "tube":first,
+							"other":second}]):
 						return true
 	return false
 

@@ -93,7 +93,10 @@ static func enemy(enemy_id: String) -> Dictionary:
 	result["motion_profile"] = str(data.get("motion_profile",
 			result.get("motion_profile", "elastic")))
 	if data.has("sprite"):
-		result["sprite"] = str(data.sprite)
+		var authored_sprite := str(data.sprite)
+		result["authored_sprite"] = authored_sprite
+		result["sprite"] = authored_sprite if ResourceLoader.exists(authored_sprite) \
+				else _fallback_enemy_sprite(data)
 		result.erase("atlas")
 		result.erase("atlas_cell")
 	elif data.has("atlas"):
@@ -104,8 +107,32 @@ static func enemy(enemy_id: String) -> Dictionary:
 		var generated_scale := 1.12
 		if profile == "caster": generated_scale = 1.18
 		elif profile == "heavy": generated_scale = 1.08
-		result["scale"] = float(data.get("sprite_scale", generated_scale))
+		result["scale"] = float(data.get("display_scale",
+				data.get("sprite_scale", generated_scale)))
+	if data.has("baseline_offset"):
+		result["baseline_offset"] = _vector_from_data(data.baseline_offset, Vector2.ZERO)
+	if data.has("impact_anchor"):
+		result["hit_anchor"] = _vector_from_data(data.impact_anchor,
+				result.get("hit_anchor", ENEMY_DEFAULT.hit_anchor))
+	if data.has("projectile_anchor"):
+		result["projectile_anchor"] = _vector_from_data(data.projectile_anchor,
+				result.get("projectile_anchor", ENEMY_DEFAULT.projectile_anchor))
 	return result
+
+
+static func _vector_from_data(value: Variant, fallback: Vector2) -> Vector2:
+	if typeof(value) == TYPE_ARRAY and value.size() >= 2:
+		return Vector2(float(value[0]), float(value[1]))
+	return fallback
+
+
+static func _fallback_enemy_sprite(data: Dictionary) -> String:
+	match str(data.get("shape", "slime")):
+		"skeleton": return str(ENEMIES.skeleton.sprite)
+		"beast": return str(ENEMIES.poison_beast.sprite)
+		"mage": return str(ENEMIES.dark_mage.sprite)
+		"golem", "fire_golem": return str(ENEMIES.stone_golem.sprite)
+		_: return str(ENEMIES.slime.sprite)
 
 
 static func enemy_texture(enemy_id: String) -> Texture2D:
@@ -156,8 +183,9 @@ static func missing_runtime_assets() -> PackedStringArray:
 			if not path.is_empty() and not ResourceLoader.exists(path):
 				result.append(path)
 	for enemy_id in GameState.enemies:
+		var config := enemy(str(enemy_id))
 		for key in ["sprite", "atlas"]:
-			var enemy_path := str(GameState.enemies[enemy_id].get(key, ""))
+			var enemy_path := str(config.get(key, ""))
 			if not enemy_path.is_empty() and not ResourceLoader.exists(enemy_path):
 				result.append(enemy_path)
 	for background_id in BACKGROUNDS:

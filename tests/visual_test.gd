@@ -29,6 +29,8 @@ func _ready() -> void:
 					"generated enemy texture is not sliced: " + str(enemy_id))
 		check(str(enemy_style.get("motion_profile", "")) in [
 			"elastic", "brittle", "pounce", "heavy", "caster", "inferno",
+			"skitter", "duelist", "predator", "ritual", "spectral",
+			"floating", "leviathan",
 		], "enemy motion profile: " + str(enemy_id))
 	for color in GameState.potions:
 		check(not VisualRegistry.potion(str(color)).is_empty(),

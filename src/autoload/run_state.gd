@@ -412,7 +412,8 @@ func complete_battle(hp_left: int, crystals_reward: int) -> Dictionary:
 		SaveSystem.bump_stat("runs_won")
 		MetaProgression.new().record_run({"seed":run_seed, "area":area_id,
 				"mode":run_mode, "ascension":run_ascension,
-				"result":"victory", "depth":7, "crystals":run_crystals})
+				"result":"victory", "depth":int(current_area().get("run_length", 7)),
+				"crystals":run_crystals})
 		if run_mode == "normal" and MetaProgression.new().ascension_unlocked():
 			MetaProgression.new().record_ascension_clear(run_ascension)
 		if run_mode == "daily": MetaProgression.new().complete_daily(Time.get_date_string_from_system())

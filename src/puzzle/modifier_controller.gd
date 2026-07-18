@@ -5,6 +5,7 @@ extends RefCounted
 signal curse_cleansed(count: int)
 signal volatile_expired(tube_index: int)
 signal board_changed
+signal modifier_fizzled(modifier_id: String)
 
 var active_ids: Array[String] = []
 
@@ -12,6 +13,9 @@ var _board: PuzzleBoard
 var _rng := RandomNumberGenerator.new()
 var _frozen_index := -1
 var _volatile: Dictionary = {}
+var _tide_countdown := 0
+var _brittle_pressure := 0
+var _ink_index := -1
 
 
 func configure(ids: Array[String], seed: int, board: PuzzleBoard) -> bool:
@@ -22,6 +26,9 @@ func configure(ids: Array[String], seed: int, board: PuzzleBoard) -> bool:
 	active_ids.clear()
 	_frozen_index = -1
 	_volatile.clear()
+	_tide_countdown = 0
+	_brittle_pressure = 0
+	_ink_index = -1
 	for id in ids:
 		if GameState.modifiers.has(id) and not id in active_ids:
 			if id == "chain_lock" and "frozen_tube" in active_ids:
@@ -63,6 +70,11 @@ func after_move() -> void:
 			for layer in tube.contents.size():
 				tube.remove_layer_effect(layer, "volatile")
 		volatile_expired.emit(index)
+	if "rising_tide" in active_ids:
+		_tide_countdown -= 1
+		if _tide_countdown <= 0:
+			_apply_tide()
+			_tide_countdown = maxi(int(GameState.modifiers.rising_tide.get("countdown", 3)), 1)
 
 
 func after_enemy_action() -> void:
@@ -88,18 +100,83 @@ func on_potion_completed(_color: String) -> void:
 		_frozen_index = -1
 
 
+func release_permafrost() -> void:
+	if _board != null and _frozen_index >= 0 and _frozen_index < _board.tubes.size():
+		_board.apply_board_command({"type": "unlock_tube", "tube": _frozen_index})
+	_frozen_index = -1
+
+
+func on_invalid_pour() -> int:
+	if "brittle_glass" not in active_ids:
+		return 0
+	_brittle_pressure += 1
+	return 1
+
+
+func brittle_pressure() -> int:
+	return _brittle_pressure
+
+
+func snapshot() -> Dictionary:
+	return {
+		"version": 1,
+		"active_ids": active_ids.duplicate(),
+		"rng_state": _rng.state,
+		"frozen_index": _frozen_index,
+		"volatile": _volatile.duplicate(true),
+		"tide_countdown": _tide_countdown,
+		"brittle_pressure": _brittle_pressure,
+		"ink_index": _ink_index,
+		"layer_effects": _layer_effect_snapshot(),
+	}
+
+
+func restore(data: Dictionary, board: PuzzleBoard) -> bool:
+	if int(data.get("version", 0)) != 1 or board == null:
+		return false
+	_board = board
+	if not _board.curse_cleansed.is_connected(_on_board_curse_cleansed):
+		_board.curse_cleansed.connect(_on_board_curse_cleansed)
+	active_ids.clear()
+	for id in data.get("active_ids", []):
+		if GameState.modifiers.has(str(id)):
+			active_ids.append(str(id))
+	_rng.state = int(data.get("rng_state", _rng.state))
+	_frozen_index = int(data.get("frozen_index", -1))
+	_volatile = (data.get("volatile", {}) as Dictionary).duplicate(true)
+	_tide_countdown = maxi(int(data.get("tide_countdown", 0)), 0)
+	_brittle_pressure = maxi(int(data.get("brittle_pressure", 0)), 0)
+	_ink_index = int(data.get("ink_index", -1))
+	var saved_effects: Array = data.get("layer_effects", [])
+	for index in mini(saved_effects.size(), _board.tubes.size()):
+		_board.tubes[index].layer_effects = (saved_effects[index] as Array).duplicate(true)
+		_board.tubes[index].queue_redraw()
+	return true
+
+
+func _layer_effect_snapshot() -> Array:
+	var result: Array = []
+	if _board == null:
+		return result
+	for tube in _board.tubes:
+		result.append(tube.layer_effects.duplicate(true))
+	return result
+
+
 func _on_board_curse_cleansed(count: int) -> void:
 	curse_cleansed.emit(count)
 
 
 func _apply_initial(id: String) -> void:
 	match id:
-		"frozen_tube":
+		"frozen_tube", "permafrost":
 			var index := _pick_nonempty()
 			if index >= 0:
 				_frozen_index = index
-				_board.apply_board_command({"type": "lock_tube", "tube": index,
-						"moves": 999})
+				if not _board.try_board_commands([{"type": "lock_tube", "tube": index,
+						"moves": 999}]):
+					_frozen_index = -1
+					modifier_fizzled.emit(id)
 		"cursed_layer":
 			_mark_random_top("cursed")
 		"volatile_liquid":
@@ -131,6 +208,28 @@ func _apply_initial(id: String) -> void:
 				var index := candidates[_rng.randi_range(0, candidates.size() - 1)]
 				_board.apply_board_command({"type": "set_capacity", "tube": index,
 						"capacity": 3})
+		"rising_tide":
+			_tide_countdown = maxi(int(GameState.modifiers.rising_tide.get("countdown", 3)), 1)
+		"abyssal_ink":
+			_ink_index = _mark_random_top("hidden")
+		"brittle_glass":
+			_brittle_pressure = 0
+
+
+func _apply_tide() -> void:
+	if _board == null:
+		return
+	var candidates := _nonempty_indices()
+	if candidates.size() < 2:
+		modifier_fizzled.emit("rising_tide")
+		return
+	while candidates.size() > 3:
+		candidates.remove_at(_rng.randi_range(0, candidates.size() - 1))
+	var commands: Array[Dictionary] = [{"type":"rotate_top", "tubes":candidates}]
+	if not _board.try_board_commands(commands):
+		modifier_fizzled.emit("rising_tide")
+	else:
+		board_changed.emit()
 
 
 func _mark_random_top(effect: String) -> int:

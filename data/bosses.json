@@ -22,5 +22,21 @@
 			{"id":"gravity_surge","threshold":0.66,"title":"GRAVITY SURGE","modifier":"chain_lock","board_action":"gravity_shift","description":"Runic gravity binds the outer flasks."},
 			{"id":"supernova_core","threshold":0.32,"title":"SUPERNOVA CORE","attack_interval_delta":-1,"ultimate_window":true,"description":"The forge collapses inward. Finish the core!"}
 		]
+	},
+	"winter_lich": {
+		"name": "Winter Lich",
+		"phases": [
+			{"id":"frozen_regalia","threshold":1.0,"title":"FROZEN REGALIA","armor":22,"description":"Ancient regalia hardens beneath a clear frost telegraph."},
+			{"id":"shattered_choir","threshold":0.68,"title":"SHATTERED CHOIR","modifier":"permafrost","board_action":"frost_bind","description":"Permafrost binds one disclosed flask after the transition."},
+			{"id":"absolute_zero","threshold":0.34,"title":"ABSOLUTE ZERO","attack_interval_delta":-1,"ultimate_window":true,"release_chilled":true,"description":"The oldest ice breaks, opening one final comeback line."}
+		]
+	},
+	"leviathan_apothecary": {
+		"name": "Leviathan Apothecary",
+		"phases": [
+			{"id":"pressure_carapace","threshold":1.0,"title":"PRESSURE CARAPACE","armor":24,"description":"A brass shell rises with a visible poison intent."},
+			{"id":"blackwater_surge","threshold":0.66,"title":"BLACKWATER SURGE","modifier":"rising_tide","board_action":"tidal_rotate","description":"Blackwater rotates disclosed eligible flasks."},
+			{"id":"abyssal_distillation","threshold":0.32,"title":"ABYSSAL DISTILLATION","attack_interval_delta":-1,"ultimate_window":true,"board_action":"mutate_pair","description":"A final transposition proceeds only when the solver accepts it."}
+		]
 	}
 }

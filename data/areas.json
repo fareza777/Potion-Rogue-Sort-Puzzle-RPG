@@ -40,5 +40,43 @@
 			"tier_3": ["dark_mage", "void_acolyte", "prism_sentinel", "flame_wraith", "magma_beetle"],
 			"elite": ["prism_sentinel", "flame_wraith", "magma_beetle"]
 		}
+	},
+	"frostbound_reliquary": {
+		"id": "frostbound_reliquary", "order": 3, "name": "Frostbound Reliquary",
+		"subtitle": "Frozen vows guard the last reliquary", "unlock_after": "astral_foundry",
+		"boss": "winter_lich", "background": "res://assets/art/backgrounds/frostbound_reliquary_battle.png",
+		"music": "frost", "accent": "77d9f5", "particle_preset": "frost",
+		"difficulty": "RELIQUARY", "threat_multiplier": 1.35, "first_clear_reward": 100,
+		"run_length": 8, "boss_depth": 8, "miniboss_depths": [4],
+		"landmarks": ["Frozen Nave", "Shattered Choir", "Reliquary Bridge", "Lich Sanctum"],
+		"guaranteed_kinds": {"4": "miniboss", "7": "recovery"},
+		"secret_branch_chance": 0.0,
+		"area_modifiers": ["permafrost", "brittle_glass"],
+		"enemy_pools": {
+			"intro": ["frost_mite", "rime_squire"],
+			"tier_1": ["frost_mite", "rime_squire"],
+			"tier_2": ["icefang_wolf", "hoarfrost_witch"],
+			"tier_3": ["crystal_yeti"],
+			"elite": ["reliquary_seraph"]
+		}
+	},
+	"abyssal_apothecary": {
+		"id": "abyssal_apothecary", "order": 4, "name": "Abyssal Apothecary",
+		"subtitle": "Blackwater stirs beneath the drowned laboratory", "unlock_after": "frostbound_reliquary",
+		"boss": "leviathan_apothecary", "background": "res://assets/art/backgrounds/abyssal_apothecary_battle.png",
+		"music": "abyss", "accent": "43d6c5", "particle_preset": "bubbles",
+		"difficulty": "ABYSSAL", "threat_multiplier": 1.48, "first_clear_reward": 130,
+		"run_length": 9, "boss_depth": 9, "miniboss_depths": [4, 6],
+		"landmarks": ["Flooded Stacks", "Pressure Gallery", "Blackwater Vats", "Leviathan Crucible"],
+		"guaranteed_kinds": {"4": "miniboss", "5": "event", "6": "miniboss"},
+		"secret_branch_chance": 0.25,
+		"area_modifiers": ["rising_tide", "abyssal_ink"],
+		"enemy_pools": {
+			"intro": ["ink_slime", "drowned_acolyte"],
+			"tier_1": ["ink_slime", "drowned_acolyte"],
+			"tier_2": ["brine_stalker", "abyssal_crab"],
+			"tier_3": ["lantern_horror", "plague_alchemist"],
+			"elite": ["deep_oracle"]
+		}
 	}
 }

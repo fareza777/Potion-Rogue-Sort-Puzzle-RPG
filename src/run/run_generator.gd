@@ -1,7 +1,7 @@
 class_name RunGenerator
 extends RefCounted
 
-const FLOOR_COUNT := 7
+const AREA_GRAMMAR := preload("res://src/run/area_grammar.gd")
 const INTRO_MODIFIERS := ["hidden_layer", "frozen_tube"]
 const ADVANCED_MODIFIERS := ["cursed_layer", "volatile_liquid", "wild_essence", "chain_lock", "corruption", "unstable_flask"]
 var _ascension := 0
@@ -9,10 +9,11 @@ var _ascension := 0
 
 func generate(seed: int, area_id := "shadow_crypt", ascension := 0) -> Dictionary:
 	_ascension = clampi(ascension, 0, 10)
-	var area := GameState.area(area_id)
+	var area: Dictionary = AREA_GRAMMAR.for_area(area_id)
 	if area.is_empty():
 		area_id = "shadow_crypt"
-		area = GameState.area(area_id)
+		area = AREA_GRAMMAR.for_area(area_id)
+	var boss_floor := int(area.get("boss_depth", area.get("run_length", 7))) - 1
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
 	var director := RunDirector.new()
@@ -21,27 +22,46 @@ func generate(seed: int, area_id := "shadow_crypt", ascension := 0) -> Dictionar
 	var expanded_floors: Array[int] = []
 	var extra_count := rng.randi_range(0, 3)
 	while expanded_floors.size() < extra_count:
-		var candidate := rng.randi_range(1, 5)
+		var candidate := rng.randi_range(1, boss_floor - 1)
 		if candidate not in expanded_floors:
 			expanded_floors.append(candidate)
-	for floor in range(1, 6):
+	var guaranteed: Dictionary = area.get("guaranteed_kinds", {})
+	var miniboss_depths: Array = area.get("miniboss_depths", [])
+	for floor in range(1, boss_floor):
 		var lanes := _lanes_for_floor(rng, floor in expanded_floors)
-		var noncombat_slot := rng.randi_range(0, lanes.size() - 1) if floor in [2, 4] else -1
+		var depth := floor + 1
+		var authored_kind := str(guaranteed.get(str(depth), ""))
+		var is_miniboss := depth in miniboss_depths or authored_kind == "miniboss"
+		var noncombat_slot := rng.randi_range(0, lanes.size() - 1) \
+				if (floor in [2, 4] or authored_kind == "recovery") and not is_miniboss else -1
+		var secret_slot := -1
+		if authored_kind.is_empty() and float(area.get("secret_branch_chance", 0.0)) > 0.0 \
+				and rng.randf() < float(area.secret_branch_chance):
+			secret_slot = rng.randi_range(0, lanes.size() - 1)
 		for slot in lanes.size():
 			var lane: int = int(lanes[slot])
 			var context := {"hp_ratio": 1.0, "power": float(_ascension)}
-			var kind := director.assign_kind(floor, slot, noncombat_slot, context, rng)
+			var kind := ("elite" if is_miniboss else "event" if authored_kind == "event" else
+					"campfire" if authored_kind == "recovery" and slot == noncombat_slot else
+					"treasure" if slot == secret_slot else
+					director.assign_kind(floor, slot, noncombat_slot, context, rng))
 			var enemy := _enemy_for_floor(floor, kind, rng, area)
 			var created := _node("f%d_l%d" % [floor, lane], floor, lane, kind, enemy, area)
-			_decorate_contract(created, rng)
+			if is_miniboss:
+				created["miniboss"] = true
+			if slot == secret_slot:
+				created["secret"] = true
+				created["risk"] = 4
+			_decorate_contract(created, rng, area)
 			_decorate_event(created, rng)
 			nodes.append(created)
-	var boss := _node("f6_boss", 6, 1, "boss", str(area.get("boss", "fire_golem")), area)
+	var boss_id := "f%d_boss" % boss_floor
+	var boss := _node(boss_id, boss_floor, 1, "boss", str(area.get("boss", "fire_golem")), area)
 	boss.contract.objective_id = "defeat"
 	nodes.append(boss)
-	_link_floors(nodes)
+	_link_floors(nodes, boss_floor + 1)
 	return {"seed": seed, "area_id": area_id, "nodes": nodes, "start": "f0_l1",
-			"boss": "f6_boss", "director_version": RunDirector.VERSION,
+			"boss": boss_id, "director_version": RunDirector.VERSION,
 			"ascension": _ascension}
 
 
@@ -79,12 +99,16 @@ func _node(id: String, floor: int, lane: int, kind: String, enemy: String,
 			"modifier_ids": [], "threat": budget}}
 
 
-func _decorate_contract(node: Dictionary, rng: RandomNumberGenerator) -> void:
+func _decorate_contract(node: Dictionary, rng: RandomNumberGenerator,
+		area: Dictionary) -> void:
 	var kind := str(node.kind)
 	var floor := int(node.floor)
 	if kind not in ["battle", "elite"]: return
 	var pool: Array = INTRO_MODIFIERS.duplicate() if floor <= 2 else ADVANCED_MODIFIERS.duplicate()
 	if floor >= 3: pool.append_array(INTRO_MODIFIERS)
+	for modifier_id in area.get("area_modifiers", []):
+		if str(modifier_id) not in pool:
+			pool.append(str(modifier_id))
 	var count := 2 if kind == "elite" else (1 if floor <= 2 else rng.randi_range(1, 2))
 	if _ascension >= 3 and floor >= 3:
 		count = mini(count + 1, 3)
@@ -117,12 +141,12 @@ func _decorate_event(node: Dictionary, rng: RandomNumberGenerator) -> void:
 			node.event_id = pool[rng.randi_range(0, pool.size() - 1)]
 
 
-func _link_floors(nodes: Array) -> void:
+func _link_floors(nodes: Array, floor_count: int) -> void:
 	var by_floor := {}
 	for node in nodes:
 		if not by_floor.has(node.floor): by_floor[node.floor] = []
 		by_floor[node.floor].append(node)
-	for floor in range(FLOOR_COUNT - 1):
+	for floor in range(floor_count - 1):
 		var current: Array = by_floor[floor]
 		var next: Array = by_floor[floor + 1]
 		for node in current:

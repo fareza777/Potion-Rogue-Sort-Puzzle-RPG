@@ -5,9 +5,10 @@ extends Node
 ## so a bad save can never crash the game.
 
 const SAVE_PATH := "user://save.json"
+const AREA_GRAMMAR := preload("res://src/run/area_grammar.gd")
 const SAVE_TEMP_PATH := SAVE_PATH + ".tmp"
 const SAVE_BACKUP_PATH := SAVE_PATH + ".bak"
-const SAVE_VERSION := 7
+const SAVE_VERSION := 8
 
 const DEFAULT_DATA := {
 	"version": SAVE_VERSION,
@@ -113,8 +114,20 @@ func migrate(source: Dictionary) -> Dictionary:
 		migrated_settings["color_patterns"] = false
 		migrated["settings"] = migrated_settings
 	if int(migrated.get("version", 1)) < 7:
-		migrated["max_ascension"] = 0
-		migrated["selected_ascension"] = 0
+		# Preserve prototype/preview Ascension progress when present. New players
+		# still receive the safe zero defaults.
+		migrated["max_ascension"] = int(migrated.get("max_ascension", 0))
+		migrated["selected_ascension"] = int(migrated.get("selected_ascension", 0))
+	if int(migrated.get("version", 1)) < 8:
+		var unlocked: Array = migrated.get("unlocked_areas", ["shadow_crypt"])
+		var completed: Array = migrated.get("completed_areas", [])
+		for area_id in GameState.area_ids():
+			var area_data := GameState.area(area_id)
+			var prerequisite := str(area_data.get("unlock_after", ""))
+			if not prerequisite.is_empty() and prerequisite in completed \
+					and area_id not in unlocked:
+				unlocked.append(area_id)
+		migrated["unlocked_areas"] = unlocked
 	var history: Array = migrated.get("run_history", [])
 	if history.size() > 20: history.resize(20)
 	migrated["run_history"] = history
@@ -357,7 +370,8 @@ func complete_area(area_id: String) -> Dictionary:
 	var all_stats: Dictionary = data.get("area_stats", {})
 	var stats: Dictionary = (all_stats.get(area_id, {}) as Dictionary).duplicate()
 	stats["wins"] = int(stats.get("wins", 0)) + 1
-	stats["best_depth"] = maxi(int(stats.get("best_depth", 0)), 7)
+	stats["best_depth"] = maxi(int(stats.get("best_depth", 0)),
+			int(AREA_GRAMMAR.for_area(area_id).get("run_length", 7)))
 	all_stats[area_id] = stats
 	data["area_stats"] = all_stats
 

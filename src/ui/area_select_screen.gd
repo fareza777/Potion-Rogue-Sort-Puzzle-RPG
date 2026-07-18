@@ -1,4 +1,6 @@
 extends Control
+
+const AREA_GRAMMAR := preload("res://src/run/area_grammar.gd")
 ## Campaign expedition selector. Locked destinations remain visible so the
 ## player always understands long-term progression and first-clear rewards.
 
@@ -77,8 +79,10 @@ func _area_card(area_id: String) -> PanelContainer:
 	info.add_child(UiKit.title_label(str(area.get("name", area_id)).to_upper(), 25,
 			_area_color(area_id)))
 	info.add_child(UiKit.label(str(area.get("subtitle", "Seven-depth expedition")), 14, UiKit.COLOR_TEXT))
+	var run_length := int(AREA_GRAMMAR.for_area(area_id).get("run_length", 7))
 	var progress := "CLEARED %d TIMES" % SaveSystem.area_wins(area_id) if cleared else (
-			"BEST DEPTH %d / 7" % SaveSystem.best_depth(area_id) if unlocked else "LOCKED")
+			"BEST DEPTH %d / %d" % [SaveSystem.best_depth(area_id), run_length]
+			if unlocked else "LOCKED")
 	info.add_child(UiKit.label(progress, 13, UiKit.COLOR_GOLD if unlocked else UiKit.COLOR_TEXT_DIM))
 	if not cleared:
 		info.add_child(UiKit.label("FIRST CLEAR  +%d CRYSTALS" % int(area.get("first_clear_reward", 0)),
