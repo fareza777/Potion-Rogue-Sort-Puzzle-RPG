@@ -135,12 +135,49 @@ func legal_moves() -> Array[Vector2i]:
 	return result
 
 
+## Applies a batch atomically and rejects puzzle states the solver cannot finish.
+## Enemy and boss hazards must use this boundary instead of mutating tubes directly.
+func try_board_commands(commands: Array[Dictionary]) -> bool:
+	if commands.is_empty():
+		return false
+	var before := export_snapshot()
+	for command in commands:
+		if not apply_board_command(command):
+			restore_snapshot(before)
+			return false
+	if not BoardSolver.has_solution(export_state(), PotionTube.CAPACITY):
+		restore_snapshot(before)
+		return false
+	_undo_stack.clear()
+	return true
+
+
 func apply_board_command(command: Dictionary) -> bool:
+	var command_type := str(command.get("type", ""))
+	if command_type == "rotate_top":
+		var indices: Array = command.get("tubes", [])
+		if indices.size() < 2:
+			return false
+		var colors: Array[String] = []
+		var seen := {}
+		for raw_index in indices:
+			var candidate := int(raw_index)
+			if candidate < 0 or candidate >= tubes.size() or seen.has(candidate) \
+					or tubes[candidate].contents.is_empty():
+				return false
+			seen[candidate] = true
+			colors.append(str(tubes[candidate].contents.back()))
+		for position in indices.size():
+			var target := tubes[int(indices[position])]
+			target.contents[target.contents.size() - 1] = colors[
+					(position - 1 + colors.size()) % colors.size()]
+			target.queue_redraw()
+		return true
 	var index := int(command.get("tube", -1))
 	if index < 0 or index >= tubes.size():
 		return false
 	var tube := tubes[index]
-	match str(command.get("type", "")):
+	match command_type:
 		"lock_tube":
 			tube.locked_moves = maxi(int(command.get("moves", 1)), 1)
 		"unlock_tube":
@@ -156,6 +193,18 @@ func apply_board_command(command: Dictionary) -> bool:
 			tube.contents.append(str(command.get("color", "")))
 			tube.layer_effects.append([])
 			tube.queue_redraw()
+		"swap_top":
+			var other_index := int(command.get("other", -1))
+			if other_index < 0 or other_index >= tubes.size() or other_index == index:
+				return false
+			var other := tubes[other_index]
+			if tube.contents.is_empty() or other.contents.is_empty():
+				return false
+			var color := str(tube.contents.back())
+			tube.contents[tube.contents.size() - 1] = str(other.contents.back())
+			other.contents[other.contents.size() - 1] = color
+			tube.queue_redraw()
+			other.queue_redraw()
 		"reveal_top":
 			tube.queue_redraw()
 		"set_capacity":
