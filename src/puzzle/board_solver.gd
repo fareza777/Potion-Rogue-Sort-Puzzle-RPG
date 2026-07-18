@@ -5,29 +5,41 @@ extends RefCounted
 
 static func has_solution(raw_state: Array, capacity: int,
 		max_states := 50000) -> bool:
+	return bool(_analyze(raw_state, capacity, max_states).solvable)
+
+
+static func analyze(raw_state: Array, max_states := 50000) -> Dictionary:
+	return _analyze(raw_state, _capacity_of(raw_state), max_states)
+
+
+static func _analyze(raw_state: Array, capacity: int, max_states: int) -> Dictionary:
 	if capacity < 1 or raw_state.is_empty() or max_states < 1:
-		return false
+		return {"solvable": false, "estimated_moves": -1, "visited_states": 0}
 	var initial := _copy_state(raw_state)
 	_clear_completed(initial, capacity)
 	if _is_solved(initial):
-		return true
-	var queue: Array = [initial]
+		return {"solvable": true, "estimated_moves": 0, "visited_states": 1}
+	var queue: Array = [{"state": initial, "depth": 0}]
 	var cursor := 0
 	var visited := {_key(initial): true}
-	while cursor < queue.size() and visited.size() <= max_states:
-		var state: Array = queue[cursor]
+	while cursor < queue.size() and visited.size() < max_states:
+		var item: Dictionary = queue[cursor]
+		var state: Array = item.state
+		var depth := int(item.depth)
 		cursor += 1
 		for move in _legal_moves(state, capacity):
 			var next := _copy_state(state)
 			_pour(next, move.x, move.y, capacity)
 			_clear_completed(next, capacity)
 			if _is_solved(next):
-				return true
+				return {"solvable": true, "estimated_moves": depth + 1,
+						"visited_states": visited.size()}
 			var key := _key(next)
 			if not visited.has(key):
 				visited[key] = true
-				queue.append(next)
-	return false
+				queue.append({"state": next, "depth": depth + 1})
+	return {"solvable": false, "estimated_moves": -1,
+			"visited_states": visited.size()}
 
 
 static func _legal_moves(state: Array, capacity: int) -> Array[Vector2i]:
@@ -90,6 +102,14 @@ static func _copy_state(state: Array) -> Array:
 		var tube: Array = raw_tube
 		copy.append(tube.duplicate())
 	return copy
+
+
+static func _capacity_of(state: Array) -> int:
+	var capacity := 1
+	for tube in state:
+		if typeof(tube) == TYPE_ARRAY:
+			capacity = maxi(capacity, tube.size())
+	return capacity
 
 
 static func _key(state: Array) -> String:

@@ -218,39 +218,21 @@ func apply_board_command(command: Dictionary) -> bool:
 	return true
 
 
-## Deals CAPACITY units of each color randomly into the filled tubes.
-## Rerolls if any tube starts already complete.
+## Deals a solver-verified board while retaining the existing board/UI lifecycle.
 func generate_board() -> void:
 	_undo_stack.clear()
 	_deselect()
+	_apply_factory_result(BoardFactory.generate(int(randi()), "standard", COLORS.size(),
+			PotionTube.CAPACITY, tubes.size()))
 
-	var units: Array[String] = []
-	for color in COLORS:
-		for i in PotionTube.CAPACITY:
-			units.append(color)
-
-	var layouts: Array = []
-	for attempt in 20:
-		units.shuffle()
-		layouts = []
-		var ok := true
-		for t in FILLED_TUBES:
-			var slice: Array[String] = []
-			for u in PotionTube.CAPACITY:
-				slice.append(units[t * PotionTube.CAPACITY + u])
-			# A tube must not start as a single solid color.
-			if slice.count(slice[0]) == slice.size():
-				ok = false
-				break
-			layouts.append(slice)
-		if ok:
-			break
-
-	for t in tubes.size():
-		if t < layouts.size():
-			tubes[t].set_contents(layouts[t])
-		else:
-			tubes[t].set_contents([] as Array[String])
+func _apply_factory_result(result: Dictionary) -> void:
+	var layouts: Array = result.get("state", [])
+	for index in tubes.size():
+		var contents: Array[String] = []
+		if index < layouts.size() and typeof(layouts[index]) == TYPE_ARRAY:
+			for value in layouts[index]:
+				contents.append(str(value))
+		tubes[index].set_contents(contents)
 
 
 ## Deterministic first-run layout. Three exposed green units teach legal
