@@ -44,6 +44,8 @@ var phase_payload: Dictionary = {}
 var run_mode := "normal"
 var pending_run_mode := "normal"
 var pending_run_seed := 0
+var run_ascension := 0
+var pending_ascension := 0
 
 
 func _ready() -> void:
@@ -54,6 +56,7 @@ func _ready() -> void:
 	catalyst_pool = GameState.load_data_file("catalysts.json", {})
 	perma_pool = GameState.load_data_file("perma_upgrades.json", {})
 	pending_area_id = SaveSystem.selected_area()
+	pending_ascension = SaveSystem.selected_ascension()
 	var saved_run: Dictionary = SaveSystem.data.get("active_run", {})
 	if not saved_run.is_empty():
 		resume_from_save(saved_run)
@@ -75,6 +78,8 @@ func start_new_run(selected_kit := "ember_adept", selected_area_id := "",
 	phase_payload = {}
 	run_mode = selected_mode if not selected_mode.is_empty() else pending_run_mode
 	if run_mode not in ["normal", "daily", "rematch"]: run_mode = "normal"
+	run_ascension = clampi(pending_ascension, 0, SaveSystem.max_ascension()) \
+			if run_mode == "normal" else 0
 	var requested_area := selected_area_id if not selected_area_id.is_empty() else pending_area_id
 	area_id = requested_area if SaveSystem.is_area_unlocked(requested_area) else "shadow_crypt"
 	pending_area_id = area_id
@@ -82,7 +87,7 @@ func start_new_run(selected_kit := "ember_adept", selected_area_id := "",
 	var requested_seed := forced_seed if forced_seed != 0 else pending_run_seed
 	run_seed = requested_seed if requested_seed != 0 else \
 			int(Time.get_unix_time_from_system() * 1000000.0) ^ Time.get_ticks_usec()
-	run_graph = RunGenerator.new().generate(run_seed, area_id)
+	run_graph = RunGenerator.new().generate(run_seed, area_id, run_ascension)
 	current_node_id = str(run_graph.get("start", "f0_l1"))
 	if run_mode == "rematch":
 		for node in run_graph.get("nodes", []):
@@ -165,10 +170,10 @@ func resume_scene() -> String:
 
 
 func serialize_boundary() -> Dictionary:
-	return {"version": 4, "active": active, "seed": run_seed, "area_id": area_id,
+	return {"version": 5, "active": active, "seed": run_seed, "area_id": area_id,
 		"graph": run_graph.duplicate(true), "current_node_id": current_node_id,
 		"phase": phase, "phase_payload": phase_payload.duplicate(true),
-		"run_mode": run_mode,
+		"run_mode": run_mode, "ascension": run_ascension,
 		"kit_id": kit_id, "player_hp": player_hp, "run_crystals": run_crystals,
 		"mutations": mutation_ids.duplicate(), "relics": relic_ids.duplicate(),
 		"catalysts": catalyst_ids.duplicate(), "upgrades": upgrade_ids.duplicate(),
@@ -177,7 +182,7 @@ func serialize_boundary() -> Dictionary:
 
 func resume_from_save(saved: Dictionary) -> bool:
 	var boundary_version := int(saved.get("version", 0))
-	if boundary_version not in [2, 3, 4] or not bool(saved.get("active", false)): return false
+	if boundary_version not in [2, 3, 4, 5] or not bool(saved.get("active", false)): return false
 	if typeof(saved.get("graph", null)) != TYPE_DICTIONARY: return false
 	var loaded_area := str(saved.get("area_id", "shadow_crypt"))
 	area_id = loaded_area if not GameState.area(loaded_area).is_empty() else "shadow_crypt"
@@ -186,6 +191,8 @@ func resume_from_save(saved: Dictionary) -> bool:
 	kit_id = loaded_kit if GameState.kits.has(loaded_kit) else "ember_adept"
 	run_seed = int(saved.get("seed", 0)); run_graph = saved.graph.duplicate(true)
 	run_mode = str(saved.get("run_mode", "normal"))
+	run_ascension = clampi(int(saved.get("ascension", 0)), 0, 10)
+	pending_ascension = run_ascension
 	current_node_id = str(saved.get("current_node_id", ""))
 	if current_node().is_empty(): return false
 	var loaded_phase := str(saved.get("phase", PHASE_MAP)) if boundary_version >= 4 else PHASE_MAP
@@ -204,7 +211,8 @@ func resume_from_save(saved: Dictionary) -> bool:
 func abandon_run() -> int:
 	if active:
 		MetaProgression.new().record_run({"seed":run_seed, "area":area_id,
-				"mode":run_mode, "result":"abandoned", "depth":battle_index,
+				"mode":run_mode, "ascension":run_ascension,
+				"result":"abandoned", "depth":battle_index,
 				"crystals":run_crystals})
 	var kept := run_crystals / 2
 	if kept > 0:
@@ -403,7 +411,10 @@ func complete_battle(hp_left: int, crystals_reward: int) -> Dictionary:
 		SaveSystem.add_crystals(run_crystals)
 		SaveSystem.bump_stat("runs_won")
 		MetaProgression.new().record_run({"seed":run_seed, "area":area_id,
-				"mode":run_mode, "result":"victory", "depth":7, "crystals":run_crystals})
+				"mode":run_mode, "ascension":run_ascension,
+				"result":"victory", "depth":7, "crystals":run_crystals})
+		if run_mode == "normal" and MetaProgression.new().ascension_unlocked():
+			MetaProgression.new().record_ascension_clear(run_ascension)
 		if run_mode == "daily": MetaProgression.new().complete_daily(Time.get_date_string_from_system())
 		var result := SaveSystem.complete_area(area_id)
 		SaveSystem.clear_active_run()

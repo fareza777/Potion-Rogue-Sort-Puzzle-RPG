@@ -22,8 +22,19 @@ func _ready() -> void:
 	check(meta.complete_mastery("shadow_crypt", "first_clear") == 0,
 			"mastery rewards are idempotent")
 	check(meta.can_rematch("shadow_crypt") == false, "boss rematch starts locked")
+	check(meta.has_method("ascension_unlocked") and not meta.call("ascension_unlocked"),
+			"Ascension starts locked before the campaign is cleared")
 	SaveSystem.data.completed_areas = ["shadow_crypt"]
 	check(meta.can_rematch("shadow_crypt"), "cleared boss unlocks rematch")
+	SaveSystem.data.completed_areas = GameState.area_ids()
+	check(meta.has_method("record_ascension_clear"), "Ascension exposes bounded unlock progress")
+	if meta.has_method("ascension_unlocked") and meta.has_method("record_ascension_clear"):
+		check(meta.call("ascension_unlocked"), "clearing all realms unlocks Ascension")
+		check(int(meta.call("record_ascension_clear", 0)) == 1,
+				"first Ascension clear unlocks level one")
+		SaveSystem.data.max_ascension = 10
+		check(int(meta.call("record_ascension_clear", 10)) == 10,
+				"Ascension progression is capped at ten")
 	check(SaveSystem.DEFAULT_DATA.has("daily") and SaveSystem.DEFAULT_DATA.has("run_history"),
 			"new replay systems have migrated save defaults")
 	SaveSystem.data = original

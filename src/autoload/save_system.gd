@@ -5,7 +5,7 @@ extends Node
 ## so a bad save can never crash the game.
 
 const SAVE_PATH := "user://save.json"
-const SAVE_VERSION := 6
+const SAVE_VERSION := 7
 
 const DEFAULT_DATA := {
 	"version": SAVE_VERSION,
@@ -28,6 +28,8 @@ const DEFAULT_DATA := {
 	"mastery": {},
 	"daily": {"last_claim": "", "best_depth": 0},
 	"run_history": [],
+	"max_ascension": 0,
+	"selected_ascension": 0,
 }
 
 var data: Dictionary = {}
@@ -85,6 +87,9 @@ func migrate(source: Dictionary) -> Dictionary:
 		var migrated_settings: Dictionary = migrated.get("settings", {})
 		migrated_settings["color_patterns"] = false
 		migrated["settings"] = migrated_settings
+	if int(migrated.get("version", 1)) < 7:
+		migrated["max_ascension"] = 0
+		migrated["selected_ascension"] = 0
 	var history: Array = migrated.get("run_history", [])
 	if history.size() > 20: history.resize(20)
 	migrated["run_history"] = history
@@ -93,6 +98,9 @@ func migrate(source: Dictionary) -> Dictionary:
 	if not settings.has("color_patterns"): settings["color_patterns"] = false
 	if not settings.has("reduced_effects"): settings["reduced_effects"] = false
 	migrated["settings"] = settings
+	migrated["max_ascension"] = clampi(int(migrated.get("max_ascension", 0)), 0, 10)
+	migrated["selected_ascension"] = clampi(int(migrated.get("selected_ascension", 0)),
+			0, int(migrated["max_ascension"]))
 	migrated["version"] = SAVE_VERSION
 	return migrated
 
@@ -238,6 +246,19 @@ func set_selected_area(area_id: String) -> bool:
 	data["selected_area"] = area_id
 	save()
 	return true
+
+
+func max_ascension() -> int:
+	return clampi(int(data.get("max_ascension", 0)), 0, 10)
+
+
+func selected_ascension() -> int:
+	return clampi(int(data.get("selected_ascension", 0)), 0, max_ascension())
+
+
+func set_selected_ascension(level: int) -> void:
+	data["selected_ascension"] = clampi(level, 0, max_ascension())
+	save()
 
 
 func completed_areas() -> Array:

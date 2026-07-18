@@ -4,9 +4,11 @@ extends RefCounted
 const FLOOR_COUNT := 7
 const INTRO_MODIFIERS := ["hidden_layer", "frozen_tube"]
 const ADVANCED_MODIFIERS := ["cursed_layer", "volatile_liquid", "wild_essence", "chain_lock", "corruption", "unstable_flask"]
+var _ascension := 0
 
 
-func generate(seed: int, area_id := "shadow_crypt") -> Dictionary:
+func generate(seed: int, area_id := "shadow_crypt", ascension := 0) -> Dictionary:
+	_ascension = clampi(ascension, 0, 10)
 	var area := GameState.area(area_id)
 	if area.is_empty():
 		area_id = "shadow_crypt"
@@ -27,7 +29,7 @@ func generate(seed: int, area_id := "shadow_crypt") -> Dictionary:
 		var noncombat_slot := rng.randi_range(0, lanes.size() - 1) if floor in [2, 4] else -1
 		for slot in lanes.size():
 			var lane: int = int(lanes[slot])
-			var context := {"hp_ratio": 1.0, "power": 0.0}
+			var context := {"hp_ratio": 1.0, "power": float(_ascension)}
 			var kind := director.assign_kind(floor, slot, noncombat_slot, context, rng)
 			var enemy := _enemy_for_floor(floor, kind, rng, area)
 			var created := _node("f%d_l%d" % [floor, lane], floor, lane, kind, enemy, area)
@@ -39,7 +41,8 @@ func generate(seed: int, area_id := "shadow_crypt") -> Dictionary:
 	nodes.append(boss)
 	_link_floors(nodes)
 	return {"seed": seed, "area_id": area_id, "nodes": nodes, "start": "f0_l1",
-			"boss": "f6_boss", "director_version": RunDirector.VERSION}
+			"boss": "f6_boss", "director_version": RunDirector.VERSION,
+			"ascension": _ascension}
 
 
 func _lanes_for_floor(rng: RandomNumberGenerator, expanded: bool) -> Array[int]:
@@ -65,7 +68,8 @@ func _enemy_for_floor(floor: int, kind: String, rng: RandomNumberGenerator,
 
 func _node(id: String, floor: int, lane: int, kind: String, enemy: String,
 		area: Dictionary) -> Dictionary:
-	var budget := ThreatBudget.new().for_node(floor, kind, area.get("threat_multiplier", 1.0))
+	var budget := ThreatBudget.new().for_node(floor, kind,
+			area.get("threat_multiplier", 1.0), _ascension)
 	var director := RunDirector.new()
 	return {"id": id, "floor": floor, "lane": lane, "kind": kind,
 		"enemy": enemy, "links": [], "visited": false,
@@ -82,6 +86,8 @@ func _decorate_contract(node: Dictionary, rng: RandomNumberGenerator) -> void:
 	var pool: Array = INTRO_MODIFIERS.duplicate() if floor <= 2 else ADVANCED_MODIFIERS.duplicate()
 	if floor >= 3: pool.append_array(INTRO_MODIFIERS)
 	var count := 2 if kind == "elite" else (1 if floor <= 2 else rng.randi_range(1, 2))
+	if _ascension >= 3 and floor >= 3:
+		count = mini(count + 1, 3)
 	while node.contract.modifier_ids.size() < count:
 		var id := str(pool[rng.randi_range(0, pool.size() - 1)])
 		if id not in node.contract.modifier_ids: node.contract.modifier_ids.append(id)

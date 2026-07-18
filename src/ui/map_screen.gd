@@ -111,7 +111,7 @@ func _roman(value: int) -> String:
 
 func _make_status_panel() -> PanelContainer:
 	var panel := UiKit.textured_panel("res://assets/art/ui/battle_panel.png", 10)
-	panel.custom_minimum_size = Vector2(0, 66)
+	panel.custom_minimum_size = Vector2(0, 104)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 0)
 	panel.add_child(box)
@@ -125,10 +125,8 @@ func _make_status_panel() -> PanelContainer:
 	box.add_child(row)
 	row.add_child(UiKit.label("HP  %d / %d" % [hp, max_hp], 17, UiKit.COLOR_HP))
 	row.add_child(UiKit.label("CRYSTALS  %d (+%d)" % [SaveSystem.crystals(), RunState.run_crystals], 17, Color("75d4ff")))
-	var build_parts: Array[String] = []
-	for id in RunState.relic_ids:
-		build_parts.append(RunState.relic_name(str(id)))
-	for id in RunState.upgrade_ids:
-		build_parts.append(RunState.upgrade_name(str(id)))
-	box.add_child(UiKit.label("BUILD: " + ("NONE YET" if build_parts.is_empty() else " - ".join(build_parts)), 12, UiKit.COLOR_TEXT_DIM))
+	var summary := BuildSummary.new()
+	summary.configure(RunState.kit_id, RunState.relic_ids, RunState.upgrade_ids,
+			RunState.mutation_ids)
+	box.add_child(summary)
 	return panel

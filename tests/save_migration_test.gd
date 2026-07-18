@@ -18,6 +18,9 @@ func _ready() -> void:
 	check(once.get("completed_areas", []) == [] and once.get("selected_area", "") == "shadow_crypt",
 			"legacy saves receive campaign progress defaults")
 	check((once.get("area_stats", {}) as Dictionary).is_empty(), "legacy saves receive empty per-area stats")
+	check(int(once.get("max_ascension", -1)) == 0
+			and int(once.get("selected_ascension", -1)) == 0,
+			"version six and older saves default Ascension safely")
 	check(SaveSystem.has_method("complete_area") and SaveSystem.has_method("record_area_depth"),
 			"campaign progression API is available")
 	if SaveSystem.has_method("complete_area"):

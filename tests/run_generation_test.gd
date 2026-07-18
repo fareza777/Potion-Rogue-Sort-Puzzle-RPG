@@ -35,6 +35,7 @@ func _ready() -> void:
 	assert_check(director_metadata_safe,
 			"all seeded graphs expose safe route metadata from director v1")
 	_test_area_identity()
+	_test_ascension()
 	_test_events()
 	print("---\n%d checks, %d failures" % [checks, failures])
 	get_tree().quit(1 if failures else 0)
@@ -58,6 +59,21 @@ func _test_area_identity() -> void:
 						(0.22 if str(node.kind) == "elite" else 0.0)) * float(area.threat_multiplier)
 				assert_check(is_equal_approx(float(node.contract.threat.enemy_scale), expected_scale),
 						"area threat multiplier is applied")
+
+
+func _test_ascension() -> void:
+	var normal := RunGenerator.new().generate(991, "shadow_crypt", 0)
+	var ascended := RunGenerator.new().generate(991, "shadow_crypt", 5)
+	assert_check(int(normal.get("ascension", -1)) == 0
+			and int(ascended.get("ascension", -1)) == 5,
+			"graph stores bounded Ascension identity")
+	var normal_battle: Dictionary = normal.nodes.filter(func(node: Dictionary) -> bool:
+		return str(node.kind) == "battle")[0]
+	var ascended_battle: Dictionary = ascended.nodes.filter(func(node: Dictionary) -> bool:
+		return str(node.id) == str(normal_battle.id))[0]
+	assert_check(float(ascended_battle.contract.threat.enemy_scale)
+			> float(normal_battle.contract.threat.enemy_scale),
+			"Ascension increases threat without replacing route topology")
 
 func _reachable(graph: Dictionary) -> Dictionary:
 	var by_id := {}; for n in graph.nodes: by_id[n.id] = n

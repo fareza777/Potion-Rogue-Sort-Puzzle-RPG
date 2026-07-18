@@ -2,7 +2,8 @@ class_name ThreatBudget
 extends RefCounted
 
 
-func for_node(floor: int, kind: String, multiplier := 1.0) -> Dictionary:
+func for_node(floor: int, kind: String, multiplier := 1.0,
+		ascension := 0) -> Dictionary:
 	var tier := "intro" if floor <= 2 else "advanced"
 	var modifier_count := 0
 	if kind == "battle": modifier_count = 1
@@ -11,5 +12,6 @@ func for_node(floor: int, kind: String, multiplier := 1.0) -> Dictionary:
 		"tier": tier,
 		"modifier_count": modifier_count,
 		"enemy_scale": (1.0 + max(0, floor - 1) * 0.12 +
-				(0.22 if kind == "elite" else 0.0)) * maxf(float(multiplier), 0.1),
+				(0.22 if kind == "elite" else 0.0)) * maxf(float(multiplier), 0.1) \
+				* (1.0 + float(clampi(ascension, 0, 10)) * 0.04),
 	}

@@ -2,6 +2,8 @@ extends Control
 ## Campaign expedition selector. Locked destinations remain visible so the
 ## player always understands long-term progression and first-clear rewards.
 
+var _ascension_label: Label
+
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -33,6 +35,8 @@ func _ready() -> void:
 	history.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/run_history.tscn")); modes.add_child(history)
 	var mode_help := UiKit.label("Daily: same challenge for everyone today  •  History: latest 20 runs",
 			12, UiKit.COLOR_TEXT_DIM); root.add_child(mode_help)
+	if MetaProgression.new().ascension_unlocked():
+		root.add_child(_make_ascension_selector())
 	var scroll := ScrollContainer.new(); scroll.name = "ExpeditionScroll"
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL; root.add_child(scroll)
 	var area_list := VBoxContainer.new(); area_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -91,6 +95,8 @@ func _area_card(area_id: String) -> PanelContainer:
 	action.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	action.pressed.connect(func() -> void:
 		RunState.pending_area_id = area_id
+		RunState.pending_run_mode = "normal"
+		RunState.pending_ascension = SaveSystem.selected_ascension()
 		SaveSystem.set_selected_area(area_id)
 		get_tree().change_scene_to_file("res://scenes/kit_select.tscn"))
 	row.add_child(action)
@@ -108,5 +114,40 @@ func _start_daily() -> void:
 	var date := Time.get_date_string_from_system()
 	RunState.pending_area_id = SaveSystem.selected_area()
 	RunState.pending_run_mode = "daily"
+	RunState.pending_ascension = 0
 	RunState.pending_run_seed = MetaProgression.new().daily_seed(date)
 	get_tree().change_scene_to_file("res://scenes/kit_select.tscn")
+
+
+func _make_ascension_selector() -> PanelContainer:
+	var panel := UiKit.panel(Color("b67cff"))
+	panel.name = "AscensionSelector"
+	panel.custom_minimum_size = Vector2(0, 62)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 14)
+	panel.add_child(row)
+	var down := UiKit.ornate_button("−", Vector2(58, 56), Color("8d70b8"))
+	down.pressed.connect(func(): _change_ascension(-1))
+	row.add_child(down)
+	_ascension_label = UiKit.title_label("", 18, Color("d9b7ff"))
+	_ascension_label.custom_minimum_size = Vector2(250, 0)
+	_ascension_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	row.add_child(_ascension_label)
+	var up := UiKit.ornate_button("+", Vector2(58, 56), Color("8d70b8"))
+	up.pressed.connect(func(): _change_ascension(1))
+	row.add_child(up)
+	_refresh_ascension_label()
+	return panel
+
+
+func _change_ascension(delta: int) -> void:
+	SaveSystem.set_selected_ascension(SaveSystem.selected_ascension() + delta)
+	RunState.pending_ascension = SaveSystem.selected_ascension()
+	_refresh_ascension_label()
+
+
+func _refresh_ascension_label() -> void:
+	if _ascension_label:
+		_ascension_label.text = "ASCENSION  %d / %d" % [SaveSystem.selected_ascension(),
+				SaveSystem.max_ascension()]

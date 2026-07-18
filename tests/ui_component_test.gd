@@ -33,6 +33,18 @@ func _ready() -> void:
 		for node_name in ["ObjectiveText", "EnemyIntent", "EnemyTrick"]:
 			check(tactical.find_child(node_name, true, false) != null,
 					"tactical readout exposes " + node_name)
+	var summary_path := "res://src/ui/build_summary.gd"
+	check(ResourceLoader.exists(summary_path), "map owns reusable build summary")
+	if ResourceLoader.exists(summary_path):
+		var summary = load(summary_path).new()
+		add_child(summary)
+		summary.configure("ember_adept", ["molten_core"], ["flame_mastery"], ["emberheart"])
+		for node_name in ["BuildKit", "BuildCounts", "BuildSynergy"]:
+			check(summary.find_child(node_name, true, false) != null,
+					"build summary exposes " + node_name)
+	var area_source := FileAccess.get_file_as_string("res://src/ui/area_select_screen.gd")
+	check(area_source.contains("AscensionSelector") and area_source.contains("set_selected_ascension"),
+			"expedition selector exposes persistent Ascension controls")
 	print("---\n%d checks, %d failures" % [checks, failures])
 	get_tree().quit(1 if failures else 0)
 

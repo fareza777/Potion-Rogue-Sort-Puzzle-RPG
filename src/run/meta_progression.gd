@@ -38,6 +38,28 @@ func can_rematch(area_id: String) -> bool:
 	return area_id in SaveSystem.completed_areas()
 
 
+func ascension_unlocked() -> bool:
+	for area_id in GameState.area_ids():
+		if area_id not in SaveSystem.completed_areas():
+			return false
+	return not GameState.area_ids().is_empty()
+
+
+func max_ascension() -> int:
+	return SaveSystem.max_ascension()
+
+
+func record_ascension_clear(level: int) -> int:
+	if not ascension_unlocked():
+		return 0
+	var unlocked := clampi(maxi(SaveSystem.max_ascension(), level + 1), 1, 10)
+	SaveSystem.data["max_ascension"] = unlocked
+	SaveSystem.data["selected_ascension"] = clampi(
+			int(SaveSystem.data.get("selected_ascension", 0)), 0, unlocked)
+	SaveSystem.save()
+	return unlocked
+
+
 func daily_claimed(date_text: String) -> bool:
 	return str((SaveSystem.data.get("daily", {}) as Dictionary).get("last_claim", "")) == date_text
 
