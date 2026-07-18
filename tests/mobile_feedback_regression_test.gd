@@ -20,6 +20,9 @@ func _ready() -> void:
 	var actions := screen.get("overlay_buttons") as Container
 	check(actions is VBoxContainer, "pause actions stack vertically on narrow phones")
 	var viewport_width := get_viewport().get_visible_rect().size.x
+	var tactical := screen.find_child("TacticalReadout", true, false) as Control
+	check(tactical != null and tactical.get_global_rect().end.x <= viewport_width,
+			"tactical readout stays inside narrow viewport")
 	var all_inside := true
 	for button in actions.get_children():
 		var rect := (button as Control).get_global_rect()

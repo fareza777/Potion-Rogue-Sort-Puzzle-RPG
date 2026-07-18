@@ -200,10 +200,14 @@ func _ready() -> void:
 			"battle exposes framed enemy vital bar")
 	check(battle_source.contains('name = "PlayerVitalBar"'),
 			"battle exposes framed player vital bar")
-	for tactical_name in ["ObjectivePanel", "EnemyIntent", "ManaMeter",
-			"ComboSlots", "SkillButton", "UltimateButton"]:
+	for tactical_name in ["TacticalReadout", "ManaMeter", "ComboSlots",
+			"SkillButton", "UltimateButton"]:
 		check(battle_source.contains('name = "' + tactical_name + '"'),
 				"battle exposes tactical " + tactical_name)
+	var tactical_source := FileAccess.get_file_as_string("res://src/ui/tactical_readout.gd")
+	for tactical_name in ["ObjectiveText", "EnemyIntent", "EnemyTrick"]:
+		check(tactical_source.contains('name = "' + tactical_name + '"'),
+				"tactical readout exposes " + tactical_name)
 	for component_name in ["EncounterHeader", "WarningPlaque", "ActionPedestal"]:
 		check(battle_source.contains('name = "' + component_name + '"'),
 				"battle exposes premium " + component_name)

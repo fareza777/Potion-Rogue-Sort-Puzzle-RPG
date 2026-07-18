@@ -22,6 +22,17 @@ func _ready() -> void:
 			"generated Hall and battle art resolves")
 	var hall := FileAccess.get_file_as_string("res://src/ui/main_menu.gd")
 	check(hall.contains("BottomNav.new()"), "Hall consumes reusable bottom navigation")
+	var tactical_path := "res://src/ui/tactical_readout.gd"
+	check(ResourceLoader.exists(tactical_path), "battle owns reusable tactical readout")
+	if ResourceLoader.exists(tactical_path):
+		var tactical_script := load(tactical_path)
+		var tactical = tactical_script.new()
+		add_child(tactical)
+		check(tactical.custom_minimum_size.y >= 56,
+				"tactical readout preserves readable mobile height")
+		for node_name in ["ObjectiveText", "EnemyIntent", "EnemyTrick"]:
+			check(tactical.find_child(node_name, true, false) != null,
+					"tactical readout exposes " + node_name)
 	print("---\n%d checks, %d failures" % [checks, failures])
 	get_tree().quit(1 if failures else 0)
 

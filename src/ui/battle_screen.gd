@@ -36,6 +36,7 @@ var combo_resolver: ComboResolver
 var skill_controller: SkillController
 var objective_label: Label
 var intent_label: Label
+var tactical_readout: TacticalReadout
 var mana_bar: ProgressBar
 var mana_label: Label
 var combo_label: Label
@@ -226,6 +227,8 @@ func _on_objective_progress(current: int, target: int) -> void:
 			order_text = "  |  " + "  ".join(steps)
 		objective_label.text = "OBJECTIVE  %s  %d/%d%s" % [objective_controller.label,
 				current, target, order_text]
+		if tactical_readout != null:
+			tactical_readout.set_objective(objective_label.text)
 
 
 func _on_tactical_move() -> void:
@@ -296,12 +299,10 @@ func _refresh_tactical_hud() -> void:
 	if intent_controller == null or skill_controller == null or intent_label == null: return
 	intent_controller.set_battle_values(battle.enemy_attack, 0.0, battle.moves_until_attack)
 	var preview := intent_controller.preview()
+	preview.moves = battle.moves_until_attack
 	var trick := signature_controller.preview() if signature_controller != null else {}
-	var trick_text := "" if str(trick.get("id", "")).is_empty() else \
-			"  |  TRICK  %s  •  %d moves" % [str(trick.get("label", "")),
-			int(trick.get("moves_remaining", 0))]
-	intent_label.text = "NEXT  %s  %d dmg  •  %d moves%s" % [str(preview.label),
-			int(preview.damage_max), battle.moves_until_attack, trick_text]
+	if tactical_readout != null:
+		tactical_readout.update_payload(objective_label.text, preview, trick)
 	mana_bar.value = skill_controller.mana
 	mana_label.text = "MANA  %d/100" % skill_controller.mana
 	var history := combo_resolver.history(); var slots: Array[String] = []
@@ -525,23 +526,13 @@ func _build_player_panel() -> PanelContainer:
 
 
 func _build_tactical_hud() -> PanelContainer:
-	var panel := PanelContainer.new()
-	panel.name = "ObjectivePanel"
-	panel.custom_minimum_size = Vector2(0, 48)
-	var style := StyleBoxFlat.new(); style.bg_color = Color(0.025, 0.012, 0.045, 0.92)
-	style.border_color = Color("795c31"); style.set_border_width_all(1); style.set_corner_radius_all(10)
-	style.content_margin_left = 12; style.content_margin_right = 12
-	style.content_margin_top = 7; style.content_margin_bottom = 7
-	panel.add_theme_stylebox_override("panel", style)
-	var row := HBoxContainer.new(); row.add_theme_constant_override("separation", 10)
-	panel.add_child(row)
-	objective_label = UiKit.label("OBJECTIVE", 13, UiKit.COLOR_GOLD)
-	objective_label.name = "ObjectiveText"; objective_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	objective_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT; row.add_child(objective_label)
-	intent_label = UiKit.label("INTENT", 13, UiKit.COLOR_FIRE)
-	intent_label.name = "EnemyIntent"; intent_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	intent_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT; row.add_child(intent_label)
-	return panel
+	tactical_readout = TacticalReadout.new()
+	tactical_readout.name = "TacticalReadout"
+	tactical_readout.set_meta("legacy_name", "ObjectivePanel")
+	tactical_readout._ready()
+	objective_label = tactical_readout.objective_label
+	intent_label = tactical_readout.intent_label
+	return tactical_readout
 
 
 func _build_power_strip() -> PanelContainer:
