@@ -33,6 +33,11 @@ func is_completed() -> bool:
 	return _completed
 
 
+func display_payload() -> Dictionary:
+	return {"id": objective_id, "label": label, "current": current, "target": target,
+			"sequence": _sequence.duplicate(), "completed": _completed}
+
+
 func on_enemy_defeated() -> void:
 	if event_id == "enemy_defeated":
 		_advance(1)

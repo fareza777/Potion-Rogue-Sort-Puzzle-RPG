@@ -192,11 +192,23 @@ func _setup_tactical_controllers(enemy_id: String) -> void:
 	board.move_made.connect(func(): _tutorial_action("select_target"))
 	board.tube_completed.connect(_on_depth_potion_completed)
 	battle.enemy_action_resolved.connect(_on_intent_resolved)
+	battle.armor_changed.connect(func(delta: int) -> void:
+		if delta < 0: objective_controller.on_armor_damaged(-delta))
 
 
 func _on_objective_progress(current: int, target: int) -> void:
 	if objective_label != null:
-		objective_label.text = "OBJECTIVE  %s  %d/%d" % [objective_controller.label, current, target]
+		var payload := objective_controller.display_payload()
+		var order: Array = payload.get("sequence", [])
+		var order_text := ""
+		if not order.is_empty():
+			var steps: Array[String] = []
+			for index in order.size():
+				steps.append(("✓ " if index < current else "→ " if index == current else "· ")
+						+ str(order[index]).to_upper())
+			order_text = "  |  " + "  ".join(steps)
+		objective_label.text = "OBJECTIVE  %s  %d/%d%s" % [objective_controller.label,
+				current, target, order_text]
 
 
 func _on_tactical_move() -> void:
@@ -264,14 +276,36 @@ func _on_skill_pressed() -> void:
 			battle.shield = mini(battle.max_shield, battle.shield + 12)
 			RunState.cleanse_curse(1)
 	battle_fx.play_combo(2, Color("6edcff")); _set_message("ACTIVE SKILL — " + skill_id.replace("_", " ").to_upper())
+	_checkpoint_encounter()
 	_refresh()
 
 
 func _on_ultimate_pressed() -> void:
-	if not skill_controller.consume_ultimate(): return
+	var result := skill_controller.cast_ultimate({"enemy_armor": battle.enemy_armor})
+	if not bool(result.get("ok", false)): return
 	battle_fx.play_ultimate(RunState.kit_id)
-	battle.deal_skill_damage(38)
-	_set_message("ULTIMATE BREW UNLEASHED!")
+	if int(result.get("break_armor", 0)) > 0:
+		battle.break_enemy_armor(int(result.break_armor))
+	if int(result.get("damage", 0)) > 0:
+		battle.deal_skill_damage(int(result.damage))
+	if int(result.get("heal", 0)) > 0:
+		battle.player_hp = mini(battle.player_hp + int(result.heal), battle.player_max_hp)
+	if int(result.get("shield", 0)) > 0:
+		battle.shield = mini(battle.shield + int(result.shield), battle.max_shield)
+	if int(result.get("cleanse", 0)) > 0:
+		RunState.cleanse_curse(int(result.cleanse))
+	if int(result.get("poison", 0)) > 0:
+		battle.poison_damage = int(result.poison)
+		battle.poison_turns = int(result.get("poison_turns", 3))
+	if int(result.get("delay", 0)) > 0:
+		battle.moves_until_attack += int(result.delay)
+	if bool(result.get("wild_layer", false)):
+		for index in board.tubes.size():
+			if board.tubes[index].free_space() > 0:
+				board.apply_board_command({"type":"append_layer", "tube":index, "color":"wild"})
+				break
+	_set_message(str(result.effect_id).replace("_", " ").to_upper() + " UNLEASHED!")
+	_checkpoint_encounter()
 	_refresh()
 
 

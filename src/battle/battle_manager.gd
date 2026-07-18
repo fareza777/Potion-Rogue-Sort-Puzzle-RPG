@@ -258,6 +258,8 @@ func _damage_enemy(amount: int, bypass_armor: bool) -> int:
 		var absorbed: int = mini(enemy_armor, remaining)
 		enemy_armor -= absorbed
 		remaining -= absorbed
+		if absorbed > 0:
+			armor_changed.emit(-absorbed)
 	enemy_hp = maxi(enemy_hp - remaining, 0)
 	enemy_damaged.emit(amount)
 	_check_enrage()
@@ -342,6 +344,15 @@ func add_enemy_armor(amount: int) -> void:
 	enemy_armor += applied
 	armor_changed.emit(applied)
 	stats_changed.emit()
+
+
+func break_enemy_armor(amount: int) -> int:
+	var removed := mini(enemy_armor, maxi(amount, 0))
+	if removed > 0:
+		enemy_armor -= removed
+		armor_changed.emit(-removed)
+		stats_changed.emit()
+	return removed
 
 
 func request_tube_lock(moves: int) -> void:
