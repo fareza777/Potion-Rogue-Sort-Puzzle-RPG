@@ -1,8 +1,9 @@
 param(
     [string]$ProjectRoot = (Split-Path -Parent $PSScriptRoot),
-    [string]$ApkPath = "builds/PotionRogue-v11-debug.apk",
+    [string]$ApkPath = "builds/PotionRogue-v12-debug.apk",
     [int]$MaxApkMB = 200,
-    [int]$MaxAssetMB = 8,
+	[int]$MaxAssetMB = 8,
+	[int]$MaxAudioMB = 12,
     [int]$MaxImageDimension = 4096
 )
 
@@ -16,6 +17,14 @@ Get-ChildItem -LiteralPath (Join-Path $root "assets") -Recurse -File |
     ForEach-Object {
         if ($_.Length -gt $MaxAssetMB * 1MB) {
             $failures.Add("Asset over ${MaxAssetMB}MB: $($_.FullName)")
+        }
+    }
+
+Get-ChildItem -LiteralPath (Join-Path $root "assets\audio") -Recurse -File |
+    Where-Object { $_.Extension -notin @(".import", ".uid") } |
+    ForEach-Object {
+        if ($_.Length -gt $MaxAudioMB * 1MB) {
+            $failures.Add("Audio over ${MaxAudioMB}MB: $($_.FullName)")
         }
     }
 
@@ -45,4 +54,4 @@ if ($failures.Count -gt 0) {
     $failures | ForEach-Object { Write-Error $_ }
     exit 1
 }
-Write-Output "Release budgets passed (APK <= ${MaxApkMB}MB, asset <= ${MaxAssetMB}MB, image <= ${MaxImageDimension}px)."
+Write-Output "Release budgets passed (APK <= ${MaxApkMB}MB, asset <= ${MaxAssetMB}MB, audio <= ${MaxAudioMB}MB, image <= ${MaxImageDimension}px)."

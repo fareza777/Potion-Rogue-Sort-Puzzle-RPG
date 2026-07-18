@@ -8,7 +8,7 @@ func _ready() -> void:
 	check(preset.contains("premium_icons_*.png"), "export excludes image-generation intermediates")
 	check(FileAccess.file_exists("res://tools/validate_release.ps1"), "release validator exists")
 	var validator := FileAccess.get_file_as_string("res://tools/validate_release.ps1")
-	for budget in ["MaxApkMB", "MaxAssetMB", "MaxImageDimension"]:
+	for budget in ["MaxApkMB", "MaxAssetMB", "MaxAudioMB", "MaxImageDimension"]:
 		check(validator.contains(budget), "release validator declares " + budget)
 	check(VisualRegistry.missing_runtime_assets().is_empty(), "all registered runtime assets resolve")
 	print("---\n%d checks, %d failures" % [checks, failures])

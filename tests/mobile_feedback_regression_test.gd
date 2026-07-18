@@ -47,6 +47,12 @@ func _ready() -> void:
 			"combat music self-recovers if its player stopped")
 	check(AudioManager.has_method("ambient_gain_db") and float(AudioManager.call("ambient_gain_db")) >= 6.0,
 			"ambient score has phone-audible output gain")
+	var dev_source := FileAccess.get_file_as_string("res://src/autoload/dev_tools.gd")
+	check(dev_source.contains("--phase=") and dev_source.contains("_prepare_capture_phase"),
+			"visual QA supports deterministic capture phases")
+	check(dev_source.contains("PHASE_MAP") and dev_source.contains("PHASE_BATTLE")
+			and dev_source.contains("_prepare_boss"),
+			"visual QA can prepare map, signature battle, and boss states")
 
 	SaveSystem.data = original_save
 	SaveSystem.save()
