@@ -141,7 +141,8 @@ func _restore_encounter(snapshot: Dictionary) -> bool:
 	if boss_phase_controller != null:
 		var boss_data: Dictionary = snapshot.get("boss_phase", {})
 		boss_phase_controller.configure(battle.enemy_id, battle.enemy_max_hp,
-				int(boss_data.get("phase_index", -1)))
+				int(boss_data.get("phase_index", -1)),
+				boss_data.get("applied_phase_actions", []))
 	return true
 
 
@@ -785,9 +786,37 @@ func _on_boss_phase_changed(index: int, config: Dictionary) -> void:
 	if str(config.get("modifier", "")) != "":
 		var ids: Array[String] = modifier_controller.active_ids.duplicate()
 		ids.append(str(config.modifier)); modifier_controller.configure(ids, RunState.run_seed + index, board)
+	var board_action := boss_phase_controller.pending_board_action()
+	if not board_action.is_empty():
+		_apply_boss_board_action(board_action)
 	var delay := 0.35 if bool(ProjectSettings.get_setting("potion_rogue/reduced_effects", false)) else 1.2
 	get_tree().create_timer(delay).timeout.connect(func():
 		if not battle.battle_over: board.enabled = true)
+
+
+func _apply_boss_board_action(action: String) -> bool:
+	match action:
+		"heat_seal":
+			for index in board.tubes.size():
+				if not board.tubes[index].contents.is_empty() and not board.tubes[index].is_locked():
+					return board.try_board_commands([
+							{"type": "lock_tube", "tube": index, "moves": 1}])
+		"spore_corrupt":
+			for index in board.tubes.size():
+				if not board.tubes[index].contents.is_empty():
+					return board.tubes[index].add_layer_effect(
+							board.tubes[index].contents.size() - 1, "cursed")
+		"gravity_shift":
+			for first in board.tubes.size():
+				if board.tubes[first].contents.is_empty():
+					continue
+				for second in range(first + 1, board.tubes.size()):
+					if board.tubes[second].contents.is_empty():
+						continue
+					if board.try_board_commands([
+							{"type": "swap_top", "tube": first, "other": second}]):
+						return true
+	return false
 
 
 func _on_combo_triggered(text: String) -> void:
