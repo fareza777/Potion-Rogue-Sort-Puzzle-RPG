@@ -25,7 +25,7 @@ var overlay: Control
 var overlay_title: Label
 var overlay_body: Label
 var overlay_choices: VBoxContainer
-var overlay_buttons: HBoxContainer
+var overlay_buttons: VBoxContainer
 var battle_fx: BattleFx
 var _layout_profile: Dictionary
 var objective_controller: ObjectiveController
@@ -626,9 +626,9 @@ func _build_overlay() -> void:
 	overlay_choices.add_theme_constant_override("separation", 12)
 	box.add_child(overlay_choices)
 
-	overlay_buttons = HBoxContainer.new()
+	overlay_buttons = VBoxContainer.new()
 	overlay_buttons.alignment = BoxContainer.ALIGNMENT_CENTER
-	overlay_buttons.add_theme_constant_override("separation", 18)
+	overlay_buttons.add_theme_constant_override("separation", 10)
 	box.add_child(overlay_buttons)
 
 
@@ -947,7 +947,8 @@ func _show_overlay(title: String, body: String, buttons: Array) -> void:
 	for child in overlay_buttons.get_children():
 		child.queue_free()
 	for entry in buttons:
-		var button := UiKit.ornate_button(entry[0], Vector2(220, 64))
+		var button := UiKit.ornate_button(entry[0], Vector2(390, 58))
+		button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		button.pressed.connect(entry[1])
 		overlay_buttons.add_child(button)
 	overlay.visible = true

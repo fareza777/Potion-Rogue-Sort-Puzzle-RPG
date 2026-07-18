@@ -6,10 +6,10 @@ var failures := 0
 func _ready() -> void:
 	var original := SaveSystem.data.duplicate(true)
 	SaveSystem.data = SaveSystem.DEFAULT_DATA.duplicate(true)
-	check(SaveSystem.setting("color_patterns") == true, "color pattern assistance defaults on")
+	check(SaveSystem.setting("color_patterns") == false, "clean potion liquids default without symbols")
 	var tube_source := FileAccess.get_file_as_string("res://src/puzzle/potion_tube.gd")
-	check(tube_source.contains("_draw_color_pattern") and tube_source.contains("ui_accept"),
-			"potion tubes combine non-color marks with keyboard activation")
+	check(not tube_source.contains("_draw_color_pattern") and tube_source.contains("ui_accept"),
+			"potion tubes stay visually clean while retaining keyboard activation")
 	var board_source := FileAccess.get_file_as_string("res://src/puzzle/puzzle_board.gd")
 	check(board_source.contains("focus_neighbor_left") and board_source.contains("focus_neighbor_right"),
 			"potion row exposes an explicit focus graph")
@@ -17,8 +17,8 @@ func _ready() -> void:
 	check(battle_source.contains("ui_cancel") and battle_source.contains("_show_pause"),
 			"Android Back and controller cancel pause battle")
 	var settings_source := FileAccess.get_file_as_string("res://src/ui/settings_screen.gd")
-	check(settings_source.contains("COLOR PATTERNS") and settings_source.contains("REDUCED EFFECTS"),
-			"accessibility settings are player configurable")
+	check(not settings_source.contains("COLOR PATTERNS") and settings_source.contains("REDUCED EFFECTS"),
+			"obsolete symbols are removed while Reduced Effects remains configurable")
 	SaveSystem.data = original; SaveSystem.save()
 	print("---\n%d checks, %d failures" % [checks, failures])
 	get_tree().quit(1 if failures else 0)
