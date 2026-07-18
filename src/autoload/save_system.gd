@@ -5,6 +5,8 @@ extends Node
 ## so a bad save can never crash the game.
 
 const SAVE_PATH := "user://save.json"
+const SAVE_TEMP_PATH := SAVE_PATH + ".tmp"
+const SAVE_BACKUP_PATH := SAVE_PATH + ".bak"
 const SAVE_VERSION := 7
 
 const DEFAULT_DATA := {
@@ -41,23 +43,46 @@ func _ready() -> void:
 
 func load_save() -> void:
 	data = DEFAULT_DATA.duplicate(true)
-	if not FileAccess.file_exists(SAVE_PATH):
+	var parsed := load_from_paths(SAVE_PATH, SAVE_BACKUP_PATH)
+	if parsed.is_empty():
+		if FileAccess.file_exists(SAVE_PATH):
+			push_warning("Save and backup are unreadable, starting fresh.")
 		return
-	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
-	if file == null:
-		push_warning("Save file unreadable, starting fresh.")
-		return
-	var parsed: Variant = JSON.parse_string(file.get_as_text())
-	if typeof(parsed) != TYPE_DICTIONARY:
-		push_warning("Save file corrupt, starting fresh.")
-		return
-	parsed = migrate(parsed)
 	# Merge over defaults so keys missing from older saves keep default values.
 	for key in parsed: data[key] = parsed[key]
 	for key in DEFAULT_DATA["settings"]:
 		if not (data["settings"] as Dictionary).has(key):
 			data["settings"][key] = DEFAULT_DATA["settings"][key]
 	data["version"] = SAVE_VERSION
+	# A valid backup is immediately promoted so the next launch is healthy too.
+	if not parse_save_text(_read_text(SAVE_PATH)).is_empty():
+		return
+	write_atomic(data, SAVE_PATH)
+
+
+func parse_save_text(text: String) -> Dictionary:
+	if text.strip_edges().is_empty(): return {}
+	var parser := JSON.new()
+	if parser.parse(text) != OK: return {}
+	var parsed: Variant = parser.data
+	if typeof(parsed) != TYPE_DICTIONARY: return {}
+	return migrate(parsed as Dictionary)
+
+
+func load_from_paths(primary_path: String, backup_path: String) -> Dictionary:
+	var primary := parse_save_text(_read_text(primary_path))
+	if not primary.is_empty(): return primary
+	var backup := parse_save_text(_read_text(backup_path))
+	if not backup.is_empty():
+		push_warning("Primary save is corrupt; recovered the previous checkpoint.")
+	return backup
+
+
+func _read_text(path: String) -> String:
+	if not FileAccess.file_exists(path): return ""
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null: return ""
+	return file.get_as_text()
 
 
 func migrate(source: Dictionary) -> Dictionary:
@@ -106,11 +131,41 @@ func migrate(source: Dictionary) -> Dictionary:
 
 
 func save() -> void:
-	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-	if file == null:
+	if not write_atomic(data, SAVE_PATH):
 		push_warning("Could not write save file.")
-		return
-	file.store_string(JSON.stringify(data, "\t"))
+
+
+func write_atomic(payload: Dictionary, path := SAVE_PATH) -> bool:
+	var temp_path: String = path + ".tmp"
+	var backup_path: String = path + ".bak"
+	var temp := FileAccess.open(temp_path, FileAccess.WRITE)
+	if temp == null: return false
+	temp.store_string(JSON.stringify(payload, "\t"))
+	temp.flush()
+	temp.close()
+	if parse_save_text(_read_text(temp_path)).is_empty():
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(temp_path))
+		return false
+	# Never replace the recovery point with corrupt data.
+	var previous_text := _read_text(path)
+	if not parse_save_text(previous_text).is_empty():
+		var backup_temp := FileAccess.open(backup_path + ".tmp", FileAccess.WRITE)
+		if backup_temp == null: return false
+		backup_temp.store_string(previous_text)
+		backup_temp.flush()
+		backup_temp.close()
+		_replace_file(backup_path + ".tmp", backup_path)
+	if FileAccess.file_exists(path):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	return DirAccess.rename_absolute(ProjectSettings.globalize_path(temp_path),
+			ProjectSettings.globalize_path(path)) == OK
+
+
+func _replace_file(source: String, destination: String) -> bool:
+	if FileAccess.file_exists(destination):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(destination))
+	return DirAccess.rename_absolute(ProjectSettings.globalize_path(source),
+			ProjectSettings.globalize_path(destination)) == OK
 
 
 func reset_progress() -> void:
