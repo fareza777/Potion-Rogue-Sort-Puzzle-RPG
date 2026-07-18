@@ -30,6 +30,7 @@ var battle_fx: BattleFx
 var _layout_profile: Dictionary
 var objective_controller: ObjectiveController
 var intent_controller: EnemyIntentController
+var signature_controller: EnemySignatureController
 var modifier_controller: ModifierController
 var combo_resolver: ComboResolver
 var skill_controller: SkillController
@@ -119,6 +120,7 @@ func _capture_encounter() -> Dictionary:
 		"skill": skill_controller.snapshot(),
 		"objective": objective_controller.snapshot(),
 		"intent": intent_controller.snapshot(),
+		"signature": signature_controller.snapshot(),
 		"combo": combo_resolver.snapshot(),
 		"boss_phase": boss_phase_controller.snapshot() if boss_phase_controller != null else {},
 	}
@@ -134,6 +136,7 @@ func _restore_encounter(snapshot: Dictionary) -> bool:
 	skill_controller.restore(snapshot.get("skill", {}))
 	objective_controller.restore(snapshot.get("objective", {}))
 	intent_controller.restore(snapshot.get("intent", {}))
+	signature_controller.restore(snapshot.get("signature", {}))
 	combo_resolver.restore(snapshot.get("combo", {}))
 	if boss_phase_controller != null:
 		var boss_data: Dictionary = snapshot.get("boss_phase", {})
@@ -182,6 +185,10 @@ func _setup_tactical_controllers(enemy_id: String) -> void:
 	intent_controller.set_battle_values(battle.enemy_attack, 0.0, battle.attack_every)
 	battle.intent_controller = intent_controller
 	battle.intent_board = board
+	signature_controller = EnemySignatureController.new()
+	signature_controller.configure(enemy_id, GameState.enemies.get(enemy_id, {}),
+			RunState.run_seed + RunState.battle_index * 37 + 11)
+	board.move_made.connect(_on_signature_move)
 	if RunState.is_boss_battle():
 		boss_phase_controller = BossPhaseController.new()
 		boss_phase_controller.phase_changed.connect(_on_boss_phase_changed)
@@ -225,6 +232,38 @@ func _on_tactical_move() -> void:
 	_refresh_tactical_hud()
 
 
+func _on_signature_move() -> void:
+	var payload := signature_controller.on_player_move(board)
+	if not bool(payload.get("triggered", false)):
+		return
+	match str(payload.get("id", "")):
+		"hunt":
+			battle.moves_until_attack = maxi(battle.moves_until_attack
+					- int(payload.get("pressure", 1)), 1)
+		"siphon":
+			skill_controller.mana = maxi(skill_controller.mana
+					- int(payload.get("mana_loss", 0)), 0)
+			skill_controller.mana_changed.emit(skill_controller.mana, 100)
+		"corrupt":
+			_mark_signature_layer(int(payload.get("target_tube", -1)), "cursed")
+		"split":
+			_mark_signature_layer(int(payload.get("target_tube", -1)), "volatile")
+		"ward":
+			battle.add_enemy_armor(2)
+	_set_message(str(payload.get("warning", payload.get("label", "Enemy trick!"))))
+	AudioManager.play("lock")
+	_checkpoint_encounter_deferred()
+	_refresh()
+
+
+func _mark_signature_layer(tube_index: int, effect: String) -> void:
+	if tube_index < 0 or tube_index >= board.tubes.size():
+		return
+	var tube := board.tubes[tube_index]
+	if not tube.contents.is_empty():
+		tube.add_layer_effect(tube.contents.size() - 1, effect)
+
+
 func _on_depth_potion_completed(color: String) -> void:
 	_tutorial_action("complete_potion")
 	objective_controller.on_potion_completed(color)
@@ -256,7 +295,12 @@ func _refresh_tactical_hud() -> void:
 	if intent_controller == null or skill_controller == null or intent_label == null: return
 	intent_controller.set_battle_values(battle.enemy_attack, 0.0, battle.moves_until_attack)
 	var preview := intent_controller.preview()
-	intent_label.text = "NEXT  %s  %d dmg  •  %d moves" % [str(preview.label), int(preview.damage_max), battle.moves_until_attack]
+	var trick := signature_controller.preview() if signature_controller != null else {}
+	var trick_text := "" if str(trick.get("id", "")).is_empty() else \
+			"  |  TRICK  %s  •  %d moves" % [str(trick.get("label", "")),
+			int(trick.get("moves_remaining", 0))]
+	intent_label.text = "NEXT  %s  %d dmg  •  %d moves%s" % [str(preview.label),
+			int(preview.damage_max), battle.moves_until_attack, trick_text]
 	mana_bar.value = skill_controller.mana
 	mana_label.text = "MANA  %d/100" % skill_controller.mana
 	var history := combo_resolver.history(); var slots: Array[String] = []
