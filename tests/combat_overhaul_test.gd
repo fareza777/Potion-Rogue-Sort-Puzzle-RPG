@@ -34,6 +34,13 @@ func _ready() -> void:
 	var screen := FileAccess.get_file_as_string("res://src/ui/battle_screen.gd")
 	check(screen.contains("cast_ultimate") and screen.contains("break_armor"),
 			"battle screen applies authored ultimate payloads")
+	var fx := BattleFx.new(); add_child(fx)
+	check(fx.has_method("impact_freeze"), "battle FX exposes bounded hit stop")
+	if fx.has_method("impact_freeze"):
+		fx.set_reduced_effects(true)
+		fx.call("impact_freeze", 500)
+		check(is_equal_approx(Engine.time_scale, 1.0),
+				"reduced effects bypasses hit stop")
 
 	print("---\n%d checks, %d failures" % [checks, failures])
 	get_tree().quit(1 if failures else 0)

@@ -339,6 +339,8 @@ func _on_ultimate_pressed() -> void:
 	var result := skill_controller.cast_ultimate({"enemy_armor": battle.enemy_armor})
 	if not bool(result.get("ok", false)): return
 	battle_fx.play_ultimate(RunState.kit_id)
+	battle_fx.impact_freeze(70)
+	AudioManager.duck_music(0.42, 8.0)
 	if int(result.get("break_armor", 0)) > 0:
 		battle.break_enemy_armor(int(result.break_armor))
 	if int(result.get("damage", 0)) > 0:
@@ -769,6 +771,8 @@ func _on_enemy_damaged(amount: int) -> void:
 func _on_boss_phase_changed(index: int, config: Dictionary) -> void:
 	board.enabled = false
 	battle_fx.play_phase_transition(str(config.get("id", "phase")))
+	battle_fx.impact_freeze(85)
+	AudioManager.duck_music(0.65, 10.0)
 	AudioManager.set_combat_layer("boss_phase_%d" % (index + 1))
 	_set_message("PHASE %d — %s" % [index + 1, str(config.get("title", "INFERNO"))])
 	if int(config.get("armor", 0)) > 0: battle.add_enemy_armor(int(config.armor))
@@ -818,6 +822,8 @@ func _on_combo_triggered(text: String) -> void:
 
 func _on_enemy_attacked(damage: int, blocked: int, crit: bool) -> void:
 	enemy_display.play_attack()
+	battle_fx.impact_freeze(75 if crit else 45)
+	AudioManager.duck_music(0.28, 7.0 if crit else 4.0)
 	battle_fx.enemy_strike(_enemy_center(), _player_bar_center())
 	var prefix := "CRITICAL! " if crit else ""
 	if blocked >= damage:

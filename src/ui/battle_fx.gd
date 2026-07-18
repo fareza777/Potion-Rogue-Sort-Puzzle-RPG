@@ -4,6 +4,7 @@ extends Control
 ## BattleManager state; callers pass screen positions and colors explicitly.
 
 var reduced_effects := false
+var _freeze_serial := 0
 
 
 func _ready() -> void:
@@ -14,6 +15,21 @@ func _ready() -> void:
 
 func set_reduced_effects(value: bool) -> void:
 	reduced_effects = value
+
+
+## Short, bounded impact pause. Timer ignores time scale so recovery is guaranteed.
+func impact_freeze(duration_ms: int) -> int:
+	if reduced_effects or get_tree() == null:
+		return 0
+	var applied := clampi(duration_ms, 20, 90)
+	_freeze_serial += 1
+	var serial := _freeze_serial
+	Engine.time_scale = 0.08
+	get_tree().create_timer(float(applied) / 1000.0, true, false, true).timeout.connect(
+			func() -> void:
+				if serial == _freeze_serial:
+					Engine.time_scale = 1.0)
+	return applied
 
 
 func hit(target: Control, strength: float = 1.0) -> void:

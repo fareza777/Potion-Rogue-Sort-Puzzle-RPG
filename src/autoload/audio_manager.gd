@@ -21,6 +21,7 @@ var _stem_players: Array[AudioStreamPlayer] = []
 var _preview_index := 0
 var _area_music := "dungeon"
 var _stem_cache: Dictionary = {}
+var _duck_serial := 0
 
 
 func _ready() -> void:
@@ -62,6 +63,27 @@ func play_music(track: String) -> void:
 	var layer := "boss_phase_1" if track == "boss" else "explore"
 	_combat_layer = layer
 	_play_layer_stems(layer)
+
+
+## Temporarily lowers the Music bus without changing the user's saved volume.
+func duck_music(duration: float, depth_db: float) -> float:
+	if float(SaveSystem.setting("music")) <= 0.001 or get_tree() == null:
+		return 0.0
+	var applied_depth := clampf(depth_db, 0.0, 18.0)
+	if applied_depth <= 0.0:
+		return 0.0
+	var idx := AudioServer.get_bus_index("Music")
+	if idx < 0:
+		return 0.0
+	_duck_serial += 1
+	var serial := _duck_serial
+	var user_value := maxf(float(SaveSystem.setting("music")), 0.0001)
+	AudioServer.set_bus_volume_db(idx, linear_to_db(user_value) - applied_depth)
+	get_tree().create_timer(clampf(duration, 0.05, 1.5), true, false, true).timeout.connect(
+			func() -> void:
+				if serial == _duck_serial:
+					set_music_volume(float(SaveSystem.setting("music"))))
+	return applied_depth
 
 
 func set_combat_layer(layer: String) -> void:

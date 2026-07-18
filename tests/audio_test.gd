@@ -9,6 +9,10 @@ func _ready() -> void:
 	AudioManager.set_music_volume(0.8); AudioManager.set_combat_layer("battle")
 	check(AudioManager.current_combat_layer() == "battle", "battle music layer activates")
 	check(AudioManager.music_is_audible(), "default music setting is audible")
+	check(AudioManager.has_method("duck_music"), "soundtrack exposes bounded impact ducking")
+	if AudioManager.has_method("duck_music"):
+		check(is_equal_approx(float(AudioManager.call("duck_music", 0.01, 99.0)), 18.0),
+				"music duck depth is clamped to safe maximum")
 	check(AudioManager.get("_stem_players").size() == 2, "music has melodic and percussion stems")
 	check(AudioManager.has_method("stem_cache_size"), "generated music stems expose bounded cache telemetry")
 	AudioManager.set_combat_layer("battle")
@@ -29,6 +33,9 @@ func _ready() -> void:
 	check(preview != "battle" and AudioManager.current_combat_layer() == preview, "settings preview cycles soundtrack")
 	SaveSystem.data.settings.music = 0.0; AudioManager.set_music_volume(0.0)
 	check(not AudioManager.music_is_audible(), "zero percent remains a true mute")
+	if AudioManager.has_method("duck_music"):
+		check(is_zero_approx(float(AudioManager.call("duck_music", 0.2, 8.0))),
+				"muted soundtrack never becomes audible through duck recovery")
 	SaveSystem.data = original
 	print("---\n%d checks, %d failures" % [checks, failures]); get_tree().quit(1 if failures else 0)
 
