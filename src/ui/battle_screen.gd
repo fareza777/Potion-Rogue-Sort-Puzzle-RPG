@@ -519,7 +519,7 @@ func _build_button_row() -> HBoxContainer:
 	var restart := UiKit.icon_button(VisualRegistry.ui_icon("mix"), -1,
 			"Brew a new potion mix")
 	restart.pressed.connect(_on_restart_pressed)
-	row.add_child(_action_stack(restart, "New Mix"))
+	row.add_child(_action_stack(restart, "New Mix\n1 Move"))
 
 	var pause := UiKit.icon_button(VisualRegistry.ui_icon("pause"), -1,
 			"Pause the battle")
@@ -936,7 +936,9 @@ func _on_restart_pressed() -> void:
 	if battle.battle_over:
 		return
 	board.generate_board()
-	_set_message("Potions remixed!")
+	battle.on_move()
+	_set_message("Potions remixed — 1 move spent")
+	_checkpoint_encounter()
 	_refresh()
 
 

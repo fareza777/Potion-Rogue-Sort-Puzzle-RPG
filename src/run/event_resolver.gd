@@ -11,6 +11,33 @@ func preview(event_id: String, choice_id: String) -> Dictionary:
 		"effects": choice.get("effects", []).duplicate(true)}
 
 
+func choice_summary(event_id: String, choice_id: String) -> String:
+	var result := preview(event_id, choice_id)
+	if not bool(result.get("ok", false)):
+		return "Unavailable"
+	var costs: Array[String] = []
+	var gains: Array[String] = []
+	if int(result.cost) > 0:
+		costs.append("Cost: %d run crystals" % int(result.cost))
+	for raw_effect in result.effects:
+		var effect: Dictionary = raw_effect
+		var value := int(effect.get("value", 0))
+		match str(effect.get("op", "")):
+			"heal": gains.append("Restore %d HP" % value)
+			"heal_percent": gains.append("Restore %d%% max HP" % roundi(float(effect.get("value", 0.0)) * 100.0))
+			"damage": costs.append("Lose: %d HP (cannot kill you)" % value)
+			"crystals": gains.append("Gain: %d run crystals" % value)
+			"cleanse": gains.append("Cleanse %d curse" % value)
+			"curse": costs.append("Gain %d curse" % value)
+			"add_mutation": gains.append("Gain: 1 random mutation")
+			"add_relic": gains.append("Gain: 1 random relic")
+			"add_catalyst": gains.append("Gain: 1 random catalyst")
+	var parts: Array[String] = []
+	parts.append_array(costs)
+	parts.append_array(gains)
+	return "  •  ".join(parts) if not parts.is_empty() else "No mechanical effect"
+
+
 func apply(event_id: String, choice_id: String, run: Node) -> Dictionary:
 	var result := preview(event_id, choice_id)
 	if not result.ok: return result
@@ -32,6 +59,7 @@ func apply(event_id: String, choice_id: String, run: Node) -> Dictionary:
 			"add_relic": run.add_relic(_draft("relic", run))
 			"add_catalyst": run.add_catalyst(_draft("catalyst", run))
 	run.resolved_event_ids.append(resolution_key)
+	result["result_summary"] = choice_summary(event_id, choice_id)
 	return result
 
 
