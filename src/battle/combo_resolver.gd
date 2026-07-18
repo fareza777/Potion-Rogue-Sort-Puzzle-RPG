@@ -51,6 +51,19 @@ func consume_ultimate() -> bool:
 	return true
 
 
+func snapshot() -> Dictionary:
+	return {"history": _history.duplicate(), "ultimate_charge": _ultimate_charge}
+
+
+func restore(snapshot_data: Dictionary) -> void:
+	_history.clear()
+	for color in snapshot_data.get("history", []):
+		_history.append(str(color))
+	while _history.size() > HISTORY_LIMIT:
+		_history.pop_front()
+	_ultimate_charge = clampi(int(snapshot_data.get("ultimate_charge", 0)), 0, 100)
+
+
 func _matches_suffix(pattern: Array) -> bool:
 	if pattern.is_empty() or pattern.size() > _history.size():
 		return false

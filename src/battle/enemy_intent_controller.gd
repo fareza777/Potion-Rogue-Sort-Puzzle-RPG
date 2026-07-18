@@ -109,3 +109,14 @@ func _attack_multiplier(config: Dictionary) -> float:
 		if str(action.get("type", "")) == "attack":
 			return maxf(float(action.get("multiplier", 1.0)), 0.0)
 	return 0.0
+
+
+func snapshot() -> Dictionary:
+	return {"enemy_id": enemy_id, "current": _current.duplicate(true), "rng_state": _rng.state}
+
+
+func restore(snapshot_data: Dictionary) -> void:
+	if str(snapshot_data.get("enemy_id", "")) != enemy_id:
+		return
+	_current = (snapshot_data.get("current", _current) as Dictionary).duplicate(true)
+	_rng.state = int(snapshot_data.get("rng_state", _rng.state))

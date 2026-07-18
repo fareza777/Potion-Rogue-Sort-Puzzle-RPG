@@ -78,21 +78,68 @@ func _ready() -> void:
 	var entry := RunState.current_battle()
 	battle.setup(str(entry.get("enemy", "slime")))
 	_setup_tactical_controllers(str(entry.get("enemy", "slime")))
+	var encounter: Dictionary = RunState.phase_payload.get("encounter", {})
+	var resumed := not encounter.is_empty() and _restore_encounter(encounter)
 	enemy_display.configure_enemy(str(entry.get("enemy", "slime")),
 			battle.enemy_shape, battle.enemy_color)
 	enemy_display.play_intro()
-	undo_left = battle.undos_allowed()
-	_set_message("Sort potions of one color to unleash them!")
+	undo_left = int(encounter.get("undo_left", battle.undos_allowed())) if resumed else battle.undos_allowed()
+	_set_message("Battle resumed exactly where you left it." if resumed \
+			else "Sort potions of one color to unleash them!")
 
 	var combat_kind := str(entry.get("kind", "battle"))
 	AudioManager.set_area(str(RunState.current_area().get("music", "dungeon")))
 	AudioManager.set_combat_layer("boss_phase_1" if combat_kind == "boss" else "elite" if combat_kind == "elite" else "battle")
-	if not SaveSystem.is_tutorial_done() and RunState.battle_index == 0:
+	if not resumed and not SaveSystem.is_tutorial_done() and RunState.battle_index == 0:
 		board.generate_tutorial_board()
 		tutorial_director = TutorialDirector.new(); tutorial_director.configure()
 		tutorial_overlay = Tutorial.new(); add_child(tutorial_overlay)
 		tutorial_overlay.setup(self, tutorial_director, _tutorial_target)
+	board.move_made.connect(_checkpoint_encounter_deferred)
+	board.tube_completed.connect(func(_color: String) -> void: _checkpoint_encounter_deferred())
+	_checkpoint_encounter()
 	_refresh()
+
+
+func _capture_encounter() -> Dictionary:
+	return {
+		"version": 1,
+		"battle": battle.export_snapshot(),
+		"board": board.export_snapshot(),
+		"undo_left": undo_left,
+		"skill": skill_controller.snapshot(),
+		"objective": objective_controller.snapshot(),
+		"intent": intent_controller.snapshot(),
+		"combo": combo_resolver.snapshot(),
+		"boss_phase": boss_phase_controller.snapshot() if boss_phase_controller != null else {},
+	}
+
+
+func _restore_encounter(snapshot: Dictionary) -> bool:
+	if int(snapshot.get("version", 0)) != 1:
+		return false
+	var restored := battle.restore_snapshot(snapshot.get("battle", {})) \
+			and board.restore_snapshot(snapshot.get("board", {}))
+	if not restored:
+		return false
+	skill_controller.restore(snapshot.get("skill", {}))
+	objective_controller.restore(snapshot.get("objective", {}))
+	intent_controller.restore(snapshot.get("intent", {}))
+	combo_resolver.restore(snapshot.get("combo", {}))
+	if boss_phase_controller != null:
+		var boss_data: Dictionary = snapshot.get("boss_phase", {})
+		boss_phase_controller.configure(battle.enemy_id, battle.enemy_max_hp,
+				int(boss_data.get("phase_index", -1)))
+	return true
+
+
+func _checkpoint_encounter_deferred() -> void:
+	call_deferred("_checkpoint_encounter")
+
+
+func _checkpoint_encounter() -> void:
+	if battle != null and board != null and not battle.battle_over and RunState.active:
+		RunState.checkpoint(RunState.PHASE_BATTLE, {"encounter": _capture_encounter()})
 
 
 func _tutorial_target(target_name: String) -> Control:
@@ -725,6 +772,9 @@ func _on_battle_won() -> void:
 	var was_last := RunState.is_last_battle()
 	var was_elite := str(RunState.current_battle().get("kind", "battle")) == "elite"
 	var campaign_result := RunState.complete_battle(battle.player_hp, battle.crystals_reward)
+	if not was_last:
+		RunState.checkpoint(RunState.PHASE_REWARD, {"encounter": _capture_encounter(),
+				"elite": was_elite})
 	if was_last:
 		var area_name := str(RunState.current_area().get("name", "expedition"))
 		var first_reward := int(campaign_result.get("reward", 0))
@@ -779,6 +829,7 @@ func _show_relic_choice() -> void:
 
 func _on_relic_picked(id: String) -> void:
 	RunState.pick_relic(id)
+	RunState.checkpoint(RunState.PHASE_MAP)
 	get_tree().change_scene_to_file("res://scenes/map.tscn")
 
 
@@ -789,6 +840,7 @@ func _on_upgrade_picked(id: String) -> void:
 	if heal_now > 0:
 		RunState.player_hp = mini(RunState.player_hp + heal_now,
 				int(RunState.stat("max_hp", float(GameState.player.get("max_hp", 50)))))
+	RunState.checkpoint(RunState.PHASE_MAP)
 	get_tree().change_scene_to_file("res://scenes/map.tscn")
 
 
@@ -819,10 +871,29 @@ func _show_pause() -> void:
 	if battle.battle_over:
 		return
 	board.enabled = false
-	_show_overlay("Paused", "", [
+	_show_overlay("Paused", "Your exact battle state is saved automatically.", [
 		["Resume", _hide_overlay],
-		["Abandon Run", _go_to_menu],
+		["Save & Exit", _save_and_exit],
+		["Abandon Run", _confirm_abandon],
 	])
+
+
+func _save_and_exit() -> void:
+	_checkpoint_encounter()
+	_go_to_menu()
+
+
+func _confirm_abandon() -> void:
+	_show_overlay("Abandon this run?",
+			"You keep half of this run's crystals. The current expedition and battle cannot be recovered.", [
+		["Keep Fighting", _show_pause],
+		["Confirm Abandon", _abandon_run],
+	])
+
+
+func _abandon_run() -> void:
+	RunState.abandon_run()
+	_go_to_menu()
 
 
 ## buttons: Array of [text, Callable] pairs.
@@ -857,6 +928,7 @@ func _on_undo_pressed() -> void:
 		battle.on_undo()
 		_set_message("Move undone.")
 		_tutorial_action("undo")
+		_checkpoint_encounter()
 		_refresh()
 
 

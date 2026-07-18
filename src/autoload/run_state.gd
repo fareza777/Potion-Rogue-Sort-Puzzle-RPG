@@ -383,7 +383,9 @@ func complete_battle(hp_left: int, crystals_reward: int) -> Dictionary:
 		active = false
 		SaveSystem.add_crystals(run_crystals)
 		SaveSystem.bump_stat("runs_won")
-		return SaveSystem.complete_area(area_id)
+		var result := SaveSystem.complete_area(area_id)
+		SaveSystem.clear_active_run()
+		return result
 	else:
 		battle_index += 1
 		SaveSystem.record_area_depth(area_id, int(current_node().get("floor", battle_index)))

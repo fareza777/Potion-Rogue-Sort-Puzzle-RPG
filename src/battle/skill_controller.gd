@@ -55,3 +55,12 @@ func consume_ultimate() -> bool:
 	if not ultimate_ready(): return false
 	_ultimate = 0
 	return true
+
+func snapshot() -> Dictionary:
+	return {"mana": mana, "ultimate": _ultimate, "cooldowns": _cooldowns.duplicate(true)}
+
+func restore(snapshot_data: Dictionary) -> void:
+	mana = clampi(int(snapshot_data.get("mana", 0)), 0, 100)
+	_ultimate = clampi(int(snapshot_data.get("ultimate", 0)), 0, 100)
+	_cooldowns = (snapshot_data.get("cooldowns", {}) as Dictionary).duplicate(true)
+	mana_changed.emit(mana, 100)
