@@ -5,10 +5,19 @@ var checks := 0
 
 func _ready() -> void:
 	var signatures := {}
+	var director_metadata_safe := true
 	for seed in 2000:
 		var graph := RunGenerator.new().generate(seed)
 		var repeat := RunGenerator.new().generate(seed)
 		var nodes: Array = graph.nodes
+		director_metadata_safe = director_metadata_safe \
+				and graph.has("director_version") and int(graph.director_version) == 1
+		for node in nodes:
+			director_metadata_safe = director_metadata_safe and node.has("reveal_kind") \
+					and int(node.get("risk", 0)) in range(1, 5)
+			if str(node.kind) in ["battle", "elite"]:
+				director_metadata_safe = director_metadata_safe \
+						and str(node.get("reveal_kind", "")) in ["BATTLE", "ELITE"]
 		assert_check(nodes.size() >= 12 and nodes.size() <= 15, "node count")
 		assert_check(JSON.stringify(graph) == JSON.stringify(repeat), "seed determinism")
 		var bosses := nodes.filter(func(n: Dictionary) -> bool: return n.kind == "boss")
@@ -23,6 +32,8 @@ func _ready() -> void:
 		assert_check(_contracts_are_compatible(graph), "compatible contracts")
 		signatures[JSON.stringify(nodes)] = true
 	assert_check(signatures.size() > 1900, "cross-seed route variation")
+	assert_check(director_metadata_safe,
+			"all seeded graphs expose safe route metadata from director v1")
 	_test_area_identity()
 	_test_events()
 	print("---\n%d checks, %d failures" % [checks, failures])

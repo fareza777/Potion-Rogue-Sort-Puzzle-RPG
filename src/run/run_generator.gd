@@ -2,7 +2,6 @@ class_name RunGenerator
 extends RefCounted
 
 const FLOOR_COUNT := 7
-const NONCOMBAT_KINDS := ["event", "event", "shop", "treasure", "campfire"]
 const INTRO_MODIFIERS := ["hidden_layer", "frozen_tube"]
 const ADVANCED_MODIFIERS := ["cursed_layer", "volatile_liquid", "wild_essence", "chain_lock", "corruption", "unstable_flask"]
 
@@ -14,6 +13,7 @@ func generate(seed: int, area_id := "shadow_crypt") -> Dictionary:
 		area = GameState.area(area_id)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
+	var director := RunDirector.new()
 	var intro_pool: Array = area.get("enemy_pools", {}).get("intro", ["slime"])
 	var nodes: Array = [_node("f0_l1", 0, 1, "start", str(intro_pool[0]), area)]
 	var expanded_floors: Array[int] = []
@@ -27,7 +27,8 @@ func generate(seed: int, area_id := "shadow_crypt") -> Dictionary:
 		var noncombat_slot := rng.randi_range(0, lanes.size() - 1) if floor in [2, 4] else -1
 		for slot in lanes.size():
 			var lane: int = int(lanes[slot])
-			var kind := _kind_for_node(floor, slot, noncombat_slot, rng)
+			var context := {"hp_ratio": 1.0, "power": 0.0}
+			var kind := director.assign_kind(floor, slot, noncombat_slot, context, rng)
 			var enemy := _enemy_for_floor(floor, kind, rng, area)
 			var created := _node("f%d_l%d" % [floor, lane], floor, lane, kind, enemy, area)
 			_decorate_contract(created, rng)
@@ -37,16 +38,8 @@ func generate(seed: int, area_id := "shadow_crypt") -> Dictionary:
 	boss.contract.objective_id = "defeat"
 	nodes.append(boss)
 	_link_floors(nodes)
-	return {"seed": seed, "area_id": area_id, "nodes": nodes, "start": "f0_l1", "boss": "f6_boss"}
-
-
-func _kind_for_node(floor: int, slot: int, noncombat_slot: int,
-		rng: RandomNumberGenerator) -> String:
-	if slot == noncombat_slot:
-		return str(NONCOMBAT_KINDS[rng.randi_range(0, NONCOMBAT_KINDS.size() - 1)])
-	if floor >= 3 and rng.randf() < 0.18:
-		return "elite"
-	return "battle"
+	return {"seed": seed, "area_id": area_id, "nodes": nodes, "start": "f0_l1",
+			"boss": "f6_boss", "director_version": RunDirector.VERSION}
 
 
 func _lanes_for_floor(rng: RandomNumberGenerator, expanded: bool) -> Array[int]:
@@ -73,8 +66,11 @@ func _enemy_for_floor(floor: int, kind: String, rng: RandomNumberGenerator,
 func _node(id: String, floor: int, lane: int, kind: String, enemy: String,
 		area: Dictionary) -> Dictionary:
 	var budget := ThreatBudget.new().for_node(floor, kind, area.get("threat_multiplier", 1.0))
+	var director := RunDirector.new()
 	return {"id": id, "floor": floor, "lane": lane, "kind": kind,
 		"enemy": enemy, "links": [], "visited": false,
+		"reveal_kind": director.reveal_for(kind),
+		"risk": director.risk_for(floor, kind),
 		"contract": {"enemy_id": enemy, "objective_id": "defeat",
 			"modifier_ids": [], "threat": budget}}
 
