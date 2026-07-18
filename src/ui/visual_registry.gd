@@ -66,9 +66,14 @@ const POTIONS := {
 }
 
 const UI_ICONS := {
-	"undo": "res://assets/art/ui/controls/icon_undo.png",
-	"mix": "res://assets/art/ui/controls/icon_mix.png",
-	"pause": "res://assets/art/ui/controls/icon_pause.png",
+	"hero": "res://assets/art/ui/nav/hero.png",
+	"upgrades": "res://assets/art/ui/nav/upgrades.png",
+	"home": "res://assets/art/ui/nav/home.png",
+	"map": "res://assets/art/ui/nav/map.png",
+	"settings": "res://assets/art/ui/nav/settings.png",
+	"undo": "res://assets/art/ui/nav/undo.png",
+	"mix": "res://assets/art/ui/nav/mix.png",
+	"pause": "res://assets/art/ui/nav/pause.png",
 	"music": "res://assets/art/ui/controls/icon_music.png",
 	"sound": "res://assets/art/ui/controls/icon_sound.png",
 	"vibration": "res://assets/art/ui/controls/icon_vibration.png",

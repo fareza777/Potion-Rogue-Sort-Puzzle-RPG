@@ -534,8 +534,7 @@ func _build_button_row() -> HBoxContainer:
 	row.custom_minimum_size = Vector2(0, 106)
 	row.add_theme_constant_override("separation", 42)
 
-	undo_button = UiKit.icon_button(VisualRegistry.ui_icon("undo"), -1,
-			"Undo the last pour")
+	undo_button = ActionIconButton.new().configure("undo", "Undo", "Undo the last pour")
 	undo_button.name = "UndoAction"
 	undo_count_label = UiKit.label("3", 18, Color("f5d681"))
 	undo_count_label.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
@@ -550,13 +549,12 @@ func _build_button_row() -> HBoxContainer:
 	undo_button.pressed.connect(_on_undo_pressed)
 	row.add_child(_action_stack(undo_button, "Undo"))
 
-	var restart := UiKit.icon_button(VisualRegistry.ui_icon("mix"), -1,
-			"Brew a new potion mix")
+	var restart := ActionIconButton.new().configure("mix", "New Mix",
+			"Brew a new potion mix — costs 1 move")
 	restart.pressed.connect(_on_restart_pressed)
 	row.add_child(_action_stack(restart, "New Mix\n1 Move"))
 
-	var pause := UiKit.icon_button(VisualRegistry.ui_icon("pause"), -1,
-			"Pause the battle")
+	var pause := ActionIconButton.new().configure("pause", "Pause", "Pause the battle")
 	pause.pressed.connect(_show_pause)
 	row.add_child(_action_stack(pause, "Pause"))
 	return row
