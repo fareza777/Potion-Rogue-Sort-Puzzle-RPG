@@ -24,6 +24,12 @@ func _ready() -> void:
 	var event_source := FileAccess.get_file_as_string("res://src/ui/event_screen.gd")
 	check(event_source.contains("choice_summary"), "event cards render concrete effect summaries")
 	check(event_source.contains("result_summary"), "event result confirms the applied outcome")
+	var route_source := FileAccess.get_file_as_string("res://src/ui/dungeon_route.gd")
+	check(route_source.contains('node.get("reveal_kind"') and route_source.contains("_risk_pips"),
+			"reachable route cards expose class and coarse risk without enemy identity")
+	var map_source := FileAccess.get_file_as_string("res://src/ui/map_screen.gd")
+	check(map_source.contains("MORE FLAMES MEAN MORE RISK"),
+			"map legend explains route risk before selection")
 
 	print("---\n%d checks, %d failures" % [checks, failures])
 	get_tree().quit(1 if failures else 0)

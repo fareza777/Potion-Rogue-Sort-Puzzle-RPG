@@ -96,11 +96,11 @@ func _make_route_legend() -> PanelContainer:
 	panel.custom_minimum_size = Vector2(0, 46)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 18)
+	row.add_theme_constant_override("separation", 8)
 	panel.add_child(row)
-	row.add_child(UiKit.label("?  UNCHARTED ROUTE", 13, Color("bca7ca")))
-	row.add_child(UiKit.label("✦", 12, UiKit.COLOR_GOLD))
-	row.add_child(UiKit.label("CHOOSE A GLOWING PATH TO REVEAL IT", 13, UiKit.COLOR_GOLD))
+	row.add_child(UiKit.label("?  PATHS HIDE THEIR GUARDIAN", 11, Color("bca7ca")))
+	row.add_child(UiKit.label("✦", 11, UiKit.COLOR_GOLD))
+	row.add_child(UiKit.label("MORE FLAMES MEAN MORE RISK", 11, UiKit.COLOR_GOLD))
 	return panel
 
 

@@ -150,12 +150,14 @@ func _populate_graph_card(button: Button, node: Dictionary) -> void:
 	copy.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(copy)
 	var heading := kind.to_upper() if revealed else (
-			"PATH CHOICE" if disclosure == "mystery" else "UNCHARTED")
+			str(node.get("reveal_kind", "PATH")).to_upper()
+			if disclosure == "mystery" else "UNCHARTED")
 	var kind_label := UiKit.label(heading, 11, _graph_color(node))
 	kind_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	copy.add_child(kind_label)
 	var detail_text := "CHAMBER" if revealed else (
-			"FATE UNKNOWN" if disclosure == "mystery" else "FATE VEILED")
+			_risk_pips(int(node.get("risk", 1)))
+			if disclosure == "mystery" else "FATE VEILED")
 	if revealed and is_combat:
 		detail_text = str(GameState.enemies.get(str(node.enemy), {}).get("name", "Unknown"))
 	elif revealed and node.has("event_id"):
@@ -164,6 +166,13 @@ func _populate_graph_card(button: Button, node: Dictionary) -> void:
 	detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	detail.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	copy.add_child(detail)
+
+
+func _risk_pips(risk: int) -> String:
+	var pips := ""
+	for index in 4:
+		pips += "✦" if index < clampi(risk, 1, 4) else "·"
+	return "RISK  " + pips
 
 
 func _draw_graph() -> void:

@@ -166,7 +166,9 @@ func _ready() -> void:
 	check(map_source.contains('change_scene_to_file("res://scenes/main_menu.tscn")'),
 			"map Hall action returns to main menu")
 	check(not map_source.contains("RunState.active = false"), "map Hall action preserves active run")
-	check(map_source.contains("UNCHARTED ROUTE"), "map explains fog-of-war legend")
+	check(map_source.contains("PATHS HIDE THEIR GUARDIAN")
+			and map_source.contains("MORE FLAMES MEAN MORE RISK"),
+			"map explains fog-of-war legend")
 	check(map_source.contains("RunState.current_area()"), "map renders current area identity")
 	check(not map_source.contains("if not RunState.active:\n\t\tRunState.start_new_run()"),
 			"map never silently starts a run")
