@@ -193,6 +193,11 @@ func save_run_boundary(run_data: Dictionary) -> void:
 	save()
 
 
+func clear_active_run() -> void:
+	data["active_run"] = {}
+	save()
+
+
 func record_early_defeat(early: bool) -> int:
 	data["early_defeat_streak"] = int(data.get("early_defeat_streak", 0)) + 1 if early else 0
 	save()

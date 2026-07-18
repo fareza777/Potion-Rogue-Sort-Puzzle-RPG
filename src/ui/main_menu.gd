@@ -187,6 +187,8 @@ func _nav_button(text: String, scene_path: String, starts_run := false) -> Butto
 		button.pressed.connect(func() -> void:
 			if starts_run and not RunState.active:
 				get_tree().change_scene_to_file("res://scenes/area_select.tscn")
+			elif starts_run:
+				get_tree().change_scene_to_file(RunState.resume_scene())
 			else:
 				get_tree().change_scene_to_file(scene_path))
 	return button
@@ -214,4 +216,4 @@ func _on_new_run_pressed() -> void:
 func _on_continue_pressed() -> void:
 	if not RunState.active:
 		return
-	get_tree().change_scene_to_file("res://scenes/map.tscn")
+	get_tree().change_scene_to_file(RunState.resume_scene())

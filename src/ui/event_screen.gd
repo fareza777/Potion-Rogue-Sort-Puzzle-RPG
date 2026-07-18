@@ -35,6 +35,7 @@ func _ready() -> void:
 func _choose(choice_id: String) -> void:
 	var result := resolver.apply(event_id, choice_id, RunState)
 	if not result.ok: status.text = "Cannot choose: " + str(result.reason); return
+	RunState.checkpoint(RunState.PHASE_MAP)
 	for child in choice_box.get_children(): child.queue_free()
 	status.text = "Choice sealed. Your path continues."
 	var continue_button := UiKit.ornate_button("RETURN TO MAP", Vector2(430, 68))

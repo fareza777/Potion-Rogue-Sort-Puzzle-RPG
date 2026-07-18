@@ -9,6 +9,9 @@ func _ready() -> void:
 	if not RunState.active:
 		get_tree().change_scene_to_file("res://scenes/area_select.tscn")
 		return
+	if RunState.phase != RunState.PHASE_MAP:
+		get_tree().change_scene_to_file(RunState.resume_scene())
+		return
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	UiKit.battle_background(self, str(RunState.current_area().get("background",
 			"res://assets/art/backgrounds/shadow_crypt_battle.png")))

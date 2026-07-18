@@ -10,6 +10,13 @@ const DEFAULT_RUN := {
 	"battles": [{"enemy": "slime", "kind": "battle"}],
 }
 
+const PHASE_MAP := "MAP"
+const PHASE_BATTLE := "BATTLE"
+const PHASE_EVENT := "EVENT"
+const PHASE_REWARD := "REWARD"
+const PHASE_COMPLETE := "COMPLETE"
+const VALID_PHASES := [PHASE_MAP, PHASE_BATTLE, PHASE_EVENT, PHASE_REWARD, PHASE_COMPLETE]
+
 var battle_index := 0
 var player_hp := -1  # HP carried between battles; -1 = start at full
 var upgrade_ids: Array = []
@@ -32,6 +39,8 @@ var resolved_event_ids: Array = []
 var active_curses := 0
 var area_id := "shadow_crypt"
 var pending_area_id := "shadow_crypt"
+var phase := PHASE_MAP
+var phase_payload: Dictionary = {}
 
 
 func _ready() -> void:
@@ -42,6 +51,9 @@ func _ready() -> void:
 	catalyst_pool = GameState.load_data_file("catalysts.json", {})
 	perma_pool = GameState.load_data_file("perma_upgrades.json", {})
 	pending_area_id = SaveSystem.selected_area()
+	var saved_run: Dictionary = SaveSystem.data.get("active_run", {})
+	if not saved_run.is_empty():
+		resume_from_save(saved_run)
 
 
 func start_new_run(selected_kit := "ember_adept", selected_area_id := "") -> void:
@@ -55,6 +67,8 @@ func start_new_run(selected_kit := "ember_adept", selected_area_id := "") -> voi
 	catalyst_ids = []
 	resolved_event_ids = []
 	active_curses = 0
+	phase = PHASE_MAP
+	phase_payload = {}
 	var requested_area := selected_area_id if not selected_area_id.is_empty() else pending_area_id
 	area_id = requested_area if SaveSystem.is_area_unlocked(requested_area) else "shadow_crypt"
 	pending_area_id = area_id
@@ -65,6 +79,7 @@ func start_new_run(selected_kit := "ember_adept", selected_area_id := "") -> voi
 	active = true
 	SaveSystem.bump_stat("runs_started")
 	SaveSystem.record_area_depth(area_id, 0)
+	checkpoint(PHASE_MAP)
 
 
 func current_area() -> Dictionary:
@@ -115,13 +130,31 @@ func select_node(id: String) -> bool:
 	var current := current_node()
 	current["visited"] = true
 	current_node_id = id
-	SaveSystem.save_run_boundary(serialize_boundary())
+	var kind := str(current_node().get("kind", "battle"))
+	checkpoint(PHASE_BATTLE if kind in ["battle", "elite", "boss"] else PHASE_EVENT)
 	return true
 
 
+func checkpoint(next_phase: String, payload := {}) -> void:
+	if next_phase not in VALID_PHASES:
+		return
+	phase = next_phase
+	phase_payload = (payload as Dictionary).duplicate(true)
+	if active:
+		SaveSystem.save_run_boundary(serialize_boundary())
+
+
+func resume_scene() -> String:
+	match phase:
+		PHASE_BATTLE, PHASE_REWARD: return "res://scenes/battle.tscn"
+		PHASE_EVENT: return "res://scenes/event.tscn"
+		_: return "res://scenes/map.tscn"
+
+
 func serialize_boundary() -> Dictionary:
-	return {"version": 3, "active": active, "seed": run_seed, "area_id": area_id,
+	return {"version": 4, "active": active, "seed": run_seed, "area_id": area_id,
 		"graph": run_graph.duplicate(true), "current_node_id": current_node_id,
+		"phase": phase, "phase_payload": phase_payload.duplicate(true),
 		"kit_id": kit_id, "player_hp": player_hp, "run_crystals": run_crystals,
 		"mutations": mutation_ids.duplicate(), "relics": relic_ids.duplicate(),
 		"catalysts": catalyst_ids.duplicate(), "upgrades": upgrade_ids.duplicate(),
@@ -129,7 +162,8 @@ func serialize_boundary() -> Dictionary:
 
 
 func resume_from_save(saved: Dictionary) -> bool:
-	if int(saved.get("version", 0)) not in [2, 3] or not bool(saved.get("active", false)): return false
+	var boundary_version := int(saved.get("version", 0))
+	if boundary_version not in [2, 3, 4] or not bool(saved.get("active", false)): return false
 	if typeof(saved.get("graph", null)) != TYPE_DICTIONARY: return false
 	var loaded_area := str(saved.get("area_id", "shadow_crypt"))
 	area_id = loaded_area if not GameState.area(loaded_area).is_empty() else "shadow_crypt"
@@ -139,6 +173,9 @@ func resume_from_save(saved: Dictionary) -> bool:
 	run_seed = int(saved.get("seed", 0)); run_graph = saved.graph.duplicate(true)
 	current_node_id = str(saved.get("current_node_id", ""))
 	if current_node().is_empty(): return false
+	var loaded_phase := str(saved.get("phase", PHASE_MAP)) if boundary_version >= 4 else PHASE_MAP
+	phase = loaded_phase if loaded_phase in VALID_PHASES else PHASE_MAP
+	phase_payload = (saved.get("phase_payload", {}) as Dictionary).duplicate(true)
 	player_hp = int(saved.get("player_hp", -1)); run_crystals = maxi(int(saved.get("run_crystals", 0)), 0)
 	mutation_ids = _valid_ids(saved.get("mutations", []), mutation_pool)
 	relic_ids = _valid_ids(saved.get("relics", []), relic_pool)
@@ -147,6 +184,17 @@ func resume_from_save(saved: Dictionary) -> bool:
 	resolved_event_ids = saved.get("resolved_events", []).duplicate()
 	active_curses = maxi(int(saved.get("active_curses", 0)), 0); active = true
 	return true
+
+
+func abandon_run() -> int:
+	var kept := run_crystals / 2
+	if kept > 0:
+		SaveSystem.add_crystals(kept)
+	active = false
+	phase = PHASE_COMPLETE
+	phase_payload = {}
+	SaveSystem.clear_active_run()
+	return kept
 
 
 func _valid_ids(raw_ids: Array, pool: Dictionary) -> Array:
@@ -344,8 +392,4 @@ func complete_battle(hp_left: int, crystals_reward: int) -> Dictionary:
 
 ## Called on defeat: half the crystals are kept. Returns the amount kept.
 func fail_run() -> int:
-	active = false
-	var kept := run_crystals / 2
-	if kept > 0:
-		SaveSystem.add_crystals(kept)
-	return kept
+	return abandon_run()
