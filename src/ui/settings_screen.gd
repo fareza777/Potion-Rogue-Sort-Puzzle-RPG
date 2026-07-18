@@ -48,6 +48,12 @@ func _ready() -> void:
 			"Adds one warning move. Rewards stay unchanged.")
 	assist_row.name = "AssistModeRow"
 	rows.add_child(assist_row)
+	var pattern_row := _make_toggle_row("COLOR PATTERNS", "color_patterns",
+			"Adds flame, leaf, wave and spiral marks to every potion layer.")
+	pattern_row.name = "ColorPatternRow"; rows.add_child(pattern_row)
+	var reduced_row := _make_toggle_row("REDUCED EFFECTS", "reduced_effects",
+			"Shorter flashes, no camera shake, and fewer particles.")
+	reduced_row.name = "ReducedEffectsRow"; rows.add_child(reduced_row)
 	var replay := UiKit.button("REPLAY TUTORIAL", Vector2(320, 58), Color("78c8ff"))
 	replay.name = "ReplayTutorial"
 	replay.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -141,6 +147,7 @@ func _make_toggle_row(title: String, key: String, description: String) -> HBoxCo
 	var toggle := _make_switch(key)
 	toggle.toggled.connect(func(on: bool):
 		SaveSystem.set_setting(key, on)
+		if key == "reduced_effects": ProjectSettings.set_setting("potion_rogue/reduced_effects", on)
 		toggle.text = "ON" if on else "OFF")
 	row.add_child(toggle)
 	return row

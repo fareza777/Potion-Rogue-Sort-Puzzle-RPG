@@ -28,15 +28,18 @@ func _ready() -> void:
 	choice_box = VBoxContainer.new(); choice_box.add_theme_constant_override("separation", 12); root.add_child(choice_box)
 	for choice_id in event.get("choices", {}):
 		var choice: Dictionary = event.choices[choice_id]
-		var button := UiKit.ornate_button(str(choice.label).to_upper(), Vector2(500, 68))
+		var summary := resolver.choice_summary(event_id, str(choice_id))
+		var button := UiKit.ornate_button("%s\n%s" % [str(choice.label).to_upper(), summary],
+				Vector2(560, 88))
 		button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		button.pressed.connect(_choose.bind(str(choice_id))); choice_box.add_child(button)
 
 func _choose(choice_id: String) -> void:
 	var result := resolver.apply(event_id, choice_id, RunState)
 	if not result.ok: status.text = "Cannot choose: " + str(result.reason); return
+	RunState.checkpoint(RunState.PHASE_MAP)
 	for child in choice_box.get_children(): child.queue_free()
-	status.text = "Choice sealed. Your path continues."
+	status.text = "APPLIED  •  " + str(result.get("result_summary", "Choice sealed."))
 	var continue_button := UiKit.ornate_button("RETURN TO MAP", Vector2(430, 68))
 	continue_button.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/map.tscn"))
 	choice_box.add_child(continue_button)

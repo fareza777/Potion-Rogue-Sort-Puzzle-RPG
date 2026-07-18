@@ -5,7 +5,7 @@ extends Node
 ## so a bad save can never crash the game.
 
 const SAVE_PATH := "user://save.json"
-const SAVE_VERSION := 4
+const SAVE_VERSION := 5
 
 const DEFAULT_DATA := {
 	"version": SAVE_VERSION,
@@ -15,7 +15,8 @@ const DEFAULT_DATA := {
 	"tutorial_state": "new",
 	"tutorial_step": 0,
 	"tutorial_skipped": false,
-	"settings": {"music": 0.8, "sfx": 0.8, "vibration": true, "assist_mode": false},
+	"settings": {"music": 0.8, "sfx": 0.8, "vibration": true, "assist_mode": false,
+		"color_patterns": true, "reduced_effects": false},
 	"stats": {"runs_started": 0, "runs_won": 0, "battles_won": 0},
 	"active_run": {},
 	"legacy_run_compensated": false,
@@ -24,6 +25,9 @@ const DEFAULT_DATA := {
 	"completed_areas": [],
 	"selected_area": "shadow_crypt",
 	"area_stats": {},
+	"mastery": {},
+	"daily": {"last_claim": "", "best_depth": 0},
+	"run_history": [],
 }
 
 var data: Dictionary = {}
@@ -73,8 +77,17 @@ func migrate(source: Dictionary) -> Dictionary:
 		migrated["completed_areas"] = migrated.get("completed_areas", [])
 		migrated["selected_area"] = migrated.get("selected_area", "shadow_crypt")
 		migrated["area_stats"] = migrated.get("area_stats", {})
+	if int(migrated.get("version", 1)) < 5:
+		migrated["mastery"] = migrated.get("mastery", {})
+		migrated["daily"] = migrated.get("daily", {"last_claim":"", "best_depth":0})
+		migrated["run_history"] = migrated.get("run_history", [])
+	var history: Array = migrated.get("run_history", [])
+	if history.size() > 20: history.resize(20)
+	migrated["run_history"] = history
 	var settings: Dictionary = migrated.get("settings", {})
 	if not settings.has("assist_mode"): settings["assist_mode"] = false
+	if not settings.has("color_patterns"): settings["color_patterns"] = true
+	if not settings.has("reduced_effects"): settings["reduced_effects"] = false
 	migrated["settings"] = settings
 	migrated["version"] = SAVE_VERSION
 	return migrated
@@ -190,6 +203,11 @@ func bump_stat(stat_name: String, amount := 1) -> void:
 
 func save_run_boundary(run_data: Dictionary) -> void:
 	data["active_run"] = run_data.duplicate(true)
+	save()
+
+
+func clear_active_run() -> void:
+	data["active_run"] = {}
 	save()
 
 

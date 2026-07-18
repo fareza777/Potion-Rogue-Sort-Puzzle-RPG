@@ -12,15 +12,14 @@ for you to finish the puzzle.
 - 🔵 Shield Potion — absorb attacks
 - 🟣 Poison Potion — damage over time
 
-**Status: Phase 4 — premium visual package complete.** Full 7-battle run (7 enemy encounters,
-elite Stone Golem with relic reward, boss Fire Golem with armor/tube-locks/enrage),
-15 data-driven upgrades, 3 relics, 4 potion combos, permanent upgrade shop
-(8 crystal upgrades), interactive tutorial, synthesized placeholder audio with
-volume/vibration settings, and corrupt-safe local save. The complete enemy roster,
-battle animation/VFX, potion vessels, main menu, dungeon map, workshop, utility
-screens, branded app icon, real screenshots, and Play Store feature graphic now
-share the same authored dark-fantasy art direction. Remaining release engineering:
-final audio production and Android signing/export configuration.
+**Status: v1.0 campaign and systems overhaul complete.** Three procedural realms,
+27 tiered enemies, distinct kit skills/ultimates, transparent event trade-offs,
+Daily Challenge, boss rematches, mastery rewards, run history, an interactive
+tutorial, layered ambient battle music, accessible potion patterns, and exact
+mid-battle Save & Exit are implemented. Continue restores the same enemy, HP,
+turn countdown, potion layout, hazards, mana, objective, and boss phase. The Hall,
+battle actions, route map, settings, workshop, and replay screens share one
+responsive dark-fantasy UI and support standard/tall portrait Android devices.
 See [docs/TECHNICAL_DESIGN.md](docs/TECHNICAL_DESIGN.md) for architecture and roadmap.
 
 ## Running the game
@@ -31,8 +30,8 @@ See [docs/TECHNICAL_DESIGN.md](docs/TECHNICAL_DESIGN.md) for architecture and ro
 
 ## Tests
 
-Headless gameplay logic tests (battle rules, combos, armor, poison, board rules,
-upgrades):
+Run any focused headless suite, or execute every `tests/*_test.tscn` scene for the
+full regression matrix (gameplay, generation, save migration, UI, audio, and release budgets):
 
 ```
 godot --headless --path . res://tests/logic_test.tscn

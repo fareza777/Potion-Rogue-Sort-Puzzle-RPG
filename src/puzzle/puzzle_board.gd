@@ -48,6 +48,9 @@ func _ready() -> void:
 		tube.tapped.connect(_on_tube_tapped)
 		grid.add_child(tube)
 		tubes.append(tube)
+	for i in tubes.size():
+		tubes[i].focus_neighbor_left = tubes[i].get_path_to(tubes[(i - 1 + tubes.size()) % tubes.size()])
+		tubes[i].focus_neighbor_right = tubes[i].get_path_to(tubes[(i + 1) % tubes.size()])
 
 	generate_board()
 
@@ -72,6 +75,30 @@ func export_state() -> Array:
 	for tube in tubes:
 		state.append(tube.contents.duplicate())
 	return state
+
+
+func export_snapshot() -> Dictionary:
+	var locks: Array[int] = []
+	var capacities: Array[int] = []
+	for tube in tubes:
+		locks.append(tube.locked_moves)
+		capacities.append(tube.capacity)
+	return {"version": 1, "state": export_state(), "locks": locks,
+			"capacities": capacities}
+
+
+func restore_snapshot(snapshot: Dictionary) -> bool:
+	if int(snapshot.get("version", 0)) != 1 or typeof(snapshot.get("state")) != TYPE_ARRAY:
+		return false
+	var capacities: Array = snapshot.get("capacities", [])
+	for index in tubes.size():
+		if index < capacities.size():
+			tubes[index].capacity = clampi(int(capacities[index]), 1, 8)
+	import_state(snapshot.get("state", []))
+	var locks: Array = snapshot.get("locks", [])
+	for index in tubes.size():
+		tubes[index].locked_moves = maxi(int(locks[index]), 0) if index < locks.size() else 0
+	return true
 
 
 func import_state(state: Array) -> void:

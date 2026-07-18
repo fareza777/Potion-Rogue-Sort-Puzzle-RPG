@@ -72,20 +72,15 @@ func _build_interface() -> void:
 		get_tree().change_scene_to_file("res://scenes/settings.tscn"))
 	commands.add_child(settings)
 
-	var nav := HBoxContainer.new()
+	var nav := BottomNav.new()
 	nav.name = "BottomNavigation"
-	nav.custom_minimum_size.y = 82
-	nav.alignment = BoxContainer.ALIGNMENT_CENTER
-	nav.add_theme_constant_override("separation", 4)
 	root.add_child(nav)
-	nav.add_child(_nav_button("HERO", "res://scenes/credits.tscn"))
-	nav.add_child(_nav_button("UPGRADES", "res://scenes/shop.tscn"))
-	var home := _nav_button("HOME", "")
-	home.disabled = true
-	home.add_theme_color_override("font_disabled_color", Color("ffe082"))
-	nav.add_child(home)
-	nav.add_child(_nav_button("MAP", "res://scenes/map.tscn", true))
-	nav.add_child(_nav_button("SETTINGS", "res://scenes/settings.tscn"))
+	nav.add_item("hero", "Hero", func(): get_tree().change_scene_to_file("res://scenes/credits.tscn"))
+	nav.add_item("upgrades", "Upgrades", func(): get_tree().change_scene_to_file("res://scenes/shop.tscn"))
+	nav.add_item("home", "Home", Callable(), true)
+	nav.add_item("map", "Map", func():
+		get_tree().change_scene_to_file(RunState.resume_scene() if RunState.active else "res://scenes/area_select.tscn"))
+	nav.add_item("settings", "Settings", func(): get_tree().change_scene_to_file("res://scenes/settings.tscn"))
 
 
 func _add_status_row(parent: VBoxContainer) -> void:
@@ -187,6 +182,8 @@ func _nav_button(text: String, scene_path: String, starts_run := false) -> Butto
 		button.pressed.connect(func() -> void:
 			if starts_run and not RunState.active:
 				get_tree().change_scene_to_file("res://scenes/area_select.tscn")
+			elif starts_run:
+				get_tree().change_scene_to_file(RunState.resume_scene())
 			else:
 				get_tree().change_scene_to_file(scene_path))
 	return button
@@ -214,4 +211,4 @@ func _on_new_run_pressed() -> void:
 func _on_continue_pressed() -> void:
 	if not RunState.active:
 		return
-	get_tree().change_scene_to_file("res://scenes/map.tscn")
+	get_tree().change_scene_to_file(RunState.resume_scene())

@@ -23,8 +23,22 @@ func _ready() -> void:
 	var subtitle := UiKit.label("Each realm has its own roster, boss, hazards and rewards.", 16, UiKit.COLOR_TEXT_DIM)
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root.add_child(subtitle)
+	var modes := HBoxContainer.new(); modes.alignment = BoxContainer.ALIGNMENT_CENTER
+	modes.add_theme_constant_override("separation", 10); root.add_child(modes)
+	var daily := UiKit.ornate_button("DAILY CHALLENGE  +15", Vector2(250, 58), Color("62b9ff"))
+	daily.add_theme_font_size_override("font_size", 17)
+	daily.pressed.connect(_start_daily); modes.add_child(daily)
+	var history := UiKit.ornate_button("RUN HISTORY", Vector2(220, 58), Color("b67cff"))
+	history.add_theme_font_size_override("font_size", 17)
+	history.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/run_history.tscn")); modes.add_child(history)
+	var mode_help := UiKit.label("Daily: same challenge for everyone today  •  History: latest 20 runs",
+			12, UiKit.COLOR_TEXT_DIM); root.add_child(mode_help)
+	var scroll := ScrollContainer.new(); scroll.name = "ExpeditionScroll"
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL; root.add_child(scroll)
+	var area_list := VBoxContainer.new(); area_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	area_list.add_theme_constant_override("separation", 10); scroll.add_child(area_list)
 	for id in GameState.area_ids():
-		root.add_child(_area_card(id))
+		area_list.add_child(_area_card(id))
 	var back := UiKit.ornate_button("BACK TO HALL", Vector2(360, 62))
 	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	back.pressed.connect(func() -> void:
@@ -38,7 +52,7 @@ func _area_card(area_id: String) -> PanelContainer:
 	var cleared := area_id in SaveSystem.completed_areas()
 	var card := UiKit.textured_panel("res://assets/art/ui/battle_panel.png", 18)
 	card.name = "AreaCard_" + area_id
-	card.custom_minimum_size = Vector2(0, 238)
+	card.custom_minimum_size = Vector2(0, 218)
 	card.modulate = Color.WHITE if unlocked else Color(0.55, 0.56, 0.64, 0.88)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 16)
@@ -65,6 +79,12 @@ func _area_card(area_id: String) -> PanelContainer:
 	if not cleared:
 		info.add_child(UiKit.label("FIRST CLEAR  +%d CRYSTALS" % int(area.get("first_clear_reward", 0)),
 				13, Color("77d8ff")))
+	elif unlocked:
+		var rematch := UiKit.ornate_button("BOSS REMATCH", Vector2(190, 58), Color("d06b63"))
+		rematch.pressed.connect(func() -> void:
+			RunState.pending_area_id = area_id; RunState.pending_run_mode = "rematch"
+			get_tree().change_scene_to_file("res://scenes/kit_select.tscn"))
+		info.add_child(rematch)
 	var action := UiKit.ornate_button("ENTER" if unlocked else "LOCKED", Vector2(142, 62),
 			_area_color(area_id))
 	action.disabled = not unlocked
@@ -82,3 +102,11 @@ func _area_color(area_id: String) -> Color:
 		"verdant_catacombs": return Color("67cf72")
 		"astral_foundry": return Color("b77cff")
 		_: return Color("e0b862")
+
+
+func _start_daily() -> void:
+	var date := Time.get_date_string_from_system()
+	RunState.pending_area_id = SaveSystem.selected_area()
+	RunState.pending_run_mode = "daily"
+	RunState.pending_run_seed = MetaProgression.new().daily_seed(date)
+	get_tree().change_scene_to_file("res://scenes/kit_select.tscn")

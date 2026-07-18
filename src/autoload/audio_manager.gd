@@ -7,6 +7,7 @@ extends Node
 
 const SAMPLE_RATE := 22050
 const SFX_POOL_SIZE := 6
+const STEM_CACHE_LIMIT := 12
 
 var _sfx: Dictionary = {}
 var _music_streams: Dictionary = {}
@@ -20,6 +21,7 @@ var _combat_layer := "explore"
 var _stem_players: Array[AudioStreamPlayer] = []
 var _preview_index := 0
 var _area_music := "dungeon"
+var _stem_cache: Dictionary = {}
 
 
 func _ready() -> void:
@@ -79,6 +81,10 @@ func set_area(track: String) -> void:
 
 func current_combat_layer() -> String:
 	return _combat_layer
+
+
+func stem_cache_size() -> int:
+	return _stem_cache.size()
 
 
 func music_is_audible() -> bool:
@@ -269,8 +275,14 @@ func _make_drone(freqs: Array, duration: float, volume: float) -> AudioStreamWAV
 
 func _play_layer_stems(layer: String) -> void:
 	if _stem_players.size() < 2: return
-	_stem_players[0].stream = _make_melodic_stem(layer)
-	_stem_players[1].stream = _make_percussion_stem(layer)
+	var cache_key := _area_music + ":" + layer
+	if not _stem_cache.has(cache_key):
+		if _stem_cache.size() >= STEM_CACHE_LIMIT:
+			_stem_cache.erase(_stem_cache.keys()[0])
+		_stem_cache[cache_key] = [_make_melodic_stem(layer), _make_percussion_stem(layer)]
+	var streams: Array = _stem_cache[cache_key]
+	_stem_players[0].stream = streams[0]
+	_stem_players[1].stream = streams[1]
 	for stem in _stem_players: stem.play()
 
 

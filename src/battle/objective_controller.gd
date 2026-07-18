@@ -33,6 +33,11 @@ func is_completed() -> bool:
 	return _completed
 
 
+func display_payload() -> Dictionary:
+	return {"id": objective_id, "label": label, "current": current, "target": target,
+			"sequence": _sequence.duplicate(), "completed": _completed}
+
+
 func on_enemy_defeated() -> void:
 	if event_id == "enemy_defeated":
 		_advance(1)
@@ -74,3 +79,15 @@ func _advance(amount: int) -> void:
 	if current >= target:
 		_completed = true
 		completed.emit()
+
+
+func snapshot() -> Dictionary:
+	return {"objective_id": objective_id, "current": current, "completed": _completed}
+
+
+func restore(snapshot_data: Dictionary) -> void:
+	if str(snapshot_data.get("objective_id", "")) != objective_id:
+		return
+	current = clampi(int(snapshot_data.get("current", 0)), 0, target)
+	_completed = bool(snapshot_data.get("completed", current >= target))
+	progress_changed.emit(current, target)

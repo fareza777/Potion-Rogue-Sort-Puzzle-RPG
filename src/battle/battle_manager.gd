@@ -113,6 +113,59 @@ func undos_allowed() -> int:
 			float(GameState.player.get("undos_per_battle", 3))))
 
 
+func export_snapshot() -> Dictionary:
+	return {
+		"version": 1,
+		"enemy_id": enemy_id,
+		"player_hp": player_hp,
+		"player_max_hp": player_max_hp,
+		"shield": shield,
+		"max_shield": max_shield,
+		"enemy_hp": enemy_hp,
+		"enemy_max_hp": enemy_max_hp,
+		"enemy_armor": enemy_armor,
+		"enemy_attack": enemy_attack,
+		"attack_every": attack_every,
+		"moves_until_attack": moves_until_attack,
+		"crystals_reward": crystals_reward,
+		"poison_damage": poison_damage,
+		"poison_turns": poison_turns,
+		"player_poison_damage": player_poison_damage,
+		"player_poison_turns": player_poison_turns,
+		"last_potion": _last_potion,
+		"last_remedy_used": _last_remedy_used,
+		"attacks_done": _attacks_done,
+		"enraged": enraged,
+	}
+
+
+func restore_snapshot(snapshot: Dictionary) -> bool:
+	if int(snapshot.get("version", 0)) != 1 or str(snapshot.get("enemy_id", "")) != enemy_id:
+		return false
+	player_max_hp = maxi(int(snapshot.get("player_max_hp", player_max_hp)), 1)
+	player_hp = clampi(int(snapshot.get("player_hp", player_hp)), 0, player_max_hp)
+	max_shield = maxi(int(snapshot.get("max_shield", max_shield)), 0)
+	shield = clampi(int(snapshot.get("shield", shield)), 0, max_shield)
+	enemy_max_hp = maxi(int(snapshot.get("enemy_max_hp", enemy_max_hp)), 1)
+	enemy_hp = clampi(int(snapshot.get("enemy_hp", enemy_hp)), 0, enemy_max_hp)
+	enemy_armor = maxi(int(snapshot.get("enemy_armor", enemy_armor)), 0)
+	enemy_attack = maxi(int(snapshot.get("enemy_attack", enemy_attack)), 1)
+	attack_every = maxi(int(snapshot.get("attack_every", attack_every)), 1)
+	moves_until_attack = clampi(int(snapshot.get("moves_until_attack", moves_until_attack)), 0, attack_every)
+	crystals_reward = maxi(int(snapshot.get("crystals_reward", crystals_reward)), 0)
+	poison_damage = maxi(int(snapshot.get("poison_damage", 0)), 0)
+	poison_turns = maxi(int(snapshot.get("poison_turns", 0)), 0)
+	player_poison_damage = maxi(int(snapshot.get("player_poison_damage", 0)), 0)
+	player_poison_turns = maxi(int(snapshot.get("player_poison_turns", 0)), 0)
+	_last_potion = str(snapshot.get("last_potion", ""))
+	_last_remedy_used = bool(snapshot.get("last_remedy_used", false))
+	_attacks_done = maxi(int(snapshot.get("attacks_done", 0)), 0)
+	enraged = bool(snapshot.get("enraged", false))
+	battle_over = false
+	stats_changed.emit()
+	return true
+
+
 ## Called for every liquid pour the player makes.
 func on_move() -> void:
 	if battle_over:
@@ -205,6 +258,8 @@ func _damage_enemy(amount: int, bypass_armor: bool) -> int:
 		var absorbed: int = mini(enemy_armor, remaining)
 		enemy_armor -= absorbed
 		remaining -= absorbed
+		if absorbed > 0:
+			armor_changed.emit(-absorbed)
 	enemy_hp = maxi(enemy_hp - remaining, 0)
 	enemy_damaged.emit(amount)
 	_check_enrage()
@@ -289,6 +344,15 @@ func add_enemy_armor(amount: int) -> void:
 	enemy_armor += applied
 	armor_changed.emit(applied)
 	stats_changed.emit()
+
+
+func break_enemy_armor(amount: int) -> int:
+	var removed := mini(enemy_armor, maxi(amount, 0))
+	if removed > 0:
+		enemy_armor -= removed
+		armor_changed.emit(-removed)
+		stats_changed.emit()
+	return removed
 
 
 func request_tube_lock(moves: int) -> void:

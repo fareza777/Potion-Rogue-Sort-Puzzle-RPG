@@ -55,3 +55,27 @@ func consume_ultimate() -> bool:
 	if not ultimate_ready(): return false
 	_ultimate = 0
 	return true
+
+
+func cast_ultimate(_context: Dictionary) -> Dictionary:
+	if not consume_ultimate():
+		return {"ok": false, "reason": "not_ready"}
+	match kit_id:
+		"verdant_warden":
+			return {"ok": true, "effect_id": "guardian_bloom", "heal": 22,
+					"shield": 24, "cleanse": 1}
+		"void_brewer":
+			return {"ok": true, "effect_id": "void_distill", "poison": 9,
+					"poison_turns": 4, "delay": 1, "wild_layer": true}
+		_:
+			return {"ok": true, "effect_id": "inferno_break", "damage": 42,
+					"break_armor": 999}
+
+func snapshot() -> Dictionary:
+	return {"mana": mana, "ultimate": _ultimate, "cooldowns": _cooldowns.duplicate(true)}
+
+func restore(snapshot_data: Dictionary) -> void:
+	mana = clampi(int(snapshot_data.get("mana", 0)), 0, 100)
+	_ultimate = clampi(int(snapshot_data.get("ultimate", 0)), 0, 100)
+	_cooldowns = (snapshot_data.get("cooldowns", {}) as Dictionary).duplicate(true)
+	mana_changed.emit(mana, 100)
