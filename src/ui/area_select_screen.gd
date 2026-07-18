@@ -23,6 +23,12 @@ func _ready() -> void:
 	var subtitle := UiKit.label("Each realm has its own roster, boss, hazards and rewards.", 16, UiKit.COLOR_TEXT_DIM)
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root.add_child(subtitle)
+	var modes := HBoxContainer.new(); modes.alignment = BoxContainer.ALIGNMENT_CENTER
+	modes.add_theme_constant_override("separation", 10); root.add_child(modes)
+	var daily := UiKit.ornate_button("DAILY CHALLENGE\nSame seed • +15 first win", Vector2(250, 66), Color("62b9ff"))
+	daily.pressed.connect(_start_daily); modes.add_child(daily)
+	var history := UiKit.ornate_button("RUN HISTORY\nLast 20 expeditions", Vector2(250, 66), Color("b67cff"))
+	history.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/run_history.tscn")); modes.add_child(history)
 	for id in GameState.area_ids():
 		root.add_child(_area_card(id))
 	var back := UiKit.ornate_button("BACK TO HALL", Vector2(360, 62))
@@ -65,6 +71,12 @@ func _area_card(area_id: String) -> PanelContainer:
 	if not cleared:
 		info.add_child(UiKit.label("FIRST CLEAR  +%d CRYSTALS" % int(area.get("first_clear_reward", 0)),
 				13, Color("77d8ff")))
+	elif unlocked:
+		var rematch := UiKit.ornate_button("BOSS REMATCH", Vector2(190, 58), Color("d06b63"))
+		rematch.pressed.connect(func() -> void:
+			RunState.pending_area_id = area_id; RunState.pending_run_mode = "rematch"
+			get_tree().change_scene_to_file("res://scenes/kit_select.tscn"))
+		info.add_child(rematch)
 	var action := UiKit.ornate_button("ENTER" if unlocked else "LOCKED", Vector2(142, 62),
 			_area_color(area_id))
 	action.disabled = not unlocked
@@ -82,3 +94,11 @@ func _area_color(area_id: String) -> Color:
 		"verdant_catacombs": return Color("67cf72")
 		"astral_foundry": return Color("b77cff")
 		_: return Color("e0b862")
+
+
+func _start_daily() -> void:
+	var date := Time.get_date_string_from_system()
+	RunState.pending_area_id = SaveSystem.selected_area()
+	RunState.pending_run_mode = "daily"
+	RunState.pending_run_seed = MetaProgression.new().daily_seed(date)
+	get_tree().change_scene_to_file("res://scenes/kit_select.tscn")

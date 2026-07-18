@@ -5,7 +5,7 @@ extends Node
 ## so a bad save can never crash the game.
 
 const SAVE_PATH := "user://save.json"
-const SAVE_VERSION := 4
+const SAVE_VERSION := 5
 
 const DEFAULT_DATA := {
 	"version": SAVE_VERSION,
@@ -24,6 +24,9 @@ const DEFAULT_DATA := {
 	"completed_areas": [],
 	"selected_area": "shadow_crypt",
 	"area_stats": {},
+	"mastery": {},
+	"daily": {"last_claim": "", "best_depth": 0},
+	"run_history": [],
 }
 
 var data: Dictionary = {}
@@ -73,6 +76,13 @@ func migrate(source: Dictionary) -> Dictionary:
 		migrated["completed_areas"] = migrated.get("completed_areas", [])
 		migrated["selected_area"] = migrated.get("selected_area", "shadow_crypt")
 		migrated["area_stats"] = migrated.get("area_stats", {})
+	if int(migrated.get("version", 1)) < 5:
+		migrated["mastery"] = migrated.get("mastery", {})
+		migrated["daily"] = migrated.get("daily", {"last_claim":"", "best_depth":0})
+		migrated["run_history"] = migrated.get("run_history", [])
+	var history: Array = migrated.get("run_history", [])
+	if history.size() > 20: history.resize(20)
+	migrated["run_history"] = history
 	var settings: Dictionary = migrated.get("settings", {})
 	if not settings.has("assist_mode"): settings["assist_mode"] = false
 	migrated["settings"] = settings

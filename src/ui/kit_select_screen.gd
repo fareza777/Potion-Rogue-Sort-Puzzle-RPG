@@ -64,7 +64,7 @@ func _kit_choice(kit_id: String) -> PanelContainer:
 	choose.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	choose.pressed.connect(func() -> void:
 		RunState.start_new_run(kit_id)
-		get_tree().change_scene_to_file("res://scenes/map.tscn"))
+		get_tree().change_scene_to_file(RunState.resume_scene()))
 	row.add_child(choose)
 	return panel
 

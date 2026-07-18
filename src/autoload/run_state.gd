@@ -41,6 +41,9 @@ var area_id := "shadow_crypt"
 var pending_area_id := "shadow_crypt"
 var phase := PHASE_MAP
 var phase_payload: Dictionary = {}
+var run_mode := "normal"
+var pending_run_mode := "normal"
+var pending_run_seed := 0
 
 
 func _ready() -> void:
@@ -56,7 +59,8 @@ func _ready() -> void:
 		resume_from_save(saved_run)
 
 
-func start_new_run(selected_kit := "ember_adept", selected_area_id := "") -> void:
+func start_new_run(selected_kit := "ember_adept", selected_area_id := "",
+		selected_mode := "", forced_seed := 0) -> void:
 	battle_index = 0
 	player_hp = -1
 	upgrade_ids = []
@@ -69,17 +73,26 @@ func start_new_run(selected_kit := "ember_adept", selected_area_id := "") -> voi
 	active_curses = 0
 	phase = PHASE_MAP
 	phase_payload = {}
+	run_mode = selected_mode if not selected_mode.is_empty() else pending_run_mode
+	if run_mode not in ["normal", "daily", "rematch"]: run_mode = "normal"
 	var requested_area := selected_area_id if not selected_area_id.is_empty() else pending_area_id
 	area_id = requested_area if SaveSystem.is_area_unlocked(requested_area) else "shadow_crypt"
 	pending_area_id = area_id
 	SaveSystem.set_selected_area(area_id)
-	run_seed = int(Time.get_unix_time_from_system() * 1000000.0) ^ Time.get_ticks_usec()
+	var requested_seed := forced_seed if forced_seed != 0 else pending_run_seed
+	run_seed = requested_seed if requested_seed != 0 else \
+			int(Time.get_unix_time_from_system() * 1000000.0) ^ Time.get_ticks_usec()
 	run_graph = RunGenerator.new().generate(run_seed, area_id)
 	current_node_id = str(run_graph.get("start", "f0_l1"))
+	if run_mode == "rematch":
+		for node in run_graph.get("nodes", []):
+			if str(node.get("kind", "")) == "boss":
+				current_node_id = str(node.get("id", current_node_id)); phase = PHASE_BATTLE; break
 	active = true
 	SaveSystem.bump_stat("runs_started")
 	SaveSystem.record_area_depth(area_id, 0)
-	checkpoint(PHASE_MAP)
+	pending_run_mode = "normal"; pending_run_seed = 0
+	checkpoint(phase)
 
 
 func current_area() -> Dictionary:
@@ -155,6 +168,7 @@ func serialize_boundary() -> Dictionary:
 	return {"version": 4, "active": active, "seed": run_seed, "area_id": area_id,
 		"graph": run_graph.duplicate(true), "current_node_id": current_node_id,
 		"phase": phase, "phase_payload": phase_payload.duplicate(true),
+		"run_mode": run_mode,
 		"kit_id": kit_id, "player_hp": player_hp, "run_crystals": run_crystals,
 		"mutations": mutation_ids.duplicate(), "relics": relic_ids.duplicate(),
 		"catalysts": catalyst_ids.duplicate(), "upgrades": upgrade_ids.duplicate(),
@@ -171,6 +185,7 @@ func resume_from_save(saved: Dictionary) -> bool:
 	var loaded_kit := str(saved.get("kit_id", "ember_adept"))
 	kit_id = loaded_kit if GameState.kits.has(loaded_kit) else "ember_adept"
 	run_seed = int(saved.get("seed", 0)); run_graph = saved.graph.duplicate(true)
+	run_mode = str(saved.get("run_mode", "normal"))
 	current_node_id = str(saved.get("current_node_id", ""))
 	if current_node().is_empty(): return false
 	var loaded_phase := str(saved.get("phase", PHASE_MAP)) if boundary_version >= 4 else PHASE_MAP
@@ -187,6 +202,10 @@ func resume_from_save(saved: Dictionary) -> bool:
 
 
 func abandon_run() -> int:
+	if active:
+		MetaProgression.new().record_run({"seed":run_seed, "area":area_id,
+				"mode":run_mode, "result":"abandoned", "depth":battle_index,
+				"crystals":run_crystals})
 	var kept := run_crystals / 2
 	if kept > 0:
 		SaveSystem.add_crystals(kept)
@@ -383,6 +402,9 @@ func complete_battle(hp_left: int, crystals_reward: int) -> Dictionary:
 		active = false
 		SaveSystem.add_crystals(run_crystals)
 		SaveSystem.bump_stat("runs_won")
+		MetaProgression.new().record_run({"seed":run_seed, "area":area_id,
+				"mode":run_mode, "result":"victory", "depth":7, "crystals":run_crystals})
+		if run_mode == "daily": MetaProgression.new().complete_daily(Time.get_date_string_from_system())
 		var result := SaveSystem.complete_area(area_id)
 		SaveSystem.clear_active_run()
 		return result
