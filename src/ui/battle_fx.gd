@@ -5,12 +5,19 @@ extends Control
 
 var reduced_effects := false
 var _freeze_serial := 0
+var _pool: FxPool
 
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	z_index = 40
+	_pool = FxPool.new(); _pool.name = "FxPool"; add_child(_pool)
+
+
+func _add_effect(effect: Node) -> void:
+	add_child(effect)
+	_pool.track(effect)
 
 
 func set_reduced_effects(value: bool) -> void:
@@ -58,7 +65,7 @@ func pour(from: Vector2, to: Vector2, color: Color, count: int) -> void:
 	for i in 17:
 		var t := float(i) / 16.0
 		arc.add_point(_quadratic(from, control, to, t))
-	add_child(arc)
+	_add_effect(arc)
 	var tween := create_tween().set_parallel(true)
 	tween.tween_property(arc, "modulate:a", 0.0, 0.24)
 	tween.tween_property(arc, "width", 1.0, 0.24)
@@ -89,14 +96,14 @@ func projectile(from: Vector2, to: Vector2, color := Color("ff9b45")) -> void:
 	orb.color = color
 	orb.position = from
 	orb.scale = Vector2(0.4, 0.4)
-	add_child(orb)
+	_add_effect(orb)
 	var trail := Line2D.new()
 	trail.width = 8.0
 	trail.default_color = Color(color, 0.55)
 	trail.antialiased = true
 	trail.add_point(from)
 	trail.add_point(from)
-	add_child(trail)
+	_add_effect(trail)
 	var tween := create_tween().set_parallel(true)
 	tween.tween_property(orb, "position", to, 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	tween.tween_property(orb, "scale", Vector2(1.25, 1.25), 0.20)
@@ -117,7 +124,7 @@ func enemy_strike(from: Vector2, to: Vector2) -> void:
 	warning.antialiased = true
 	warning.add_point(from)
 	warning.add_point(to)
-	add_child(warning)
+	_add_effect(warning)
 	var flash := create_tween()
 	flash.tween_property(warning, "modulate:a", 0.15, 0.07)
 	flash.tween_property(warning, "modulate:a", 1.0, 0.07)
@@ -177,7 +184,7 @@ func _burst(at: Vector2, color: Color, amount: int, spread: float,
 		particle.polygon = _circle_points(randf_range(2.0, 5.5), 10)
 		particle.color = color.lightened(randf_range(0.0, 0.28))
 		particle.position = at
-		add_child(particle)
+		_add_effect(particle)
 		var angle := randf_range(PI * 0.15, PI * 0.85) if float_up \
 				else randf_range(0.0, TAU)
 		var distance := randf_range(spread * 0.45, spread)
@@ -198,7 +205,7 @@ func _ring(at: Vector2, color: Color, radius: float) -> void:
 	ring.antialiased = true
 	for point in _circle_points(radius, 32):
 		ring.add_point(at + point * 0.55)
-	add_child(ring)
+	_add_effect(ring)
 	var tween := create_tween().set_parallel(true)
 	tween.tween_property(ring, "scale", Vector2(1.8, 1.8), 0.34) \
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)

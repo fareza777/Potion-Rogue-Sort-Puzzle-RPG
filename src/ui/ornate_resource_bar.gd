@@ -159,39 +159,7 @@ func _apply_palette() -> void:
 
 
 func _make_bar_texture(base: Color, jewel_fill: bool) -> ImageTexture:
-	var width := 256
-	var height := 32
-	var radius := 10.0
-	var image := Image.create(width, height, false, Image.FORMAT_RGBA8)
-	for y in height:
-		for x in width:
-			var px := float(x)
-			var py := float(y)
-			var inside := true
-			if px < radius and py < radius:
-				inside = Vector2(px - radius, py - radius).length() <= radius
-			elif px > width - radius - 1 and py < radius:
-				inside = Vector2(px - (width - radius - 1), py - radius).length() <= radius
-			elif px < radius and py > height - radius - 1:
-				inside = Vector2(px - radius, py - (height - radius - 1)).length() <= radius
-			elif px > width - radius - 1 and py > height - radius - 1:
-				inside = Vector2(px - (width - radius - 1),
-						py - (height - radius - 1)).length() <= radius
-			if not inside:
-				image.set_pixel(x, y, Color.TRANSPARENT)
-				continue
-			var horizontal := float(x) / float(width - 1)
-			var vertical := float(y) / float(height - 1)
-			var color := base.darkened(0.10 + 0.10 * vertical)
-			if jewel_fill:
-				color = base.darkened(0.22).lerp(base.lightened(0.17), horizontal)
-				color = color.lightened(0.22 * maxf(0.0, 1.0 - vertical * 3.2))
-				if y >= 3 and y <= 5:
-					color = color.lightened(0.18)
-			else:
-				color = color.lerp(Color("261e2d"), 0.18 * (1.0 - vertical))
-			image.set_pixel(x, y, color)
-	return ImageTexture.create_from_image(image)
+	return ResourceTextureCache.bar_texture(_kind, base, jewel_fill) as ImageTexture
 
 
 func _draw() -> void:

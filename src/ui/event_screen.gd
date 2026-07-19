@@ -6,6 +6,8 @@ var choice_box: VBoxContainer
 var status: Label
 
 func _ready() -> void:
+	AudioManager.set_area(str(RunState.current_area().get("music", "dungeon")))
+	AudioManager.set_scene_state("event")
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	UiKit.battle_background(self, VisualRegistry.background("main_hall"))
 	var shade := ColorRect.new(); shade.set_anchors_preset(Control.PRESET_FULL_RECT)

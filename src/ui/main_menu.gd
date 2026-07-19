@@ -14,6 +14,7 @@ func _ready() -> void:
 	add_child(particles)
 	_build_interface()
 	AudioManager.play_music("dungeon")
+	AudioManager.set_scene_state("hall")
 
 
 func _build_interface() -> void:

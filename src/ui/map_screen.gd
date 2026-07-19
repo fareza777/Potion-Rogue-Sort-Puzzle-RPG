@@ -8,6 +8,8 @@ var tutorial_director: TutorialDirector
 
 
 func _ready() -> void:
+	AudioManager.set_area(str(RunState.current_area().get("music", "dungeon")))
+	AudioManager.set_scene_state("explore")
 	if not RunState.active:
 		get_tree().change_scene_to_file("res://scenes/area_select.tscn")
 		return

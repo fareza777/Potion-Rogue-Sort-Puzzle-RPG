@@ -882,6 +882,7 @@ func _on_tube_lock_requested(moves: int) -> void:
 # --- Run flow ----------------------------------------------------------------
 
 func _on_battle_won() -> void:
+	AudioManager.set_scene_state("victory")
 	objective_controller.on_enemy_defeated()
 	SaveSystem.record_early_defeat(false)
 	board.enabled = false
@@ -975,6 +976,7 @@ func _on_upgrade_picked(id: String) -> void:
 
 
 func _on_battle_lost() -> void:
+	AudioManager.set_scene_state("defeat")
 	board.enabled = false
 	AudioManager.play("defeat")
 	AudioManager.stop_music()

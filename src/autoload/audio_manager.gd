@@ -129,6 +129,24 @@ func preview_music() -> String:
 	return str(layers[_preview_index])
 
 
+func set_scene_state(state: String) -> bool:
+	match state:
+		"hall", "explore", "event": set_combat_layer("explore")
+		"battle": set_combat_layer("battle")
+		"elite": set_combat_layer("elite")
+		"boss": set_combat_layer("boss_phase_1")
+		"victory":
+			play("victory"); set_combat_layer("explore")
+		"defeat":
+			play("defeat"); set_combat_layer("explore")
+		_: return false
+	return true
+
+
+func accepted_scene_states() -> Array:
+	return ["hall", "explore", "event", "battle", "elite", "boss", "victory", "defeat"]
+
+
 func crossfade_music(track: String, duration := 0.8) -> void:
 	var stream: AudioStream = _music_streams.get(track)
 	if stream == null:
@@ -229,31 +247,31 @@ func _build_sounds() -> void:
 	}
 	_music_streams = {
 		"dungeon": _load_ambient("res://assets/audio/dungeon_ambient.wav",
-				_make_drone([55.0, 82.5, 110.0], 6.0, 0.10)),
+				func(): return _make_drone([55.0, 82.5, 110.0], 6.0, 0.10)),
 		"boss": _load_ambient("res://assets/audio/boss_ambient.wav",
-				_make_drone([65.4, 98.0, 130.8, 155.6], 4.0, 0.13)),
+				func(): return _make_drone([65.4, 98.0, 130.8, 155.6], 4.0, 0.13)),
 		"verdant": _load_ambient("res://assets/audio/verdant_ambient.wav",
-				_make_drone([65.4, 78.5, 98.1], 6.0, 0.10)),
+				func(): return _make_drone([65.4, 78.5, 98.1], 6.0, 0.10)),
 		"verdant_boss": _load_ambient("res://assets/audio/verdant_boss.wav",
-				_make_drone([58.3, 87.3, 116.5], 5.0, 0.13)),
+				func(): return _make_drone([58.3, 87.3, 116.5], 5.0, 0.13)),
 		"astral": _load_ambient("res://assets/audio/astral_ambient.wav",
-				_make_drone([55.0, 68.8, 82.5], 6.0, 0.10)),
+				func(): return _make_drone([55.0, 68.8, 82.5], 6.0, 0.10)),
 		"astral_boss": _load_ambient("res://assets/audio/astral_boss.wav",
-				_make_drone([49.0, 73.5, 98.0], 5.0, 0.14)),
+				func(): return _make_drone([49.0, 73.5, 98.0], 5.0, 0.14)),
 		"frost": _load_ambient("res://assets/audio/frost_ambient.ogg",
-				_make_drone([41.25, 61.875, 82.5], 8.0, 0.10)),
+				func(): return _make_drone([41.25, 61.875, 82.5], 8.0, 0.10)),
 		"frost_boss": _load_ambient("res://assets/audio/frost_boss.ogg",
-				_make_drone([49.0, 73.5, 98.0], 6.0, 0.14)),
+				func(): return _make_drone([49.0, 73.5, 98.0], 6.0, 0.14)),
 		"abyss": _load_ambient("res://assets/audio/abyss_ambient.ogg",
-				_make_drone([36.56, 54.84, 73.12], 8.0, 0.10)),
+				func(): return _make_drone([36.56, 54.84, 73.12], 8.0, 0.10)),
 		"abyss_boss": _load_ambient("res://assets/audio/abyss_boss.ogg",
-				_make_drone([36.56, 48.75, 73.12], 6.0, 0.14)),
+				func(): return _make_drone([36.56, 48.75, 73.12], 6.0, 0.14)),
 	}
 
 
-func _load_ambient(path: String, fallback: AudioStreamWAV) -> AudioStream:
+func _load_ambient(path: String, fallback_factory: Callable) -> AudioStream:
 	if not ResourceLoader.exists(path):
-		return fallback
+		return fallback_factory.call() as AudioStream
 	var stream := load(path)
 	if stream is AudioStreamWAV:
 		stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
