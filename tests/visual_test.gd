@@ -285,8 +285,8 @@ func _ready() -> void:
 			"dungeon route has seven illustrated encounters")
 	route.queue_free()
 	for audio_path in [
-		"res://assets/audio/dungeon_ambient.wav",
-		"res://assets/audio/boss_ambient.wav",
+		"res://assets/audio/dungeon_ambient.ogg",
+		"res://assets/audio/boss_ambient.ogg",
 	]:
 		check(ResourceLoader.exists(audio_path), "loadable ambient: " + audio_path)
 	check(AudioManager.has_method("crossfade_music"), "ambient crossfade interface")

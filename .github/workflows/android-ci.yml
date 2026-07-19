@@ -1,0 +1,34 @@
+name: Android CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test-export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.7.1
+          use-dotnet: false
+          include-templates: true
+      - name: Import project
+        run: godot --headless --editor --quit --path .
+      - name: Run all suites sequentially
+        shell: bash
+        run: |
+          for scene in tests/*_test.tscn; do
+            echo "Running $scene"
+            godot --headless --path . "$scene"
+          done
+      - name: Export Android debug APK
+        run: godot --headless --path . --export-debug "Android Debug" builds/PotionRogue-v15-debug.apk
+      - name: Validate release budgets and balance
+        shell: pwsh
+        run: ./tools/validate_release.ps1 -ProjectRoot . -ApkPath builds/PotionRogue-v15-debug.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PotionRogue-v15-debug
+          path: builds/PotionRogue-v15-debug.apk
