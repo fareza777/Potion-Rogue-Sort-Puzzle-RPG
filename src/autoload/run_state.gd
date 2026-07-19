@@ -16,6 +16,7 @@ const PHASE_EVENT := "EVENT"
 const PHASE_REWARD := "REWARD"
 const PHASE_COMPLETE := "COMPLETE"
 const VALID_PHASES := [PHASE_MAP, PHASE_BATTLE, PHASE_EVENT, PHASE_REWARD, PHASE_COMPLETE]
+const CHECKPOINT_SCHEDULER := preload("res://src/autoload/checkpoint_scheduler.gd")
 
 var battle_index := 0
 var player_hp := -1  # HP carried between battles; -1 = start at full
@@ -46,9 +47,11 @@ var pending_run_mode := "normal"
 var pending_run_seed := 0
 var run_ascension := 0
 var pending_ascension := 0
+var _checkpoint_scheduler = CHECKPOINT_SCHEDULER.new()
 
 
 func _ready() -> void:
+	_checkpoint_scheduler.configure(_write_checkpoint_boundary)
 	run_config = GameState.load_data_file("run.json", DEFAULT_RUN)
 	upgrade_pool = GameState.load_data_file("upgrades.json", {})
 	relic_pool = GameState.load_data_file("relics.json", {})
@@ -60,6 +63,17 @@ func _ready() -> void:
 	var saved_run: Dictionary = SaveSystem.data.get("active_run", {})
 	if not saved_run.is_empty():
 		resume_from_save(saved_run)
+	set_process(true)
+
+
+func _process(_delta: float) -> void:
+	if _checkpoint_scheduler.is_due():
+		_checkpoint_scheduler.flush("quiet_window")
+
+
+func _notification(what: int) -> void:
+	if what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_WM_CLOSE_REQUEST]:
+		flush_checkpoint("application_boundary")
 
 
 func start_new_run(selected_kit := "ember_adept", selected_area_id := "",
@@ -156,10 +170,27 @@ func select_node(id: String) -> bool:
 func checkpoint(next_phase: String, payload := {}) -> void:
 	if next_phase not in VALID_PHASES:
 		return
+	request_checkpoint(next_phase, payload)
+	flush_checkpoint("hard_boundary")
+
+
+func request_checkpoint(next_phase: String, payload := {}) -> void:
+	if next_phase not in VALID_PHASES:
+		return
 	phase = next_phase
 	phase_payload = (payload as Dictionary).duplicate(true)
 	if active:
-		SaveSystem.save_run_boundary(serialize_boundary())
+		_checkpoint_scheduler.request(next_phase, phase_payload)
+
+
+func flush_checkpoint(reason := "manual") -> bool:
+	return _checkpoint_scheduler.flush(reason)
+
+
+func _write_checkpoint_boundary(next_phase: String, payload: Dictionary) -> bool:
+	phase = next_phase
+	phase_payload = payload.duplicate(true)
+	return SaveSystem.save_run_boundary(serialize_boundary())
 
 
 func resume_scene() -> String:

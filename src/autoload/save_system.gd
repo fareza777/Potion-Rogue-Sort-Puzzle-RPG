@@ -143,9 +143,11 @@ func migrate(source: Dictionary) -> Dictionary:
 	return migrated
 
 
-func save() -> void:
-	if not write_atomic(data, SAVE_PATH):
+func save() -> bool:
+	var succeeded := write_atomic(data, SAVE_PATH)
+	if not succeeded:
 		push_warning("Could not write save file.")
+	return succeeded
 
 
 func write_atomic(payload: Dictionary, path := SAVE_PATH) -> bool:
@@ -281,9 +283,9 @@ func bump_stat(stat_name: String, amount := 1) -> void:
 	save()
 
 
-func save_run_boundary(run_data: Dictionary) -> void:
+func save_run_boundary(run_data: Dictionary) -> bool:
 	data["active_run"] = run_data.duplicate(true)
-	save()
+	return save()
 
 
 func clear_active_run() -> void:

@@ -156,7 +156,7 @@ func _checkpoint_encounter_deferred() -> void:
 
 func _checkpoint_encounter() -> void:
 	if battle != null and board != null and not battle.battle_over and RunState.active:
-		RunState.checkpoint(RunState.PHASE_BATTLE, {"encounter": _capture_encounter()})
+		RunState.request_checkpoint(RunState.PHASE_BATTLE, {"encounter": _capture_encounter()})
 
 
 func _tutorial_target(target_name: String) -> Control:
@@ -988,6 +988,8 @@ func _show_pause() -> void:
 	if battle.battle_over:
 		return
 	board.enabled = false
+	_checkpoint_encounter()
+	RunState.flush_checkpoint("pause")
 	_show_overlay("Paused", "Your exact battle state is saved automatically.", [
 		["Resume", _hide_overlay],
 		["Save & Exit", _save_and_exit],
@@ -997,6 +999,7 @@ func _show_pause() -> void:
 
 func _save_and_exit() -> void:
 	_checkpoint_encounter()
+	RunState.flush_checkpoint("save_and_exit")
 	_go_to_menu()
 
 
