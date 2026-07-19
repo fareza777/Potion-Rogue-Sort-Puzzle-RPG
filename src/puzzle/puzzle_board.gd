@@ -87,6 +87,10 @@ func export_snapshot() -> Dictionary:
 			"capacities": capacities}
 
 
+func integrity_report() -> Dictionary:
+	return BoardIntegrityGuard.new().inspect(export_snapshot())
+
+
 func restore_snapshot(snapshot: Dictionary) -> bool:
 	if int(snapshot.get("version", 0)) != 1 or typeof(snapshot.get("state")) != TYPE_ARRAY:
 		return false
