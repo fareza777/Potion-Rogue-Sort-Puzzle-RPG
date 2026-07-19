@@ -10,8 +10,7 @@ func _ready() -> void:
 	var particles := AmbientParticles.new()
 	particles.name = "AmbientEmbers"
 	particles.set_anchors_preset(Control.PRESET_FULL_RECT)
-	particles.set_reduced_effects(bool(ProjectSettings.get_setting(
-			"potion_rogue/reduced_effects", false)))
+	particles.set_reduced_effects(bool(SaveSystem.setting("reduced_effects")))
 	add_child(particles)
 	_build_interface()
 	AudioManager.play_music("dungeon")

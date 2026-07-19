@@ -19,7 +19,8 @@ const DEFAULT_DATA := {
 	"tutorial_step": 0,
 	"tutorial_skipped": false,
 	"settings": {"music": 0.8, "sfx": 0.8, "vibration": true, "assist_mode": false,
-		"color_patterns": false, "reduced_effects": false},
+		"color_patterns": false, "reduced_effects": false, "text_scale": 1.0,
+		"high_contrast": false},
 	"stats": {"runs_started": 0, "runs_won": 0, "battles_won": 0},
 	"active_run": {},
 	"legacy_run_compensated": false,
@@ -140,6 +141,9 @@ func migrate(source: Dictionary) -> Dictionary:
 	if not settings.has("assist_mode"): settings["assist_mode"] = false
 	if not settings.has("color_patterns"): settings["color_patterns"] = false
 	if not settings.has("reduced_effects"): settings["reduced_effects"] = false
+	if not settings.has("text_scale"): settings["text_scale"] = 1.0
+	if not settings.has("high_contrast"): settings["high_contrast"] = false
+	settings["text_scale"] = clampf(float(settings["text_scale"]), 0.85, 1.30)
 	migrated["settings"] = settings
 	migrated["max_ascension"] = clampi(int(migrated.get("max_ascension", 0)), 0, 10)
 	migrated["selected_ascension"] = clampi(int(migrated.get("selected_ascension", 0)),

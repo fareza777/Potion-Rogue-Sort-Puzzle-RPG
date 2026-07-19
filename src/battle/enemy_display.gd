@@ -24,6 +24,7 @@ var _sprite_material: ShaderMaterial
 var _action_tween: Tween
 var _motion_profile := "elastic"
 var _base_scale := Vector2.ONE
+var reduced_effects := false
 
 
 func _ready() -> void:
@@ -59,6 +60,15 @@ func uses_sprite_art() -> bool:
 
 func motion_profile() -> String:
 	return _motion_profile
+
+
+func set_reduced_effects(value: bool) -> void:
+	reduced_effects = value
+	set_process(not value)
+	if value and _sprite_root != null:
+		_sprite_root.position = Vector2.ZERO
+		_body_texture.scale = Vector2.ONE
+	queue_redraw()
 
 
 func _ensure_sprite_nodes() -> void:

@@ -21,7 +21,10 @@ func _ready() -> void:
 	rows.name = "SettingsRows"
 	rows.alignment = BoxContainer.ALIGNMENT_CENTER
 	rows.add_theme_constant_override("separation", 14)
-	panel.add_child(rows)
+	var scroll := ScrollContainer.new(); scroll.name = "SettingsScroll"
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL; panel.add_child(scroll)
+	rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL; scroll.add_child(rows)
 	rows.add_child(UiKit.title_label("SETTINGS", 46))
 	rows.add_child(UiKit.label("AUDIO & ACCESSIBILITY", 16, UiKit.COLOR_TEXT_DIM))
 
@@ -51,6 +54,11 @@ func _ready() -> void:
 	var reduced_row := _make_toggle_row("REDUCED EFFECTS", "reduced_effects",
 			"Shorter flashes, no camera shake, and fewer particles.")
 	reduced_row.name = "ReducedEffectsRow"; rows.add_child(reduced_row)
+	var text_scale_row := _make_text_scale_row()
+	text_scale_row.name = "TextScaleRow"; rows.add_child(text_scale_row)
+	var contrast_row := _make_toggle_row("HIGH CONTRAST", "high_contrast",
+			"Brightens secondary text and focus outlines.")
+	contrast_row.name = "HighContrastRow"; rows.add_child(contrast_row)
 	var replay := UiKit.button("REPLAY TUTORIAL", Vector2(320, 58), Color("78c8ff"))
 	replay.name = "ReplayTutorial"
 	replay.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -130,6 +138,19 @@ func _make_vibration_row() -> HBoxContainer:
 		vib.text = "ON" if on else "OFF"
 		AudioManager.vibrate(40))
 	row.add_child(vib)
+	return row
+
+
+func _make_text_scale_row() -> HBoxContainer:
+	var row := HBoxContainer.new(); row.custom_minimum_size.y = 82
+	var label := UiKit.label("TEXT SIZE", 21, UiKit.COLOR_GOLD)
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT; row.add_child(label)
+	var slider := HSlider.new(); slider.min_value = 0.85; slider.max_value = 1.30
+	slider.step = 0.05; slider.value = float(SaveSystem.setting("text_scale"))
+	slider.custom_minimum_size = Vector2(250, 56); _style_slider(slider)
+	slider.value_changed.connect(func(value: float): SaveSystem.set_setting("text_scale", value))
+	row.add_child(slider)
 	return row
 
 

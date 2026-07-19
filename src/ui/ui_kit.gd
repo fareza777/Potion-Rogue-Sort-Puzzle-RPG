@@ -218,7 +218,8 @@ static func button(text: String, min_size := Vector2(180, 64),
 		accent := COLOR_GOLD) -> Button:
 	var b := Button.new()
 	b.text = text
-	b.custom_minimum_size = min_size
+	b.custom_minimum_size = Vector2(min_size.x, maxf(min_size.y, UiThemeTokens.TOUCH_MIN))
+	b.focus_mode = Control.FOCUS_ALL
 	b.pressed.connect(func() -> void:
 		var audio := _audio()
 		if audio != null:
@@ -252,7 +253,24 @@ static func button(text: String, min_size := Vector2(180, 64),
 	disabled.bg_color = Color("221a33")
 	disabled.border_color = Color("4a3f61")
 	b.add_theme_stylebox_override("disabled", disabled)
+	b.add_theme_stylebox_override("focus", UiThemeTokens.focus_style(12))
 	return b
+
+
+static func scaled_text_size(size: int) -> int:
+	var scale := 1.0
+	var tree := Engine.get_main_loop() as SceneTree
+	var save := tree.root.get_node_or_null("SaveSystem") if tree != null else null
+	if save != null: scale = clampf(float(save.setting("text_scale")), 0.85, 1.30)
+	return maxi(roundi(float(size) * scale), 10)
+
+
+static func accessible_color(color: Color) -> Color:
+	var tree := Engine.get_main_loop() as SceneTree
+	var save := tree.root.get_node_or_null("SaveSystem") if tree != null else null
+	if save != null and bool(save.setting("high_contrast")):
+		return color.lightened(0.22)
+	return color
 
 
 static func title_label(text: String, size: int, color := COLOR_GOLD) -> Label:
@@ -260,8 +278,8 @@ static func title_label(text: String, size: int, color := COLOR_GOLD) -> Label:
 	l.text = text
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.add_theme_font_override("font", title_font())
-	l.add_theme_font_size_override("font_size", size)
-	l.add_theme_color_override("font_color", color)
+	l.add_theme_font_size_override("font_size", scaled_text_size(size))
+	l.add_theme_color_override("font_color", accessible_color(color))
 	l.add_theme_constant_override("shadow_offset_x", 2)
 	l.add_theme_constant_override("shadow_offset_y", 3)
 	l.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.6))
@@ -272,8 +290,8 @@ static func label(text: String, size: int, color := COLOR_TEXT) -> Label:
 	var l := Label.new()
 	l.text = text
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	l.add_theme_font_size_override("font_size", size)
-	l.add_theme_color_override("font_color", color)
+	l.add_theme_font_size_override("font_size", scaled_text_size(size))
+	l.add_theme_color_override("font_color", accessible_color(color))
 	return l
 
 

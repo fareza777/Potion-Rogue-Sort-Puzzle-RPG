@@ -29,7 +29,10 @@ func _ready() -> void:
 	root.add_child(subtitle)
 	var modes := HBoxContainer.new(); modes.alignment = BoxContainer.ALIGNMENT_CENTER
 	modes.add_theme_constant_override("separation", 10); root.add_child(modes)
-	var daily := UiKit.ornate_button("DAILY CHALLENGE  +15", Vector2(250, 58), Color("62b9ff"))
+	var utc_date := Time.get_date_string_from_system(true)
+	var daily_caption := "LOCAL DAILY  •  CLAIMED" if MetaProgression.new().daily_claimed(utc_date) \
+			else "LOCAL DAILY  +15"
+	var daily := UiKit.ornate_button(daily_caption, Vector2(250, 58), Color("62b9ff"))
 	daily.add_theme_font_size_override("font_size", 17)
 	daily.pressed.connect(_start_daily); modes.add_child(daily)
 	var history := UiKit.ornate_button("RUN HISTORY", Vector2(220, 58), Color("b67cff"))
@@ -157,3 +160,7 @@ func _refresh_ascension_label() -> void:
 	if _ascension_label:
 		_ascension_label.text = "ASCENSION  %d / %d" % [SaveSystem.selected_ascension(),
 				SaveSystem.max_ascension()]
+		var rules := GameState.load_data_file("ascension_rules.json", {})
+		var level := SaveSystem.selected_ascension()
+		_ascension_label.tooltip_text = "No modifiers" if level == 0 else \
+				str(rules.get(str(level), {}).get("description", "Unknown modifier"))

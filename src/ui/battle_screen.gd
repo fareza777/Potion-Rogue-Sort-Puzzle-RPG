@@ -66,6 +66,7 @@ func _ready() -> void:
 		RunState.start_new_run()
 
 	_build_ui()
+	enemy_display.set_reduced_effects(bool(SaveSystem.setting("reduced_effects")))
 	battle_navigation.configure(get_tree())
 	hud_presenter.build(self, _layout_profile)
 	hud_presenter.bind({"stage": battle_kind_label, "enemy_name": enemy_name_label,
@@ -442,8 +443,7 @@ func _build_ui() -> void:
 	root.add_child(controls)
 	battle_fx = BattleFx.new()
 	add_child(battle_fx)
-	battle_fx.set_reduced_effects(bool(ProjectSettings.get_setting(
-			"potion_rogue/reduced_effects", false)))
+	battle_fx.set_reduced_effects(bool(SaveSystem.setting("reduced_effects")))
 	_build_overlay()
 
 
@@ -811,7 +811,7 @@ func _on_boss_phase_changed(index: int, config: Dictionary) -> void:
 	if not board_action.is_empty():
 		if not _apply_boss_board_action(board_action):
 			_set_message("%s FIZZLES  •  BOARD REMAINS SOLVABLE" % board_action.to_upper())
-	var delay := 0.35 if bool(ProjectSettings.get_setting("potion_rogue/reduced_effects", false)) else 1.2
+	var delay := 0.35 if bool(SaveSystem.setting("reduced_effects")) else 1.2
 	get_tree().create_timer(delay).timeout.connect(func():
 		if not battle.battle_over: board.enabled = true)
 

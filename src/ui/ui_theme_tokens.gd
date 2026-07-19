@@ -30,6 +30,20 @@ const TYPE_SCALE := {"caption":TYPE.caption, "body":TYPE.body_large, "action":TY
 static func type_size(role: String) -> int:
 	return int(TYPE_SCALE.get(role, TYPE_SCALE.body))
 
+
+static func contrast_ratio(foreground: Color, background: Color) -> float:
+	var lighter := maxf(_luminance(foreground), _luminance(background))
+	var darker := minf(_luminance(foreground), _luminance(background))
+	return (lighter + 0.05) / (darker + 0.05)
+
+
+static func _luminance(color: Color) -> float:
+	var values: Array[float] = []
+	for channel in [color.r, color.g, color.b]:
+		values.append(channel / 12.92 if channel <= 0.04045 \
+				else pow((channel + 0.055) / 1.055, 2.4))
+	return values[0] * 0.2126 + values[1] * 0.7152 + values[2] * 0.0722
+
 static func focus_style(radius := 14) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.18, 0.10, 0.28, 0.96)

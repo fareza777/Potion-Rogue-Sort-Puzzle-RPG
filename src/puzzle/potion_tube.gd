@@ -137,6 +137,8 @@ func _sync_layer_effects() -> void:
 
 
 func flash_complete() -> void:
+	if bool(SaveSystem.setting("reduced_effects")):
+		modulate = Color.WHITE; scale = Vector2.ONE; queue_redraw(); return
 	if _feedback_tween != null and _feedback_tween.is_valid():
 		_feedback_tween.kill()
 	_feedback_tween = create_tween().set_parallel(true)
@@ -150,6 +152,8 @@ func flash_complete() -> void:
 
 
 func play_invalid() -> void:
+	if bool(SaveSystem.setting("reduced_effects")):
+		queue_redraw(); return
 	if _feedback_tween != null and _feedback_tween.is_valid():
 		_feedback_tween.kill()
 	var base_x := position.x
@@ -216,9 +220,9 @@ func _draw() -> void:
 	else:
 		draw_rect(Rect2(4, 8, w - 8, h - 12), Color("7d7195"), false, 3.0)
 
-	if selected:
+	if selected or has_focus():
 		draw_arc(Vector2(cx, h * 0.56), w * 0.55, 0.0, TAU, 40,
-				Color(1.0, 0.78, 0.25, 0.78), 4.0, true)
+				Color("8eeeff") if has_focus() else Color(1.0, 0.78, 0.25, 0.78), 4.0, true)
 
 	# Magical lock overlay
 	if is_locked():

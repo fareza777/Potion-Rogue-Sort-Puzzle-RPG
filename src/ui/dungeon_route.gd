@@ -53,11 +53,11 @@ func _ready() -> void:
 		_pulse = fmod(_pulse + 0.04, TAU)
 		queue_redraw())
 	add_child(timer)
-	if not bool(ProjectSettings.get_setting("potion_rogue/reduced_effects", false)):
+	if not bool(SaveSystem.setting("reduced_effects")):
 		timer.start()
 	visibility_changed.connect(func() -> void:
 		if not visible: timer.stop()
-		elif not bool(ProjectSettings.get_setting("potion_rogue/reduced_effects", false)):
+		elif not bool(SaveSystem.setting("reduced_effects")):
 			timer.start())
 
 

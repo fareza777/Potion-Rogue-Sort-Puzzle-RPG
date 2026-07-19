@@ -24,6 +24,8 @@ func _ready() -> void:
 
 func set_reduced_effects(value: bool) -> void:
 	reduced_effects = value
+	set_process(not value)
+	queue_redraw()
 
 
 func _process(delta: float) -> void:
@@ -36,7 +38,7 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
-	var visible_count := 8 if reduced_effects else _motes.size()
+	var visible_count := 0 if reduced_effects else _motes.size()
 	for i in visible_count:
 		var mote: Dictionary = _motes[i]
 		var alpha := 0.20 + 0.22 * (0.5 + 0.5 * sin(float(mote.phase)))
