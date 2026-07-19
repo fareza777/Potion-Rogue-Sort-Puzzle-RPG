@@ -52,6 +52,7 @@ var battle_navigation := BattleNavigation.new()
 var remix_jobs := RemixJobController.new()
 var _pending_remix_generation := -1
 var _pending_remix_snapshot: Dictionary = {}
+var _pending_remix_seed := 0
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -77,6 +78,9 @@ func _process(_delta: float) -> void:
 		_set_message("MIX FAILED — TRY AGAIN")
 	else:
 		battle.on_move()
+		RunState.record_replay("remix", {"seed":_pending_remix_seed,
+				"generation_id":int(payload.get("generation_id", -1)),
+				"board":board.export_state()})
 		_set_message("Potions remixed — 1 move spent")
 		_checkpoint_encounter()
 	_pending_remix_snapshot = {}
@@ -148,6 +152,8 @@ func _ready() -> void:
 		tutorial_overlay = Tutorial.new(); add_child(tutorial_overlay)
 		tutorial_overlay.setup(self, tutorial_director, _tutorial_target)
 	board.move_made.connect(_checkpoint_encounter_deferred)
+	board.move_made.connect(func() -> void:
+		RunState.record_replay("move", {"board":board.export_state()}))
 	board.tube_completed.connect(func(_color: String) -> void: _checkpoint_encounter_deferred())
 	_checkpoint_encounter()
 	_refresh()
@@ -1079,6 +1085,8 @@ func _on_undo_pressed() -> void:
 	if board.undo():
 		undo_left -= 1
 		battle.on_undo()
+		RunState.record_replay("undo", {"remaining":undo_left,
+				"board":board.export_state()})
 		_set_message("Move undone.")
 		_tutorial_action("undo")
 		_checkpoint_encounter()
@@ -1089,7 +1097,8 @@ func _on_restart_pressed() -> void:
 	if battle.battle_over or remix_jobs.is_busy():
 		return
 	_pending_remix_snapshot = board.export_snapshot()
-	_pending_remix_generation = remix_jobs.request(board.export_state(), int(randi()),
+	_pending_remix_seed = int(randi())
+	_pending_remix_generation = remix_jobs.request(board.export_state(), _pending_remix_seed,
 			"standard", PotionTube.CAPACITY)
 	board.enabled = false
 	_set_message("BREWING...")

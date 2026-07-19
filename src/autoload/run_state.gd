@@ -49,6 +49,7 @@ var run_ascension := 0
 var pending_ascension := 0
 var _checkpoint_scheduler = CHECKPOINT_SCHEDULER.new()
 var _run_rng := RunRng.new()
+var _replay_journal := ReplayJournal.new()
 
 
 func _ready() -> void:
@@ -103,6 +104,9 @@ func start_new_run(selected_kit := "ember_adept", selected_area_id := "",
 	run_seed = requested_seed if requested_seed != 0 else \
 			int(Time.get_unix_time_from_system() * 1000000.0) ^ Time.get_ticks_usec()
 	_run_rng.configure(run_seed ^ 0x51ed270b)
+	_replay_journal.clear()
+	_replay_journal.record("run_started", {"seed":run_seed, "area":area_id,
+			"mode":run_mode, "ascension":run_ascension, "kit":kit_id})
 	run_graph = RunGenerator.new().generate(run_seed, area_id, run_ascension)
 	current_node_id = str(run_graph.get("start", "f0_l1"))
 	if run_mode == "rematch":
@@ -164,6 +168,7 @@ func select_node(id: String) -> bool:
 	var current := current_node()
 	current["visited"] = true
 	current_node_id = id
+	record_replay("route_selected", {"node_id":id})
 	var kind := str(current_node().get("kind", "battle"))
 	checkpoint(PHASE_BATTLE if kind in ["battle", "elite", "boss"] else PHASE_EVENT)
 	return true
@@ -203,7 +208,7 @@ func resume_scene() -> String:
 
 
 func serialize_boundary() -> Dictionary:
-	return {"version": 5, "active": active, "seed": run_seed, "area_id": area_id,
+	return {"version": 7, "active": active, "seed": run_seed, "area_id": area_id,
 		"graph": run_graph.duplicate(true), "current_node_id": current_node_id,
 		"phase": phase, "phase_payload": phase_payload.duplicate(true),
 		"run_mode": run_mode, "ascension": run_ascension,
@@ -211,12 +216,13 @@ func serialize_boundary() -> Dictionary:
 		"mutations": mutation_ids.duplicate(), "relics": relic_ids.duplicate(),
 		"catalysts": catalyst_ids.duplicate(), "upgrades": upgrade_ids.duplicate(),
 		"resolved_events": resolved_event_ids.duplicate(), "active_curses": active_curses,
-		"rng_state": int(_run_rng.snapshot().state)}
+		"rng_state": int(_run_rng.snapshot().state),
+		"replay":_replay_journal.snapshot()}
 
 
 func resume_from_save(saved: Dictionary) -> bool:
 	var boundary_version := int(saved.get("version", 0))
-	if boundary_version not in [2, 3, 4, 5, 6] or not bool(saved.get("active", false)): return false
+	if boundary_version not in [2, 3, 4, 5, 6, 7] or not bool(saved.get("active", false)): return false
 	if typeof(saved.get("graph", null)) != TYPE_DICTIONARY: return false
 	var loaded_area := str(saved.get("area_id", "shadow_crypt"))
 	area_id = loaded_area if not GameState.area(loaded_area).is_empty() else "shadow_crypt"
@@ -240,7 +246,18 @@ func resume_from_save(saved: Dictionary) -> bool:
 	upgrade_ids = _valid_ids(saved.get("upgrades", []), upgrade_pool)
 	resolved_event_ids = saved.get("resolved_events", []).duplicate()
 	active_curses = maxi(int(saved.get("active_curses", 0)), 0); active = true
+	_replay_journal.clear()
+	if boundary_version >= 7:
+		_replay_journal.restore(saved.get("replay", {}))
 	return true
+
+
+func record_replay(kind: String, payload := {}) -> void:
+	_replay_journal.record(kind, payload)
+
+
+func replay_snapshot() -> Dictionary:
+	return _replay_journal.snapshot()
 
 
 func abandon_run() -> int:
