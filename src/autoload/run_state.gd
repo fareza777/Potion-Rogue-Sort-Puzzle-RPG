@@ -248,7 +248,9 @@ func abandon_run() -> int:
 		MetaProgression.new().record_run({"seed":run_seed, "area":area_id,
 				"mode":run_mode, "ascension":run_ascension,
 				"result":"abandoned", "depth":battle_index,
-				"crystals":run_crystals})
+				"crystals":run_crystals, "relics":relic_ids.duplicate(),
+				"mutations":mutation_ids.duplicate(), "catalysts":catalyst_ids.duplicate(),
+				"upgrades":upgrade_ids.duplicate(), "kit":kit_id})
 	var kept := run_crystals / 2
 	if kept > 0:
 		SaveSystem.add_crystals(kept)
@@ -448,10 +450,14 @@ func complete_battle(hp_left: int, crystals_reward: int) -> Dictionary:
 		MetaProgression.new().record_run({"seed":run_seed, "area":area_id,
 				"mode":run_mode, "ascension":run_ascension,
 				"result":"victory", "depth":int(current_area().get("run_length", 7)),
-				"crystals":run_crystals})
+				"crystals":run_crystals, "relics":relic_ids.duplicate(),
+				"mutations":mutation_ids.duplicate(), "catalysts":catalyst_ids.duplicate(),
+				"upgrades":upgrade_ids.duplicate(), "kit":kit_id})
+		MetaProgression.new().complete_mastery(area_id,
+				str(current_contract().get("objective_id", "defeat")))
 		if run_mode == "normal" and MetaProgression.new().ascension_unlocked():
 			MetaProgression.new().record_ascension_clear(run_ascension)
-		if run_mode == "daily": MetaProgression.new().complete_daily(Time.get_date_string_from_system())
+		if run_mode == "daily": MetaProgression.new().complete_daily(Time.get_date_string_from_system(true))
 		var result := SaveSystem.complete_area(area_id)
 		SaveSystem.clear_active_run()
 		return result

@@ -71,6 +71,13 @@ func daily_claimed(date_text: String) -> bool:
 func complete_daily(date_text: String) -> int:
 	if daily_claimed(date_text):
 		return 0
-	SaveSystem.data["daily"] = {"last_claim": date_text, "best_depth": 7}
+	var daily: Dictionary = SaveSystem.data.get("daily", {}).duplicate(true)
+	var previous := str(daily.get("last_played", ""))
+	daily["streak"] = int(daily.get("streak", 0)) + 1 if previous != date_text else int(daily.get("streak", 0))
+	daily["last_claim"] = date_text
+	daily["last_played"] = date_text
+	daily["best_depth"] = maxi(int(daily.get("best_depth", 0)), 7)
+	daily["score"] = maxi(int(daily.get("score", 0)), 1000 + int(daily.streak) * 100)
+	SaveSystem.data["daily"] = daily
 	SaveSystem.add_crystals(15)
 	return 15

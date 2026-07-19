@@ -16,6 +16,8 @@ func _init() -> void:
 	style.content_margin_top = 7
 	style.content_margin_bottom = 7
 	add_theme_stylebox_override("panel", style)
+	focus_mode = Control.FOCUS_ALL
+	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 	add_child(row)
@@ -35,15 +37,29 @@ func _init() -> void:
 	row.add_child(synergy)
 
 
-func configure(kit_id: String, relics: Array, upgrades: Array, mutations: Array) -> void:
+func configure(kit_id: String, relics: Array, upgrades: Array, mutations: Array,
+		catalysts: Array = []) -> void:
 	(find_child("BuildKit", true, false) as Label).text = _pretty(kit_id)
 	(find_child("BuildCounts", true, false) as Label).text = "%d RELICS  •  %d UPGRADES" % [relics.size(), upgrades.size()]
-	(find_child("BuildSynergy", true, false) as Label).text = _synergy(kit_id, relics, upgrades, mutations)
+	var active := BuildSynergy.new().evaluate({"relics":relics, "upgrades":upgrades,
+		"mutations":mutations, "catalysts":catalysts})
+	(find_child("BuildSynergy", true, false) as Label).text = str(active[0].name).to_upper() \
+			if not active.is_empty() else _synergy(kit_id, relics, upgrades, mutations)
 	var details: Array[String] = []
 	for id in relics: details.append("Relic: " + _pretty(str(id)))
 	for id in upgrades: details.append("Upgrade: " + _pretty(str(id)))
 	for id in mutations: details.append("Mutation: " + _pretty(str(id)))
+	for id in catalysts: details.append("Catalyst: " + _pretty(str(id)))
+	for synergy in active:
+		details.append("Synergy: %s â€” %s" % [synergy.name, _effect_copy(synergy.effects)])
 	tooltip_text = "Current build\n" + ("No additions yet" if details.is_empty() else "\n".join(details))
+
+
+func _effect_copy(effects: Array) -> String:
+	var copy: Array[String] = []
+	for effect in effects:
+		copy.append("%s %s %s" % [effect.stat, effect.op, str(effect.value)])
+	return ", ".join(copy)
 
 
 func _synergy(kit_id: String, relics: Array, upgrades: Array, mutations: Array) -> String:

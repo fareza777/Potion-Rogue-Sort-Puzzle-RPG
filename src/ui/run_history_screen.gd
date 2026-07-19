@@ -15,7 +15,7 @@ func _ready() -> void:
 	for raw_record in records:
 		var record: Dictionary = raw_record
 		var card := UiKit.textured_panel("res://assets/art/ui/battle_panel.png", 16); card.custom_minimum_size.y = 88
-		var copy := "%s  •  %s  •  Depth %d  •  %d crystals\nSeed %s" % [str(record.get("result", "run")).to_upper(), str(record.get("mode", "normal")).to_upper(), int(record.get("depth", 0)), int(record.get("crystals", 0)), str(record.get("seed", 0))]
+		var copy := "%s  •  %s  •  Depth %d  •  %d crystals\nSeed %s  •  Kit %s  •  Build %d/%d/%d/%d" % [str(record.get("result", "run")).to_upper(), str(record.get("mode", "normal")).to_upper(), int(record.get("depth", 0)), int(record.get("crystals", 0)), str(record.get("seed", 0)), str(record.get("kit", "unknown")).replace("_", " ").to_upper(), (record.get("relics", []) as Array).size(), (record.get("upgrades", []) as Array).size(), (record.get("mutations", []) as Array).size(), (record.get("catalysts", []) as Array).size()]
 		card.add_child(UiKit.label(copy, 16, UiKit.COLOR_TEXT)); list.add_child(card)
 	var back := UiKit.ornate_button("BACK", Vector2(300, 62)); back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	back.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/area_select.tscn")); root.add_child(back)

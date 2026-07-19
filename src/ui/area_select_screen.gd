@@ -117,7 +117,7 @@ func _area_color(area_id: String) -> Color:
 
 
 func _start_daily() -> void:
-	var date := Time.get_date_string_from_system()
+	var date := Time.get_date_string_from_system(true)
 	RunState.pending_area_id = SaveSystem.selected_area()
 	RunState.pending_run_mode = "daily"
 	RunState.pending_ascension = 0

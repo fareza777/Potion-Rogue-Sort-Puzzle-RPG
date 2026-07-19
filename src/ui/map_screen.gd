@@ -138,6 +138,6 @@ func _make_status_panel() -> PanelContainer:
 	row.add_child(UiKit.label("CRYSTALS  %d (+%d)" % [SaveSystem.crystals(), RunState.run_crystals], 17, Color("75d4ff")))
 	var summary := BuildSummary.new()
 	summary.configure(RunState.kit_id, RunState.relic_ids, RunState.upgrade_ids,
-			RunState.mutation_ids)
+			RunState.mutation_ids, RunState.catalyst_ids)
 	box.add_child(summary)
 	return panel

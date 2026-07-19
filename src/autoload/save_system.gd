@@ -29,7 +29,8 @@ const DEFAULT_DATA := {
 	"selected_area": "shadow_crypt",
 	"area_stats": {},
 	"mastery": {},
-	"daily": {"last_claim": "", "best_depth": 0},
+	"daily": {"last_claim": "", "last_played": "", "best_depth": 0,
+		"score": 0, "streak": 0},
 	"run_history": [],
 	"max_ascension": 0,
 	"selected_ascension": 0,
@@ -109,6 +110,10 @@ func migrate(source: Dictionary) -> Dictionary:
 		migrated["mastery"] = migrated.get("mastery", {})
 		migrated["daily"] = migrated.get("daily", {"last_claim":"", "best_depth":0})
 		migrated["run_history"] = migrated.get("run_history", [])
+	var daily: Dictionary = migrated.get("daily", {}).duplicate(true)
+	for key in DEFAULT_DATA.daily:
+		if not daily.has(key): daily[key] = DEFAULT_DATA.daily[key]
+	migrated["daily"] = daily
 	if int(migrated.get("version", 1)) < 6:
 		var migrated_settings: Dictionary = migrated.get("settings", {})
 		migrated_settings["color_patterns"] = false

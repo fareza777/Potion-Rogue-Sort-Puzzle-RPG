@@ -137,7 +137,10 @@ func _decorate_event(node: Dictionary, rng: RunRng) -> void:
 		"campfire": node.event_id = "ember_camp"
 		"shop": node.event_id = "bound_alchemist"
 		"event":
-			var pool := ["whispering_well", "mirror_cauldron", "bone_oracle"]
+			var pool := ["whispering_well", "mirror_cauldron", "bone_oracle",
+				"frost_shrine", "drowned_altar", "prism_archive", "spore_garden",
+				"ossuary_vault", "astral_forge", "moonlit_merchant",
+				"abyssal_bargain", "echo_chamber"]
 			node.event_id = pool[rng.randi_range(0, pool.size() - 1)]
 
 
