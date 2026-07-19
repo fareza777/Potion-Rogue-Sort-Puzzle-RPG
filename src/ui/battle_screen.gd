@@ -49,6 +49,9 @@ var encounter_coordinator := EncounterCoordinator.new()
 var hud_presenter := BattleHudPresenter.new()
 var overlay_controller := BattleOverlayController.new()
 var battle_navigation := BattleNavigation.new()
+var remix_jobs := RemixJobController.new()
+var _pending_remix_generation := -1
+var _pending_remix_snapshot: Dictionary = {}
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -58,6 +61,32 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		else:
 			_show_pause()
 		get_viewport().set_input_as_handled()
+
+
+func _process(_delta: float) -> void:
+	if _pending_remix_generation < 0:
+		return
+	var payload := remix_jobs.poll()
+	if payload.is_empty() or int(payload.get("generation_id", -1)) != _pending_remix_generation:
+		return
+	_pending_remix_generation = -1
+	var applied := not payload.has("error") \
+			and board.apply_remix_result(payload.get("result", {}))
+	if not applied:
+		board.restore_snapshot(_pending_remix_snapshot)
+		_set_message("MIX FAILED — TRY AGAIN")
+	else:
+		battle.on_move()
+		_set_message("Potions remixed — 1 move spent")
+		_checkpoint_encounter()
+	_pending_remix_snapshot = {}
+	if not battle.battle_over:
+		board.enabled = true
+	_refresh()
+
+
+func _exit_tree() -> void:
+	remix_jobs.cancel()
 
 
 func _ready() -> void:
@@ -1057,13 +1086,13 @@ func _on_undo_pressed() -> void:
 
 
 func _on_restart_pressed() -> void:
-	if battle.battle_over:
+	if battle.battle_over or remix_jobs.is_busy():
 		return
-	board.remix_board()
-	battle.on_move()
-	_set_message("Potions remixed — 1 move spent")
-	_checkpoint_encounter()
-	_refresh()
+	_pending_remix_snapshot = board.export_snapshot()
+	_pending_remix_generation = remix_jobs.request(board.export_state(), int(randi()),
+			"standard", PotionTube.CAPACITY)
+	board.enabled = false
+	_set_message("BREWING...")
 
 
 func _start_new_run() -> void:

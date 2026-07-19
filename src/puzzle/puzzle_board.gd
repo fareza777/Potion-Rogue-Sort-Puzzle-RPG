@@ -241,6 +241,19 @@ func remix_board(seed := int(randi()), band := "standard") -> void:
 			PotionTube.CAPACITY))
 
 
+func apply_remix_result(result: Dictionary) -> bool:
+	if typeof(result.get("state")) != TYPE_ARRAY \
+			or not bool(result.get("analysis", {}).get("solvable", false)):
+		return false
+	var layouts: Array = result.get("state", [])
+	if layouts.size() != tubes.size():
+		return false
+	_undo_stack.clear()
+	_deselect()
+	_apply_factory_result(result)
+	return integrity_report().status == "valid"
+
+
 func _apply_factory_result(result: Dictionary) -> void:
 	var layouts: Array = result.get("state", [])
 	for index in tubes.size():
