@@ -6,10 +6,17 @@ var _failures := 0
 
 
 func _ready() -> void:
+	if "--variety-only" in OS.get_cmdline_user_args():
+		_test_generation_variety()
+		print("---")
+		print("%d checks, %d failures" % [_checks, _failures])
+		get_tree().quit(1 if _failures > 0 else 0)
+		return
 	_test_analysis()
 	_test_analysis_bound()
 	_test_partial_capacity_analysis()
 	_test_deterministic_generation()
+	_test_generation_variety()
 	_test_generation_property()
 	_test_remix_multiset()
 	_test_remix_fallback_shape()
@@ -59,6 +66,20 @@ func _test_deterministic_generation() -> void:
 	check(first.state == second.state and first.analysis == second.analysis
 			and first.attempt == second.attempt,
 			"identical seeds produce identical verified boards")
+
+
+func _test_generation_variety() -> void:
+	var structural_patterns := {}
+	var shortcut_boards := 0
+	for seed in 48:
+		var state: Array = BoardFactory.generate(10_000 + seed, "standard").state
+		structural_patterns[_structure_signature(state)] = true
+		if _has_three_stack_shortcut(state):
+			shortcut_boards += 1
+	check(structural_patterns.size() >= 24,
+			"forty-eight seeds produce at least twenty-four structural layouts")
+	check(shortcut_boards <= 12,
+			"at most one quarter of boards expose three-same-color shortcuts")
 
 
 func _test_generation_property() -> void:
@@ -143,6 +164,32 @@ func _colors(state: Array) -> Array[String]:
 			result.append(str(value))
 	result.sort()
 	return result
+
+
+func _structure_signature(state: Array) -> String:
+	var color_ids := {}
+	var next_id := 0
+	var tubes: Array[String] = []
+	for tube in state:
+		var encoded: Array[String] = []
+		for value in tube:
+			var color := str(value)
+			if not color_ids.has(color):
+				color_ids[color] = next_id
+				next_id += 1
+			encoded.append(str(color_ids[color]))
+		tubes.append("".join(encoded))
+	tubes.sort()
+	return "|".join(tubes)
+
+
+func _has_three_stack_shortcut(state: Array) -> bool:
+	for tube in state:
+		for index in range(maxi(0, tube.size() - 2)):
+			if str(tube[index]) == str(tube[index + 1]) \
+					and str(tube[index]) == str(tube[index + 2]):
+				return true
+	return false
 
 
 func check(condition: bool, what: String) -> void:

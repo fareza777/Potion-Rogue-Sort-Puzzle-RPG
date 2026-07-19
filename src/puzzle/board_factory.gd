@@ -4,12 +4,45 @@ extends RefCounted
 
 const COLORS: Array[String] = ["red", "green", "blue", "purple"]
 const MAX_ATTEMPTS := 12
+const STANDARD_LAYOUTS := [
+	[[3,1,3,0],[2,2,3,0],[1,2,2,1],[3,0,1,0]],
+	[[0,2,0,2],[2,3,2,0],[1,1,3,3],[3,0,1,1]],
+	[[0,1,1,2],[1,3,3,0],[3,0,2,1],[2,0,3,2]],
+	[[1,1,2,3],[3,0,1,2],[2,1,3,0],[3,2,0,0]],
+	[[2,2,1,3],[0,1,2,1],[1,2,0,3],[0,3,3,0]],
+	[[1,0,2,2],[3,2,0,1],[0,0,3,3],[1,2,3,1]],
+	[[1,2,0,0],[1,3,3,2],[0,0,1,1],[2,2,3,3]],
+	[[1,0,2,3],[1,1,2,3],[1,2,3,0],[0,0,3,2]],
+	[[2,0,1,0],[3,2,2,3],[1,1,2,0],[3,1,3,0]],
+	[[3,2,1,1],[2,2,0,3],[3,2,3,1],[0,0,1,0]],
+	[[3,3,0,0],[3,0,1,2],[3,2,1,2],[2,1,1,0]],
+	[[0,1,1,0],[0,0,3,2],[3,1,3,2],[1,2,2,3]],
+	[[1,2,3,3],[3,0,2,1],[3,1,2,0],[0,0,1,2]],
+	[[1,3,3,2],[0,0,2,0],[1,1,3,3],[1,2,0,2]],
+	[[2,1,1,2],[3,0,1,0],[1,0,3,2],[2,3,3,0]],
+	[[1,3,1,0],[1,2,2,0],[2,2,3,0],[3,0,1,3]],
+	[[3,0,0,3],[1,1,2,3],[2,2,3,2],[1,0,0,1]],
+	[[0,0,3,3],[3,2,1,2],[1,3,2,1],[0,0,2,1]],
+	[[1,3,3,2],[0,1,0,0],[2,1,2,1],[0,3,3,2]],
+	[[3,3,1,1],[0,2,2,1],[0,3,2,0],[3,2,0,1]],
+	[[3,1,0,0],[3,3,1,2],[1,2,2,3],[1,0,2,0]],
+	[[3,0,2,2],[0,1,1,0],[1,1,3,3],[0,2,2,3]],
+	[[0,2,3,2],[3,3,2,0],[0,3,1,1],[1,2,1,0]],
+	[[1,0,3,2],[0,0,1,1],[2,3,2,3],[0,1,2,3]],
+]
 
 
 static func generate(seed: int, requested_band: String, color_count := 4,
 		capacity := 4, tube_count := 6) -> Dictionary:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
+	if requested_band == "standard" and color_count == 4 and capacity == 4 \
+			and tube_count >= 6:
+		var catalog_state := _catalog_state(seed, rng, tube_count)
+		var catalog_analysis := BoardSolver.analyze(catalog_state, 50000, capacity)
+		if _is_playable(catalog_state, catalog_analysis, capacity) \
+				and BoardDifficulty.band(int(catalog_analysis.estimated_moves)) == "standard":
+			return {"state": catalog_state, "analysis": catalog_analysis, "attempt": 0}
 	var target := _target_moves(requested_band)
 	var best: Dictionary = {}
 	var best_distance := 1_000_000
@@ -89,6 +122,22 @@ static func _template_state(rng: RandomNumberGenerator, color_count: int,
 			filled.append([])
 		return filled
 	return _cyclic_state(color_count, capacity, tube_count)
+
+
+static func _catalog_state(seed: int, rng: RandomNumberGenerator, tube_count: int) -> Array:
+	var source: Array = STANDARD_LAYOUTS[posmod(seed, STANDARD_LAYOUTS.size())]
+	var palette := COLORS.duplicate()
+	_shuffle(palette, rng)
+	var result: Array = []
+	for raw_tube in source:
+		var tube: Array[String] = []
+		for color_index in raw_tube:
+			tube.append(str(palette[int(color_index)]))
+		result.append(tube)
+	_shuffle(result, rng)
+	while result.size() < tube_count:
+		result.append([])
+	return result
 
 
 static func _shuffled_state(rng: RandomNumberGenerator, color_count: int,
