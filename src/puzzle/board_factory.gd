@@ -81,6 +81,11 @@ static func remix(state: Array, seed: int, requested_band := "standard",
 	for color in colors:
 		if not color in unique_colors:
 			unique_colors.append(color)
+	if not _forms_complete_color_sets(colors, unique_colors, capacity):
+		var recovered := _recovery_remix(seed, requested_band, unique_colors,
+				capacity, tube_count)
+		if not recovered.is_empty():
+			return recovered
 	if colors.size() == unique_colors.size() * capacity and tube_count > unique_colors.size():
 		var generated := generate(seed, requested_band, unique_colors.size(), capacity,
 				tube_count)
@@ -110,6 +115,41 @@ static func remix(state: Array, seed: int, requested_band := "standard",
 	return {"state": fallback,
 			"analysis": BoardSolver.analyze(fallback, 50000, capacity),
 			"attempt": -1}
+
+
+static func _forms_complete_color_sets(colors: Array[String],
+		unique_colors: Array[String], capacity: int) -> bool:
+	if colors.is_empty() or capacity < 1:
+		return false
+	for color in unique_colors:
+		if colors.count(color) % capacity != 0:
+			return false
+	return true
+
+
+static func _recovery_remix(seed: int, requested_band: String,
+		live_colors: Array[String], capacity: int, tube_count: int) -> Dictionary:
+	if tube_count < 3:
+		return {}
+	var palette: Array[String] = []
+	for color in live_colors:
+		if color in COLORS and color not in palette:
+			palette.append(color)
+	for color in COLORS:
+		if palette.size() >= 2:
+			break
+		if color not in palette:
+			palette.append(color)
+	var color_count := mini(palette.size(), tube_count - 1)
+	if color_count < 2:
+		return {}
+	palette.resize(color_count)
+	var generated := generate(seed, requested_band, color_count, capacity, tube_count)
+	if not bool(generated.get("analysis", {}).get("solvable", false)):
+		return {}
+	generated.state = _rename_colors(generated.state, palette)
+	generated["recovered"] = true
+	return generated
 
 
 static func _template_state(rng: RandomNumberGenerator, color_count: int,

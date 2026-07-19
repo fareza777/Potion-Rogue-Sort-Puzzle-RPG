@@ -5,6 +5,7 @@ const AREA_GRAMMAR := preload("res://src/run/area_grammar.gd")
 ## player always understands long-term progression and first-clear rewards.
 
 var _ascension_label: Label
+var _area_scroll: ScrollContainer
 
 
 func _ready() -> void:
@@ -42,11 +43,13 @@ func _ready() -> void:
 			12, UiKit.COLOR_TEXT_DIM); root.add_child(mode_help)
 	if MetaProgression.new().ascension_unlocked():
 		root.add_child(_make_ascension_selector())
-	var scroll := ScrollContainer.new(); scroll.name = "ExpeditionScroll"
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL; root.add_child(scroll)
+	_area_scroll = ScrollContainer.new(); _area_scroll.name = "ExpeditionScroll"
+	_area_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_area_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	_area_scroll.scroll_deadzone = 8
+	_area_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL; root.add_child(_area_scroll)
 	var area_list := VBoxContainer.new(); area_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	area_list.add_theme_constant_override("separation", 10); scroll.add_child(area_list)
+	area_list.add_theme_constant_override("separation", 10); _area_scroll.add_child(area_list)
 	for id in GameState.area_ids():
 		area_list.add_child(_area_card(id))
 	var back := UiKit.ornate_button("BACK TO HALL", Vector2(360, 62))
@@ -54,6 +57,20 @@ func _ready() -> void:
 	back.pressed.connect(func() -> void:
 		get_tree().change_scene_to_file("res://scenes/main_menu.tscn"))
 	root.add_child(back)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not event is InputEventScreenDrag or not is_instance_valid(_area_scroll):
+		return
+	if not _area_scroll.get_global_rect().has_point(event.position):
+		return
+	var bar := _area_scroll.get_v_scroll_bar()
+	var limit := maxi(roundi(bar.max_value - bar.page), 0)
+	if limit <= 0:
+		return
+	_area_scroll.scroll_vertical = clampi(
+			_area_scroll.scroll_vertical - roundi(event.relative.y), 0, limit)
+	get_viewport().set_input_as_handled()
 
 
 func _area_card(area_id: String) -> PanelContainer:
