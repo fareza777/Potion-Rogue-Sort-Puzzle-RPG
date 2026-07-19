@@ -86,9 +86,12 @@ func setup(new_enemy_id: String) -> void:
 	var damage_scale := 1.0 + (threat_scale - 1.0) * 0.35
 	enemy_attack = roundi(float(e.get("attack", 8)) * damage_scale)
 	attack_every = int(e.get("attack_every", 3)) + int(RunState.stat("enemy_delay", 0.0)) \
-			+ (1 if bool(SaveSystem.setting("assist_mode")) else 0)
+			+ (1 if bool(SaveSystem.setting("assist_mode")) else 0) \
+			+ int(RunState.ensure_current_encounter_profile().get("countdown_bonus", 0))
 	moves_until_attack = attack_every
 	crystals_reward = int(e.get("crystals", 5))
+	crystals_reward = roundi(float(crystals_reward) * float(
+			RunState.current_contract().get("profile", {}).get("reward_mult", 1.0)))
 
 	_enemy_crit_chance = float(e.get("crit_chance", 0.0))
 	_lock_every_attacks = int(e.get("lock_every_attacks", 0))

@@ -93,7 +93,7 @@ func start_new_run(selected_kit := "ember_adept", selected_area_id := "",
 	phase = PHASE_MAP
 	phase_payload = {}
 	run_mode = selected_mode if not selected_mode.is_empty() else pending_run_mode
-	if run_mode not in ["normal", "daily", "rematch"]: run_mode = "normal"
+	if run_mode not in ["normal", "daily", "weekly", "rematch"]: run_mode = "normal"
 	run_ascension = clampi(pending_ascension, 0, SaveSystem.max_ascension()) \
 			if run_mode == "normal" else 0
 	var requested_area := selected_area_id if not selected_area_id.is_empty() else pending_area_id
@@ -157,6 +157,23 @@ func current_contract() -> Dictionary:
 	return current_node().get("contract", {})
 
 
+func ensure_current_encounter_profile() -> Dictionary:
+	var node := current_node()
+	if node.is_empty() or str(node.get("kind", "")) not in ["battle", "elite", "boss"]:
+		return {}
+	var contract: Dictionary = node.get("contract", {})
+	if not (contract.get("profile", {}) as Dictionary).is_empty():
+		return contract.profile
+	var ratio := float(current_hp()) / float(maxi(max_hp(), 1))
+	contract["profile"] = EncounterDirector.new().build_profile({
+		"floor": int(node.get("floor", 0)), "kind": str(node.get("kind", "battle")),
+		"hp_ratio": ratio, "ascension": run_ascension,
+		"early_defeat_streak": int(SaveSystem.data.get("early_defeat_streak", 0)),
+	}, run_seed ^ str(node.get("id", "")).hash())
+	node["contract"] = contract
+	return contract.profile
+
+
 func reachable_node_ids() -> Array[String]:
 	var result: Array[String] = []
 	for id in current_node().get("links", []): result.append(str(id))
@@ -168,6 +185,7 @@ func select_node(id: String) -> bool:
 	var current := current_node()
 	current["visited"] = true
 	current_node_id = id
+	ensure_current_encounter_profile()
 	record_replay("route_selected", {"node_id":id})
 	var kind := str(current_node().get("kind", "battle"))
 	checkpoint(PHASE_BATTLE if kind in ["battle", "elite", "boss"] else PHASE_EVENT)

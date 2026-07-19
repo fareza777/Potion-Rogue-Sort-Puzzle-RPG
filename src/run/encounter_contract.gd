@@ -10,6 +10,7 @@ var objective_id := "defeat"
 var modifier_ids: Array[String] = []
 var reward_mult := 1.0
 var node_kind := "battle"
+var profile: Dictionary = {}
 
 
 static func from_dict(raw: Dictionary) -> EncounterContract:
@@ -33,6 +34,7 @@ static func from_dict(raw: Dictionary) -> EncounterContract:
 	result.node_kind = str(raw.get("kind", "battle"))
 	if not result.node_kind in VALID_NODE_KINDS:
 		result.node_kind = "battle"
+	result.profile = (raw.get("profile", {}) as Dictionary).duplicate(true)
 	return result
 
 
@@ -50,4 +52,5 @@ func to_dict() -> Dictionary:
 		"modifiers": modifier_ids.duplicate(),
 		"reward_mult": reward_mult,
 		"kind": node_kind,
+		"profile": profile.duplicate(true),
 	}

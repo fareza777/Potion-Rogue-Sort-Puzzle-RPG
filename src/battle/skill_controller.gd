@@ -22,6 +22,14 @@ func gain_mana(amount: int) -> void:
 	mana = clampi(mana + maxi(amount, 0), 0, 100)
 	mana_changed.emit(mana, 100)
 
+
+func spend_mana(amount: int) -> bool:
+	var cost := maxi(amount, 0)
+	if mana < cost: return false
+	mana -= cost
+	mana_changed.emit(mana, 100)
+	return true
+
 func can_cast(skill_id: String) -> bool:
 	var kit: Dictionary = GameState.kits.get(kit_id, {})
 	return str(kit.get("active", "")) == skill_id \

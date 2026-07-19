@@ -50,9 +50,11 @@ var hud_presenter := BattleHudPresenter.new()
 var overlay_controller := BattleOverlayController.new()
 var battle_navigation := BattleNavigation.new()
 var remix_jobs := RemixJobController.new()
+var remix_economy := RemixEconomy.new()
 var _pending_remix_generation := -1
 var _pending_remix_snapshot: Dictionary = {}
 var _pending_remix_seed := 0
+var _pending_remix_quote: Dictionary = {}
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -77,13 +79,25 @@ func _process(_delta: float) -> void:
 		board.restore_snapshot(_pending_remix_snapshot)
 		_set_message("MIX FAILED — TRY AGAIN")
 	else:
+		var mana_cost := int(_pending_remix_quote.get("mana_cost", 0))
+		if mana_cost > 0 and not skill_controller.spend_mana(mana_cost):
+			board.restore_snapshot(_pending_remix_snapshot)
+			board.enabled = true
+			_set_message("NOT ENOUGH MANA — MIX CANCELLED")
+			_pending_remix_snapshot = {}
+			_pending_remix_quote = {}
+			return
+		remix_economy.commit(_pending_remix_quote)
 		battle.on_move()
 		RunState.record_replay("remix", {"seed":_pending_remix_seed,
 				"generation_id":int(payload.get("generation_id", -1)),
 				"board":board.export_state()})
-		_set_message("Potions remixed — 1 move spent")
+		_set_message("Emergency recovery — 1 move spent" if bool(
+				_pending_remix_quote.get("emergency", false)) else
+				"Potions remixed — 1 move spent")
 		_checkpoint_encounter()
 	_pending_remix_snapshot = {}
+	_pending_remix_quote = {}
 	if not battle.battle_over:
 		board.enabled = true
 	_refresh()
@@ -169,6 +183,7 @@ func _capture_encounter() -> Dictionary:
 		"signature": signature_controller.snapshot(),
 		"modifier": modifier_controller.snapshot(),
 		"combo": combo_resolver.snapshot(),
+		"remix_economy": remix_economy.snapshot(),
 		"boss_phase": boss_phase_controller.snapshot() if boss_phase_controller != null else {},
 	}, true)
 	return result
@@ -186,6 +201,7 @@ func _restore_encounter(snapshot: Dictionary) -> bool:
 	signature_controller.restore(snapshot.get("signature", {}))
 	modifier_controller.restore(snapshot.get("modifier", {}), board)
 	combo_resolver.restore(snapshot.get("combo", {}))
+	remix_economy.restore(snapshot.get("remix_economy", {}))
 	if boss_phase_controller != null:
 		var boss_data: Dictionary = snapshot.get("boss_phase", {})
 		if not boss_phase_controller.restore(boss_data):
@@ -1095,6 +1111,12 @@ func _on_undo_pressed() -> void:
 
 func _on_restart_pressed() -> void:
 	if battle.battle_over or remix_jobs.is_busy():
+		return
+	var integrity := board.integrity_report()
+	_pending_remix_quote = remix_economy.quote(str(integrity.get("status", "invalid")),
+			remix_economy.mix_count, skill_controller.mana)
+	if not bool(_pending_remix_quote.get("allowed", false)):
+		_set_message("NEW MIX NEEDS %d MANA" % int(_pending_remix_quote.get("mana_cost", 20)))
 		return
 	_pending_remix_snapshot = board.export_snapshot()
 	_pending_remix_seed = int(randi())
