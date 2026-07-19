@@ -143,6 +143,19 @@ func set_scene_state(state: String) -> bool:
 	return true
 
 
+func set_combat_intensity(hp_ratio: float, moves_until_attack: int) -> String:
+	var layer := "danger" if hp_ratio <= 0.3 or moves_until_attack <= 1 else \
+			("pressure" if hp_ratio <= 0.55 or moves_until_attack <= 2 else "battle")
+	set_combat_layer(layer)
+	return layer
+
+
+func haptic(event_name: String) -> void:
+	var durations := {"select":12, "pour":20, "complete":36, "hit":65,
+			"critical":95, "victory":55, "invalid":28}
+	vibrate(int(durations.get(event_name, 20)))
+
+
 func accepted_scene_states() -> Array:
 	return ["hall", "explore", "event", "battle", "elite", "boss", "victory", "defeat"]
 
@@ -347,6 +360,8 @@ func _play_layer_stems(layer: String) -> void:
 func _layer_profile(layer: String) -> Dictionary:
 	match layer:
 		"battle": return {"tempo": 92.0, "root": 73.42, "energy": 0.13}
+		"pressure": return {"tempo": 104.0, "root": 69.30, "energy": 0.15}
+		"danger": return {"tempo": 120.0, "root": 61.74, "energy": 0.18}
 		"elite": return {"tempo": 108.0, "root": 65.41, "energy": 0.16}
 		"boss_phase_1": return {"tempo": 116.0, "root": 61.74, "energy": 0.17}
 		"boss_phase_2": return {"tempo": 128.0, "root": 61.74, "energy": 0.19}

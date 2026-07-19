@@ -44,6 +44,7 @@ var skill_button: Button
 var ultimate_button: Button
 var boss_phase_controller: BossPhaseController
 var encounter_format := EncounterFormatController.new()
+var presentation_director := BattlePresentationDirector.new()
 var tutorial_director: TutorialDirector
 var tutorial_overlay: Tutorial
 var encounter_coordinator := EncounterCoordinator.new()
@@ -274,6 +275,9 @@ func _setup_tactical_controllers(enemy_id: String) -> void:
 			battle.moves_until_attack = maxi(battle.moves_until_attack - pressure, 1)
 			_set_message("BRITTLE GLASS  •  ENEMY PRESSURE +1")
 			_refresh())
+	board.guidance_changed.connect(func(reason: String) -> void:
+		AudioManager.haptic("invalid")
+		_set_message(reason.to_upper()))
 	combo_resolver = ComboResolver.new()
 	combo_resolver.combo_resolved.connect(_on_depth_combo)
 	skill_controller = SkillController.new()
@@ -785,6 +789,7 @@ func _refresh() -> void:
 			if battle.poison_turns > 0 else ""
 
 	var moves := battle.moves_until_attack
+	AudioManager.set_combat_intensity(float(battle.player_hp) / float(maxi(battle.player_max_hp, 1)), moves)
 	if moves == 1 and _last_moves_until_attack != 1:
 		enemy_display.play_anticipate()
 		battle_fx.warning_pulse(warning_plaque)
@@ -812,8 +817,12 @@ func _refresh() -> void:
 func _set_message(text: String) -> void:
 	message_label.text = text
 	message_label.modulate.a = 0.45
-	var tween := create_tween()
-	tween.tween_property(message_label, "modulate:a", 1.0, 0.16)
+	message_label.scale = Vector2(0.975, 0.975)
+	message_label.pivot_offset = message_label.size * 0.5
+	var tween := create_tween().set_parallel(true)
+	var duration := presentation_director.duration("hit", bool(SaveSystem.setting("reduced_effects")))
+	tween.tween_property(message_label, "modulate:a", 1.0, duration).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	tween.tween_property(message_label, "scale", Vector2.ONE, duration).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 func _enemy_center() -> Vector2:
@@ -828,7 +837,7 @@ func _player_bar_center() -> Vector2:
 
 func _on_potion_activated(color: String, text: String) -> void:
 	_set_message(text)
-	AudioManager.vibrate(25)
+	AudioManager.haptic("complete")
 	match color:
 		"red":
 			AudioManager.play("fire")
@@ -914,7 +923,7 @@ func _on_enemy_attacked(damage: int, blocked: int, crit: bool) -> void:
 		_set_message("%s%s attacks for %d damage!" % [prefix, battle.enemy_name, damage])
 	if damage > blocked:
 		AudioManager.play("player_hit")
-		AudioManager.vibrate(60)
+		AudioManager.haptic("critical" if crit else "hit")
 		UiKit.float_text(self, _player_bar_center(), "-%d" % (damage - blocked),
 				UiKit.COLOR_ENEMY_HP, 36)
 	else:

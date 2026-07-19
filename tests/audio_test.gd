@@ -15,6 +15,11 @@ func _ready() -> void:
 				"music duck depth is clamped to safe maximum")
 	check(AudioManager.get("_stem_players").size() == 2, "music has melodic and percussion stems")
 	check(AudioManager.has_method("stem_cache_size"), "generated music stems expose bounded cache telemetry")
+	check(AudioManager.has_method("set_combat_intensity"), "music supports adaptive danger intensity")
+	if AudioManager.has_method("set_combat_intensity"):
+		check(AudioManager.call("set_combat_intensity", 0.1, 1) == "danger",
+				"low HP and imminent attack select danger layer")
+	check(AudioManager.has_method("haptic"), "named haptic language is available")
 	AudioManager.set_combat_layer("battle")
 	check(AudioManager.current_combat_layer() == "battle", "same layer does not change identity")
 	check(AudioManager.has_method("set_area"), "soundtrack exposes area identity")

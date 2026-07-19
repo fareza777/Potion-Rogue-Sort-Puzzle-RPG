@@ -8,6 +8,7 @@ signal tube_completed(color: String)
 signal tube_selected
 signal board_refilled
 signal invalid_move
+signal guidance_changed(message: String)
 signal tube_locked
 signal curse_cleansed(count: int)
 signal pour_presented(from_global: Vector2, to_global: Vector2, color: String, count: int)
@@ -344,6 +345,7 @@ func _on_tube_tapped(tube: PotionTube) -> void:
 		if not tube.contents.is_empty():
 			selected_tube = tube
 			tube.selected = true
+			_refresh_guidance()
 			tube_selected.emit()
 		return
 	if selected_tube == tube:
@@ -353,12 +355,17 @@ func _on_tube_tapped(tube: PotionTube) -> void:
 		_deselect()
 	else:
 		# Invalid pour: treat the tap as selecting the new tube instead.
+		var from_index := tubes.find(selected_tube)
+		var reason := BoardGuidance.new().invalid_reason(export_state(), from_index,
+				tubes.find(tube), tube.capacity)
 		tube.play_invalid()
 		_deselect()
 		if not tube.contents.is_empty():
 			selected_tube = tube
 			tube.selected = true
+			_refresh_guidance()
 		invalid_move.emit()
+		guidance_changed.emit(reason)
 
 
 func _try_pour(from_tube: PotionTube, to_tube: PotionTube) -> bool:
@@ -421,3 +428,14 @@ func _deselect() -> void:
 	if selected_tube != null:
 		selected_tube.selected = false
 		selected_tube = null
+	for tube in tubes: tube.guidance_state = "neutral"
+
+
+func _refresh_guidance() -> void:
+	if selected_tube == null: return
+	var source_index := tubes.find(selected_tube)
+	var valid: Array = BoardGuidance.new().for_selection(export_state(), source_index,
+			selected_tube.capacity).get("valid_targets", [])
+	for index in tubes.size():
+		tubes[index].guidance_state = "neutral" if index == source_index else (
+				"valid" if index in valid else "dim")

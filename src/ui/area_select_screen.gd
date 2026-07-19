@@ -6,11 +6,14 @@ const AREA_GRAMMAR := preload("res://src/run/area_grammar.gd")
 
 var _ascension_label: Label
 var _area_scroll: ScrollContainer
+var _preview_background: TextureRect
+var _preview_label: Label
+var _background_tween: Tween
 
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
-	UiKit.battle_background(self, VisualRegistry.background("main_hall"))
+	_preview_background = UiKit.battle_background(self, VisualRegistry.background("main_hall"))
 	var shade := ColorRect.new()
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	shade.color = Color(0.008, 0.005, 0.02, 0.74)
@@ -28,18 +31,24 @@ func _ready() -> void:
 	var subtitle := UiKit.label("Each realm has its own roster, boss, hazards and rewards.", 16, UiKit.COLOR_TEXT_DIM)
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root.add_child(subtitle)
+	_preview_label = UiKit.label("SELECT A REALM TO PREVIEW", 13, UiKit.COLOR_GOLD)
+	_preview_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	root.add_child(_preview_label)
 	var modes := HBoxContainer.new(); modes.alignment = BoxContainer.ALIGNMENT_CENTER
-	modes.add_theme_constant_override("separation", 10); root.add_child(modes)
+	modes.add_theme_constant_override("separation", 6); root.add_child(modes)
 	var utc_date := Time.get_date_string_from_system(true)
 	var daily_caption := "LOCAL DAILY  •  CLAIMED" if MetaProgression.new().daily_claimed(utc_date) \
 			else "LOCAL DAILY  +15"
-	var daily := UiKit.ornate_button(daily_caption, Vector2(170, 58), Color("62b9ff"))
+	var daily := UiKit.ornate_button(daily_caption, Vector2(152, 58), Color("62b9ff"))
+	daily.name = "DailyChallenge"
 	daily.add_theme_font_size_override("font_size", 17)
 	daily.pressed.connect(_start_daily); modes.add_child(daily)
-	var weekly := UiKit.ornate_button("WEEKLY  +25", Vector2(170, 58), Color("e88cff"))
+	var weekly := UiKit.ornate_button("WEEKLY  +25", Vector2(152, 58), Color("e88cff"))
+	weekly.name = "WeeklyChallenge"
 	weekly.add_theme_font_size_override("font_size", 16)
 	weekly.pressed.connect(_start_weekly); modes.add_child(weekly)
-	var history := UiKit.ornate_button("HISTORY", Vector2(170, 58), Color("b67cff"))
+	var history := UiKit.ornate_button("HISTORY", Vector2(152, 58), Color("b67cff"))
+	history.name = "RunHistory"
 	history.add_theme_font_size_override("font_size", 17)
 	history.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/run_history.tscn")); modes.add_child(history)
 	var mode_help := UiKit.label("Daily challenge  •  Weekly expedition  •  Latest 20 runs",
@@ -55,6 +64,12 @@ func _ready() -> void:
 	area_list.add_theme_constant_override("separation", 10); _area_scroll.add_child(area_list)
 	for id in GameState.area_ids():
 		area_list.add_child(_area_card(id))
+	var scroll_cue := UiKit.label("⌄  SWIPE TO EXPLORE EVERY REALM  ⌄", 12, Color("d8b6ff"))
+	scroll_cue.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	root.add_child(scroll_cue)
+	var cue_tween := create_tween().set_loops()
+	cue_tween.tween_property(scroll_cue, "modulate:a", 0.38, 0.8).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	cue_tween.tween_property(scroll_cue, "modulate:a", 1.0, 1.0).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
 	var back := UiKit.ornate_button("BACK TO HALL", Vector2(360, 62))
 	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	back.pressed.connect(func() -> void:
@@ -84,6 +99,10 @@ func _area_card(area_id: String) -> PanelContainer:
 	card.name = "AreaCard_" + area_id
 	card.custom_minimum_size = Vector2(0, 218)
 	card.modulate = Color.WHITE if unlocked else Color(0.55, 0.56, 0.64, 0.88)
+	card.mouse_entered.connect(_preview_area.bind(area_id))
+	card.focus_entered.connect(_preview_area.bind(area_id))
+	card.gui_input.connect(func(event: InputEvent) -> void:
+		if event is InputEventScreenTouch and event.pressed: _preview_area(area_id))
 	var stack := VBoxContainer.new()
 	stack.add_theme_constant_override("separation", UiThemeTokens.SPACE.sm)
 	card.add_child(stack)
@@ -136,6 +155,21 @@ func _area_card(area_id: String) -> PanelContainer:
 		get_tree().change_scene_to_file("res://scenes/kit_select.tscn"))
 	stack.add_child(action)
 	return card
+
+
+func _preview_area(area_id: String) -> void:
+	var area := GameState.area(area_id)
+	_preview_label.text = "%s  •  %s" % [str(area.get("name", area_id)).to_upper(),
+			str(area.get("subtitle", "DUNGEON EXPEDITION")).to_upper()]
+	var texture := VisualRegistry.texture_or_null(str(area.get("background", "")))
+	if texture == null or _preview_background.texture == texture: return
+	if _background_tween != null and _background_tween.is_valid(): _background_tween.kill()
+	_background_tween = create_tween()
+	_background_tween.tween_property(_preview_background, "modulate:a", 0.25, 0.18) \
+			.set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	_background_tween.tween_callback(func() -> void: _preview_background.texture = texture)
+	_background_tween.tween_property(_preview_background, "modulate:a", 1.0, 0.42) \
+			.set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
 
 
 func _area_color(area_id: String) -> Color:

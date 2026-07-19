@@ -34,6 +34,11 @@ var selected := false:
 		selected = value
 		queue_redraw()
 
+var guidance_state := "neutral":
+	set(value):
+		guidance_state = value
+		queue_redraw()
+
 var _bottle_texture: Texture2D
 var _feedback_tween: Tween
 
@@ -223,6 +228,11 @@ func _draw() -> void:
 	if selected or has_focus():
 		draw_arc(Vector2(cx, h * 0.56), w * 0.55, 0.0, TAU, 40,
 				Color("8eeeff") if has_focus() else Color(1.0, 0.78, 0.25, 0.78), 4.0, true)
+	elif guidance_state == "valid":
+		draw_arc(Vector2(cx, h * 0.56), w * 0.54, 0.0, TAU, 40,
+				Color(0.35, 0.95, 0.75, 0.82), 4.0, true)
+	elif guidance_state == "dim":
+		draw_rect(Rect2(4, h * 0.12, w - 8, h * 0.8), Color(0.01, 0.01, 0.03, 0.28))
 
 	# Magical lock overlay
 	if is_locked():
