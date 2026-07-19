@@ -45,6 +45,10 @@ var ultimate_button: Button
 var boss_phase_controller: BossPhaseController
 var tutorial_director: TutorialDirector
 var tutorial_overlay: Tutorial
+var encounter_coordinator := EncounterCoordinator.new()
+var hud_presenter := BattleHudPresenter.new()
+var overlay_controller := BattleOverlayController.new()
+var battle_navigation := BattleNavigation.new()
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -62,6 +66,12 @@ func _ready() -> void:
 		RunState.start_new_run()
 
 	_build_ui()
+	battle_navigation.configure(get_tree())
+	hud_presenter.build(self, _layout_profile)
+	hud_presenter.bind({"stage": battle_kind_label, "enemy_name": enemy_name_label,
+		"countdown": countdown_label, "undo_count": undo_count_label})
+	overlay_controller.configure(overlay, overlay_title, overlay_body,
+			overlay_choices, overlay_buttons)
 
 	battle = BattleManager.new()
 	add_child(battle)
@@ -88,6 +98,7 @@ func _ready() -> void:
 
 	var entry := RunState.current_battle()
 	battle.setup(str(entry.get("enemy", "slime")))
+	encounter_coordinator.configure(battle, board, entry)
 	_setup_tactical_controllers(str(entry.get("enemy", "slime")))
 	var encounter: Dictionary = RunState.phase_payload.get("encounter", {})
 	var resumed := not encounter.is_empty() and _restore_encounter(encounter)
@@ -113,10 +124,8 @@ func _ready() -> void:
 
 
 func _capture_encounter() -> Dictionary:
-	return {
-		"version": 1,
-		"battle": battle.export_snapshot(),
-		"board": board.export_snapshot(),
+	var result := encounter_coordinator.snapshot()
+	result.merge({
 		"undo_left": undo_left,
 		"skill": skill_controller.snapshot(),
 		"objective": objective_controller.snapshot(),
@@ -125,14 +134,14 @@ func _capture_encounter() -> Dictionary:
 		"modifier": modifier_controller.snapshot(),
 		"combo": combo_resolver.snapshot(),
 		"boss_phase": boss_phase_controller.snapshot() if boss_phase_controller != null else {},
-	}
+	}, true)
+	return result
 
 
 func _restore_encounter(snapshot: Dictionary) -> bool:
 	if int(snapshot.get("version", 0)) != 1:
 		return false
-	var restored := battle.restore_snapshot(snapshot.get("battle", {})) \
-			and board.restore_snapshot(snapshot.get("board", {}))
+	var restored := encounter_coordinator.restore(snapshot)
 	if not restored:
 		return false
 	skill_controller.restore(snapshot.get("skill", {}))
@@ -723,6 +732,10 @@ func _refresh() -> void:
 	undo_count_label.text = str(undo_left)
 	undo_button.disabled = undo_left <= 0 or not board.can_undo() or battle.battle_over
 	_refresh_tactical_hud()
+	hud_presenter.refresh({"stage": stage,
+		"enemy_name": battle.enemy_name + ("  (Enraged!)" if battle.enraged else ""),
+		"countdown": "Enemy attacks in %d move%s!" % [moves, "" if moves == 1 else "s"],
+		"undo_count": undo_left})
 
 
 func _set_message(text: String) -> void:
@@ -990,7 +1003,7 @@ func _show_pause() -> void:
 	board.enabled = false
 	_checkpoint_encounter()
 	RunState.flush_checkpoint("pause")
-	_show_overlay("Paused", "Your exact battle state is saved automatically.", [
+	overlay_controller.show_pause([
 		["Resume", _hide_overlay],
 		["Save & Exit", _save_and_exit],
 		["Abandon Run", _confirm_abandon],
@@ -1018,23 +1031,11 @@ func _abandon_run() -> void:
 
 ## buttons: Array of [text, Callable] pairs.
 func _show_overlay(title: String, body: String, buttons: Array) -> void:
-	overlay_title.text = title
-	overlay_body.text = body
-	overlay_body.visible = body != ""
-	for child in overlay_choices.get_children():
-		child.queue_free()
-	for child in overlay_buttons.get_children():
-		child.queue_free()
-	for entry in buttons:
-		var button := UiKit.ornate_button(entry[0], Vector2(390, 58))
-		button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		button.pressed.connect(entry[1])
-		overlay_buttons.add_child(button)
-	overlay.visible = true
+	overlay_controller.show(title, body, buttons)
 
 
 func _hide_overlay() -> void:
-	overlay.visible = false
+	overlay_controller.hide()
 	if not battle.battle_over:
 		board.enabled = true
 
@@ -1073,8 +1074,8 @@ func _replay_area() -> void:
 
 
 func _go_to_area_select() -> void:
-	get_tree().change_scene_to_file("res://scenes/area_select.tscn")
+	battle_navigation.go_to_area_select()
 
 
 func _go_to_menu() -> void:
-	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+	battle_navigation.go_to_menu()
