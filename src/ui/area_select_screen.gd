@@ -33,13 +33,16 @@ func _ready() -> void:
 	var utc_date := Time.get_date_string_from_system(true)
 	var daily_caption := "LOCAL DAILY  •  CLAIMED" if MetaProgression.new().daily_claimed(utc_date) \
 			else "LOCAL DAILY  +15"
-	var daily := UiKit.ornate_button(daily_caption, Vector2(250, 58), Color("62b9ff"))
+	var daily := UiKit.ornate_button(daily_caption, Vector2(170, 58), Color("62b9ff"))
 	daily.add_theme_font_size_override("font_size", 17)
 	daily.pressed.connect(_start_daily); modes.add_child(daily)
-	var history := UiKit.ornate_button("RUN HISTORY", Vector2(220, 58), Color("b67cff"))
+	var weekly := UiKit.ornate_button("WEEKLY  +25", Vector2(170, 58), Color("e88cff"))
+	weekly.add_theme_font_size_override("font_size", 16)
+	weekly.pressed.connect(_start_weekly); modes.add_child(weekly)
+	var history := UiKit.ornate_button("HISTORY", Vector2(170, 58), Color("b67cff"))
 	history.add_theme_font_size_override("font_size", 17)
 	history.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/run_history.tscn")); modes.add_child(history)
-	var mode_help := UiKit.label("Daily: same challenge for everyone today  •  History: latest 20 runs",
+	var mode_help := UiKit.label("Daily challenge  •  Weekly expedition  •  Latest 20 runs",
 			12, UiKit.COLOR_TEXT_DIM); root.add_child(mode_help)
 	if MetaProgression.new().ascension_unlocked():
 		root.add_child(_make_ascension_selector())
@@ -108,6 +111,9 @@ func _area_card(area_id: String) -> PanelContainer:
 			"BEST DEPTH %d / %d" % [SaveSystem.best_depth(area_id), run_length]
 			if unlocked else "LOCKED")
 	info.add_child(UiKit.label(progress, 13, UiKit.COLOR_GOLD if unlocked else UiKit.COLOR_TEXT_DIM))
+	if unlocked:
+		info.add_child(UiKit.label("MASTERY RANK %d / 10" % MetaProgression.new().area_mastery_rank(area_id),
+				12, Color("d8b6ff")))
 	if not cleared:
 		info.add_child(UiKit.label("FIRST CLEAR  +%d CRYSTALS" % int(area.get("first_clear_reward", 0)),
 				13, Color("77d8ff")))
@@ -142,6 +148,15 @@ func _start_daily() -> void:
 	RunState.pending_run_mode = "daily"
 	RunState.pending_ascension = 0
 	RunState.pending_run_seed = MetaProgression.new().daily_seed(date)
+	get_tree().change_scene_to_file("res://scenes/kit_select.tscn")
+
+
+func _start_weekly() -> void:
+	var meta := MetaProgression.new()
+	RunState.pending_area_id = SaveSystem.selected_area()
+	RunState.pending_run_mode = "weekly"
+	RunState.pending_ascension = 0
+	RunState.pending_run_seed = meta.weekly_seed(meta.current_week_key())
 	get_tree().change_scene_to_file("res://scenes/kit_select.tscn")
 
 

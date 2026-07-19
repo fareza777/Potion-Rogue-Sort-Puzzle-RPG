@@ -111,6 +111,40 @@ func setup(new_enemy_id: String) -> void:
 	stats_changed.emit()
 
 
+func setup_next_wave(wave_number: int) -> void:
+	var carried_hp := player_hp
+	var carried_shield := shield
+	var carried_max_hp := player_max_hp
+	var carried_max_shield := max_shield
+	setup(enemy_id)
+	player_max_hp = carried_max_hp
+	player_hp = clampi(carried_hp, 1, player_max_hp)
+	max_shield = carried_max_shield
+	shield = clampi(carried_shield, 0, max_shield)
+	var scale := 1.0 + 0.12 * float(maxi(wave_number - 1, 0))
+	enemy_max_hp = roundi(float(enemy_max_hp) * scale)
+	enemy_hp = enemy_max_hp
+	enemy_attack = roundi(float(enemy_attack) * (1.0 + (scale - 1.0) * 0.5))
+	enemy_name += "  •  WAVE %d" % wave_number
+	stats_changed.emit()
+
+
+func complete_by_objective() -> void:
+	if battle_over: return
+	enemy_hp = 0
+	battle_over = true
+	stats_changed.emit()
+	battle_won.emit()
+
+
+func fail_by_objective() -> void:
+	if battle_over: return
+	player_hp = 0
+	battle_over = true
+	stats_changed.emit()
+	battle_lost.emit()
+
+
 func undos_allowed() -> int:
 	return int(RunState.stat("extra_undos",
 			float(GameState.player.get("undos_per_battle", 3))))

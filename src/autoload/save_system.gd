@@ -8,7 +8,7 @@ const SAVE_PATH := "user://save.json"
 const AREA_GRAMMAR := preload("res://src/run/area_grammar.gd")
 const SAVE_TEMP_PATH := SAVE_PATH + ".tmp"
 const SAVE_BACKUP_PATH := SAVE_PATH + ".bak"
-const SAVE_VERSION := 8
+const SAVE_VERSION := 9
 
 const DEFAULT_DATA := {
 	"version": SAVE_VERSION,
@@ -30,6 +30,9 @@ const DEFAULT_DATA := {
 	"selected_area": "shadow_crypt",
 	"area_stats": {},
 	"mastery": {},
+	"area_mastery": {},
+	"weekly_records": {},
+	"seen_scroll_cues": [],
 	"daily": {"last_claim": "", "last_played": "", "best_depth": 0,
 		"score": 0, "streak": 0},
 	"run_history": [],
@@ -134,6 +137,10 @@ func migrate(source: Dictionary) -> Dictionary:
 					and area_id not in unlocked:
 				unlocked.append(area_id)
 		migrated["unlocked_areas"] = unlocked
+	if int(migrated.get("version", 1)) < 9:
+		migrated["area_mastery"] = migrated.get("area_mastery", {})
+		migrated["weekly_records"] = migrated.get("weekly_records", {})
+		migrated["seen_scroll_cues"] = migrated.get("seen_scroll_cues", [])
 	var history: Array = migrated.get("run_history", [])
 	if history.size() > 20: history.resize(20)
 	migrated["run_history"] = history

@@ -490,9 +490,12 @@ func complete_battle(hp_left: int, crystals_reward: int) -> Dictionary:
 				"upgrades":upgrade_ids.duplicate(), "kit":kit_id})
 		MetaProgression.new().complete_mastery(area_id,
 				str(current_contract().get("objective_id", "defeat")))
+		MetaProgression.new().add_area_mastery(area_id, 30 + run_ascension * 5)
 		if run_mode == "normal" and MetaProgression.new().ascension_unlocked():
 			MetaProgression.new().record_ascension_clear(run_ascension)
 		if run_mode == "daily": MetaProgression.new().complete_daily(Time.get_date_string_from_system(true))
+		if run_mode == "weekly": MetaProgression.new().complete_weekly(
+				MetaProgression.new().current_week_key(), 1000 + run_crystals * 10)
 		var result := SaveSystem.complete_area(area_id)
 		SaveSystem.clear_active_run()
 		return result

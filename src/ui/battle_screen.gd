@@ -43,6 +43,7 @@ var combo_label: Label
 var skill_button: Button
 var ultimate_button: Button
 var boss_phase_controller: BossPhaseController
+var encounter_format := EncounterFormatController.new()
 var tutorial_director: TutorialDirector
 var tutorial_overlay: Tutorial
 var encounter_coordinator := EncounterCoordinator.new()
@@ -185,6 +186,7 @@ func _capture_encounter() -> Dictionary:
 		"combo": combo_resolver.snapshot(),
 		"remix_economy": remix_economy.snapshot(),
 		"boss_phase": boss_phase_controller.snapshot() if boss_phase_controller != null else {},
+		"encounter_format": encounter_format.snapshot(),
 	}, true)
 	return result
 
@@ -202,6 +204,7 @@ func _restore_encounter(snapshot: Dictionary) -> bool:
 	modifier_controller.restore(snapshot.get("modifier", {}), board)
 	combo_resolver.restore(snapshot.get("combo", {}))
 	remix_economy.restore(snapshot.get("remix_economy", {}))
+	encounter_format.restore(snapshot.get("encounter_format", {}))
 	if boss_phase_controller != null:
 		var boss_data: Dictionary = snapshot.get("boss_phase", {})
 		if not boss_phase_controller.restore(boss_data):
@@ -238,6 +241,7 @@ func _tutorial_action(action: String) -> void:
 
 func _setup_tactical_controllers(enemy_id: String) -> void:
 	var contract: Dictionary = RunState.current_contract()
+	encounter_format.configure(contract.get("profile", {}))
 	objective_controller = ObjectiveController.new()
 	var objective_id := str(contract.get("objective_id", "defeat"))
 	objective_controller.configure(objective_id, GameState.objectives.get(objective_id, {}))
@@ -280,8 +284,24 @@ func _setup_tactical_controllers(enemy_id: String) -> void:
 	board.move_made.connect(func(): _tutorial_action("select_target"))
 	board.tube_completed.connect(_on_depth_potion_completed)
 	battle.enemy_action_resolved.connect(_on_intent_resolved)
+	battle.enemy_action_resolved.connect(_on_format_enemy_action)
 	battle.armor_changed.connect(func(delta: int) -> void:
 		if delta < 0: objective_controller.on_armor_damaged(-delta))
+	board.tube_completed.connect(_on_format_potion_completed)
+
+
+func _on_format_enemy_action(_intent_id: String) -> void:
+	var outcome := encounter_format.on_enemy_action()
+	_set_message(encounter_format.title() + "  •  " + encounter_format.status_text())
+	if outcome == "victory": battle.complete_by_objective()
+	elif outcome == "defeat": battle.fail_by_objective()
+
+
+func _on_format_potion_completed(_color: String) -> void:
+	var outcome := encounter_format.on_potion_completed()
+	if encounter_format.format == "protect_cauldron":
+		_set_message(encounter_format.title() + "  •  " + encounter_format.status_text())
+	if outcome == "victory": battle.complete_by_objective()
 
 
 func _on_objective_progress(current: int, target: int) -> void:
@@ -933,6 +953,16 @@ func _on_tube_lock_requested(moves: int) -> void:
 # --- Run flow ----------------------------------------------------------------
 
 func _on_battle_won() -> void:
+	if encounter_format.on_enemy_defeated() == "next_wave":
+		board.enabled = false
+		_set_message("WAVE CLEARED  •  " + encounter_format.status_text())
+		battle.setup_next_wave(encounter_format.wave)
+		enemy_display.configure_enemy(battle.enemy_id, battle.enemy_shape, battle.enemy_color)
+		enemy_display.play_intro()
+		board.enabled = true
+		_refresh()
+		_checkpoint_encounter()
+		return
 	AudioManager.set_scene_state("victory")
 	objective_controller.on_enemy_defeated()
 	SaveSystem.record_early_defeat(false)

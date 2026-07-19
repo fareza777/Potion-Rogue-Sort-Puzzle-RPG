@@ -8,6 +8,14 @@ func daily_seed(date_text: String) -> int:
 	return absi(("POTION_ROGUE_DAILY:" + date_text).hash()) + 1
 
 
+func weekly_seed(week_key: String) -> int:
+	return absi(("POTION_ROGUE_WEEKLY:" + week_key).hash()) + 1
+
+
+func current_week_key() -> String:
+	return "W%d" % int(floor(Time.get_unix_time_from_system() / 604800.0))
+
+
 func record_run(summary: Dictionary) -> void:
 	var record := summary.duplicate(true)
 	record["recorded_at"] = int(Time.get_unix_time_from_system())
@@ -32,6 +40,35 @@ func complete_mastery(area_id: String, objective_id: String) -> int:
 	SaveSystem.data["mastery"] = mastery
 	SaveSystem.add_crystals(10)
 	return 10
+
+
+func add_area_mastery(area_id: String, xp: int) -> int:
+	var records: Dictionary = SaveSystem.data.get("area_mastery", {}).duplicate(true)
+	var entry: Dictionary = records.get(area_id, {"xp":0, "clears":0}).duplicate(true)
+	var awarded := maxi(xp, 0)
+	entry["xp"] = int(entry.get("xp", 0)) + awarded
+	entry["clears"] = int(entry.get("clears", 0)) + 1
+	records[area_id] = entry
+	SaveSystem.data["area_mastery"] = records
+	SaveSystem.save()
+	return awarded
+
+
+func area_mastery_rank(area_id: String) -> int:
+	var xp := int((SaveSystem.data.get("area_mastery", {}) as Dictionary).get(
+			area_id, {}).get("xp", 0))
+	return mini(xp / 30, 10)
+
+
+func complete_weekly(week_key: String, score: int) -> int:
+	var records: Dictionary = SaveSystem.data.get("weekly_records", {}).duplicate(true)
+	if records.has(week_key): return 0
+	var reward := 25
+	records[week_key] = {"score":maxi(score, 0), "reward":reward,
+			"completed_at":int(Time.get_unix_time_from_system())}
+	SaveSystem.data["weekly_records"] = records
+	SaveSystem.add_crystals(reward)
+	return reward
 
 
 func can_rematch(area_id: String) -> bool:
