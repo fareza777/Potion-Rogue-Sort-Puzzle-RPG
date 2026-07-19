@@ -70,10 +70,13 @@ func resolve(battle: BattleManager, board: PuzzleBoard) -> void:
 				battle.apply_player_poison(int(action.get("damage", 3)),
 						int(action.get("turns", 2)))
 			"corruption":
-				var command := {"type": "append_corruption",
-						"count": int(action.get("count", 1))}
-				if board != null and board.has_method("apply_board_command"):
-					board.call("apply_board_command", command)
+				var command := {"id": "corruption",
+						"count": int(action.get("count", 1)), "seed": int(_rng.state)}
+				if board != null:
+					var result := BoardActionResolver.new().apply(command, board)
+					if not bool(result.get("applied", false)):
+						battle.request_board_hazard({"type": "hazard_failed",
+								"reason": str(result.get("reason", "Corruption failed"))})
 				else:
 					battle.request_board_hazard(command)
 			"enrage":

@@ -178,6 +178,10 @@ func apply_board_command(command: Dictionary) -> bool:
 		return false
 	var tube := tubes[index]
 	match command_type:
+		"append_corruption":
+			if tube.contents.is_empty():
+				return false
+			return tube.add_layer_effect(tube.contents.size() - 1, "cursed")
 		"lock_tube":
 			tube.locked_moves = maxi(int(command.get("moves", 1)), 1)
 		"unlock_tube":

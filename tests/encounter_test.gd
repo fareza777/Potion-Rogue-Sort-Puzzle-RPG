@@ -147,7 +147,7 @@ func _fresh_battle(enemy_id: String) -> BattleManager:
 
 
 func _test_expanded_roster() -> void:
-	check(GameState.enemies.size() == 27, "roster contains twenty-seven enemies")
+	check(GameState.enemies.size() == 42, "roster contains forty-two enemies")
 	for family in ["crypt", "fungal", "arcane", "infernal"]:
 		var illustrated := 0
 		for enemy in GameState.enemies.values():

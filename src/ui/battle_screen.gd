@@ -804,54 +804,9 @@ func _on_boss_phase_changed(index: int, config: Dictionary) -> void:
 
 
 func _apply_boss_board_action(action: String) -> bool:
-	match action:
-		"heat_seal":
-			for index in board.tubes.size():
-				if not board.tubes[index].contents.is_empty() and not board.tubes[index].is_locked():
-					return board.try_board_commands([
-							{"type": "lock_tube", "tube": index, "moves": 1}])
-		"spore_corrupt":
-			for index in board.tubes.size():
-				if not board.tubes[index].contents.is_empty():
-					return board.tubes[index].add_layer_effect(
-							board.tubes[index].contents.size() - 1, "cursed")
-		"gravity_shift":
-			for first in board.tubes.size():
-				if board.tubes[first].contents.is_empty():
-					continue
-				for second in range(first + 1, board.tubes.size()):
-					if board.tubes[second].contents.is_empty():
-						continue
-					if board.try_board_commands([
-							{"type": "swap_top", "tube": first, "other": second}]):
-						return true
-		"frost_bind":
-			for index in board.tubes.size():
-				if not board.tubes[index].contents.is_empty() and not board.tubes[index].is_locked():
-					if board.try_board_commands([{"type":"lock_tube", "tube":index,
-							"moves":1}]):
-						return true
-		"tidal_rotate":
-			var targets: Array = []
-			for index in board.tubes.size():
-				if not board.tubes[index].contents.is_empty() and not board.tubes[index].is_locked():
-					targets.append(index)
-					if targets.size() == 3:
-						break
-			if targets.size() >= 2:
-				var commands: Array[Dictionary] = [{"type":"rotate_top", "tubes":targets}]
-				return board.try_board_commands(commands)
-		"mutate_pair":
-			for first in board.tubes.size():
-				if board.tubes[first].contents.is_empty():
-					continue
-				for second in range(first + 1, board.tubes.size()):
-					if board.tubes[second].contents.is_empty():
-						continue
-					if board.try_board_commands([{"type":"swap_top", "tube":first,
-							"other":second}]):
-						return true
-	return false
+	var result := BoardActionResolver.new().apply({"id": action,
+			"seed": RunState.run_seed + RunState.battle_index * 101}, board)
+	return bool(result.get("applied", false))
 
 
 func _on_combo_triggered(text: String) -> void:
