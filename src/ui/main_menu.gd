@@ -75,12 +75,11 @@ func _build_interface() -> void:
 	var nav := BottomNav.new()
 	nav.name = "BottomNavigation"
 	root.add_child(nav)
-	nav.add_item("hero", "Hero", func(): get_tree().change_scene_to_file("res://scenes/credits.tscn"))
-	nav.add_item("upgrades", "Upgrades", func(): get_tree().change_scene_to_file("res://scenes/shop.tscn"))
 	nav.add_item("home", "Home", Callable(), true)
-	nav.add_item("map", "Map", func():
-		get_tree().change_scene_to_file(RunState.resume_scene() if RunState.active else "res://scenes/area_select.tscn"))
-	nav.add_item("settings", "Settings", func(): get_tree().change_scene_to_file("res://scenes/settings.tscn"))
+	nav.add_item("areas", "Areas", func(): get_tree().change_scene_to_file("res://scenes/area_select.tscn"))
+	nav.add_item("build", "Build", func(): get_tree().change_scene_to_file("res://scenes/shop.tscn"))
+	nav.add_item("history", "History", func(): get_tree().change_scene_to_file("res://scenes/run_history.tscn"))
+	nav.add_item("credits", "Credits", func(): get_tree().change_scene_to_file("res://scenes/credits.tscn"))
 
 
 func _add_status_row(parent: VBoxContainer) -> void:

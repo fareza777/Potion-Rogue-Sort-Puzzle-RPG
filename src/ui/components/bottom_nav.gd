@@ -12,7 +12,8 @@ func _init() -> void:
 func add_item(id: String, caption: String, action: Callable, active := false) -> Button:
 	var button := Button.new()
 	button.name = "Nav_" + id
-	button.custom_minimum_size = Vector2(104, 94)
+	button.custom_minimum_size = Vector2(88, 94)
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.icon = VisualRegistry.texture_or_null(VisualRegistry.ui_icon(id))
 	button.expand_icon = true
 	button.text = "\n\n" + caption.to_upper()

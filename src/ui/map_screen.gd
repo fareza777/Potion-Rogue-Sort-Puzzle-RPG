@@ -37,11 +37,11 @@ func _ready() -> void:
 	route_control.custom_minimum_size = Vector2(0, 860)
 	route_panel.add_child(route_control)
 	if not RunState.run_graph.is_empty():
-		route_control.configure_graph(RunState.run_graph, RunState.current_node_id,
-				RunState.reachable_node_ids())
+		var boss_depth := int(AREA_GRAMMAR.for_area(RunState.area_id).get("run_length", 7)) - 1
+		route_control.configure(RunState.run_graph, RunState.current_node_id, boss_depth)
 		route_control.node_selected.connect(_on_node_selected)
 	else:
-		route_control.configure(RunState.battles(), RunState.battle_index)
+		route_control.configure_legacy(RunState.battles(), RunState.battle_index)
 
 	root.add_child(_make_status_panel())
 	root.add_child(_make_route_legend())

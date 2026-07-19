@@ -40,6 +40,7 @@ func _ready() -> void:
 	if MetaProgression.new().ascension_unlocked():
 		root.add_child(_make_ascension_selector())
 	var scroll := ScrollContainer.new(); scroll.name = "ExpeditionScroll"
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL; root.add_child(scroll)
 	var area_list := VBoxContainer.new(); area_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	area_list.add_theme_constant_override("separation", 10); scroll.add_child(area_list)
@@ -60,9 +61,12 @@ func _area_card(area_id: String) -> PanelContainer:
 	card.name = "AreaCard_" + area_id
 	card.custom_minimum_size = Vector2(0, 218)
 	card.modulate = Color.WHITE if unlocked else Color(0.55, 0.56, 0.64, 0.88)
+	var stack := VBoxContainer.new()
+	stack.add_theme_constant_override("separation", UiThemeTokens.SPACE.sm)
+	card.add_child(stack)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 16)
-	card.add_child(row)
+	stack.add_child(row)
 	var crest := TextureRect.new()
 	crest.custom_minimum_size = Vector2(152, 190)
 	crest.texture = VisualRegistry.enemy_texture(str(area.get("boss", "fire_golem")))
@@ -93,25 +97,23 @@ func _area_card(area_id: String) -> PanelContainer:
 			RunState.pending_area_id = area_id; RunState.pending_run_mode = "rematch"
 			get_tree().change_scene_to_file("res://scenes/kit_select.tscn"))
 		info.add_child(rematch)
-	var action := UiKit.ornate_button("ENTER" if unlocked else "LOCKED", Vector2(142, 62),
+	var action := UiKit.ornate_button("ENTER EXPEDITION" if unlocked else "LOCKED", Vector2(0, 62),
 			_area_color(area_id))
+	action.name = "AreaAction"
 	action.disabled = not unlocked
-	action.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	action.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	action.pressed.connect(func() -> void:
 		RunState.pending_area_id = area_id
 		RunState.pending_run_mode = "normal"
 		RunState.pending_ascension = SaveSystem.selected_ascension()
 		SaveSystem.set_selected_area(area_id)
 		get_tree().change_scene_to_file("res://scenes/kit_select.tscn"))
-	row.add_child(action)
+	stack.add_child(action)
 	return card
 
 
 func _area_color(area_id: String) -> Color:
-	match area_id:
-		"verdant_catacombs": return Color("67cf72")
-		"astral_foundry": return Color("b77cff")
-		_: return Color("e0b862")
+	return UiThemeTokens.REALM_ACCENTS.get(area_id, UiKit.COLOR_GOLD)
 
 
 func _start_daily() -> void:

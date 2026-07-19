@@ -17,6 +17,7 @@ var _pulse := 0.0
 var graph_nodes: Array = []
 var graph_current := ""
 var graph_reachable: Array[String] = []
+var _boss_depth := 6
 
 
 func configure_graph(graph: Dictionary, current_id: String, reachable: Array[String]) -> void:
@@ -27,7 +28,17 @@ func configure_graph(graph: Dictionary, current_id: String, reachable: Array[Str
 	queue_redraw()
 
 
-func configure(battles: Array, active_index: int) -> void:
+func configure(graph: Dictionary, current_id: String, boss_depth: int) -> void:
+	_boss_depth = maxi(boss_depth, 1)
+	var reachable: Array[String] = []
+	for node in graph.get("nodes", []):
+		if str(node.get("id", "")) == current_id:
+			for id in node.get("links", []): reachable.append(str(id))
+			break
+	configure_graph(graph, current_id, reachable)
+
+
+func configure_legacy(battles: Array, active_index: int) -> void:
 	entries = battles
 	current_index = active_index
 	_rebuild_nodes()
@@ -37,12 +48,17 @@ func configure(battles: Array, active_index: int) -> void:
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_PASS
 	var timer := Timer.new()
-	timer.wait_time = 0.04
+	timer.wait_time = 0.10
 	timer.timeout.connect(func() -> void:
 		_pulse = fmod(_pulse + 0.04, TAU)
 		queue_redraw())
 	add_child(timer)
-	timer.start()
+	if not bool(ProjectSettings.get_setting("potion_rogue/reduced_effects", false)):
+		timer.start()
+	visibility_changed.connect(func() -> void:
+		if not visible: timer.stop()
+		elif not bool(ProjectSettings.get_setting("potion_rogue/reduced_effects", false)):
+			timer.start())
 
 
 func _notification(what: int) -> void:
@@ -183,7 +199,7 @@ func _draw_graph() -> void:
 			if not by_id.has(str(target_id)): continue
 			var a := _graph_point(node)
 			var b := _graph_point(by_id[str(target_id)])
-			var active := str(node.id) == graph_current or bool(node.visited)
+			var active := str(node.id) == graph_current or bool(node.get("visited", false))
 			draw_line(a, b, Color(0.03, 0.01, 0.06, 0.95), 13.0, true)
 			draw_line(a, b, Color("d292ff") if active else Color("51445b"), 5.0, true)
 			draw_line(a, b, Color("f2c968") if active else Color("79664e"), 1.5, true)
@@ -197,8 +213,11 @@ func _position_graph_nodes() -> void:
 
 func _graph_point(node: Dictionary) -> Vector2:
 	var x: float = [0.19, 0.5, 0.81][clampi(int(node.lane), 0, 2)]
-	var y: float = lerpf(0.90, 0.09, float(node.floor) / 6.0)
-	return Vector2(size.x * x, size.y * y)
+	var usable_top := 127.0
+	var usable_bottom := maxf(size.y - 127.0, usable_top)
+	var progress := clampf(float(node.floor) / maxf(float(_boss_depth), 1.0), 0.0, 1.0)
+	var y := lerpf(usable_bottom, usable_top, progress)
+	return Vector2(clampf(size.x * x, 74.0, size.x - 74.0), y)
 
 
 func _emit_node(id: String) -> void:
@@ -216,7 +235,7 @@ func disclosure_state(node_id: String) -> String:
 
 func _graph_color(node: Dictionary) -> Color:
 	if str(node.id) == graph_current: return Color("74e990")
-	if bool(node.visited): return Color("6f8a68")
+	if bool(node.get("visited", false)): return Color("6f8a68")
 	if str(node.id) in graph_reachable: return Color("f0c55e")
 	return Color("5e5264")
 
