@@ -81,7 +81,8 @@ const UI_ICONS := {
 
 const BACKGROUNDS := {
 	"main_hall": "res://assets/art/backgrounds/main_hall_v2.png",
-	"battle": "res://assets/art/backgrounds/shadow_crypt_battle.png",
+	"battle": "res://assets/art/backgrounds/shadow_crypt_battle_v2.png",
+	"shadow_crypt": "res://assets/art/backgrounds/shadow_crypt_battle_v2.png",
 }
 
 

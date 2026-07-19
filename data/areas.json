@@ -2,7 +2,8 @@
 	"shadow_crypt": {
 		"id": "shadow_crypt", "order": 0, "name": "Shadow Crypt",
 		"subtitle": "The dead guard the Crucible Gate", "unlock_after": "",
-		"boss": "fire_golem", "background": "res://assets/art/backgrounds/shadow_crypt_battle.png",
+		"boss": "fire_golem", "background": "res://assets/art/backgrounds/shadow_crypt_battle_v2.png",
+		"readability": {"center_quiet_width": 0.42, "foreground": "detailed", "fallback": "res://assets/art/backgrounds/shadow_crypt_battle.png"},
 		"music": "dungeon", "accent": "9f6bd2", "particle_preset": "embers",
 		"difficulty": "INITIATE", "threat_multiplier": 1.0, "first_clear_reward": 30,
 		"enemy_pools": {
