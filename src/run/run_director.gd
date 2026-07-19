@@ -7,7 +7,7 @@ const NONCOMBAT := ["event", "event", "shop", "treasure", "campfire"]
 
 
 func assign_kind(floor: int, slot: int, noncombat_slot: int,
-		context: Dictionary, rng: RandomNumberGenerator) -> String:
+		context: Dictionary, rng: RunRng) -> String:
 	if slot == noncombat_slot:
 		var pool := NONCOMBAT.duplicate()
 		if float(context.get("hp_ratio", 1.0)) <= 0.35:

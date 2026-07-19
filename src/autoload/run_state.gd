@@ -48,6 +48,7 @@ var pending_run_seed := 0
 var run_ascension := 0
 var pending_ascension := 0
 var _checkpoint_scheduler = CHECKPOINT_SCHEDULER.new()
+var _run_rng := RunRng.new()
 
 
 func _ready() -> void:
@@ -101,6 +102,7 @@ func start_new_run(selected_kit := "ember_adept", selected_area_id := "",
 	var requested_seed := forced_seed if forced_seed != 0 else pending_run_seed
 	run_seed = requested_seed if requested_seed != 0 else \
 			int(Time.get_unix_time_from_system() * 1000000.0) ^ Time.get_ticks_usec()
+	_run_rng.configure(run_seed ^ 0x51ed270b)
 	run_graph = RunGenerator.new().generate(run_seed, area_id, run_ascension)
 	current_node_id = str(run_graph.get("start", "f0_l1"))
 	if run_mode == "rematch":
@@ -208,12 +210,13 @@ func serialize_boundary() -> Dictionary:
 		"kit_id": kit_id, "player_hp": player_hp, "run_crystals": run_crystals,
 		"mutations": mutation_ids.duplicate(), "relics": relic_ids.duplicate(),
 		"catalysts": catalyst_ids.duplicate(), "upgrades": upgrade_ids.duplicate(),
-		"resolved_events": resolved_event_ids.duplicate(), "active_curses": active_curses}
+		"resolved_events": resolved_event_ids.duplicate(), "active_curses": active_curses,
+		"rng_state": int(_run_rng.snapshot().state)}
 
 
 func resume_from_save(saved: Dictionary) -> bool:
 	var boundary_version := int(saved.get("version", 0))
-	if boundary_version not in [2, 3, 4, 5] or not bool(saved.get("active", false)): return false
+	if boundary_version not in [2, 3, 4, 5, 6] or not bool(saved.get("active", false)): return false
 	if typeof(saved.get("graph", null)) != TYPE_DICTIONARY: return false
 	var loaded_area := str(saved.get("area_id", "shadow_crypt"))
 	area_id = loaded_area if not GameState.area(loaded_area).is_empty() else "shadow_crypt"
@@ -221,6 +224,7 @@ func resume_from_save(saved: Dictionary) -> bool:
 	var loaded_kit := str(saved.get("kit_id", "ember_adept"))
 	kit_id = loaded_kit if GameState.kits.has(loaded_kit) else "ember_adept"
 	run_seed = int(saved.get("seed", 0)); run_graph = saved.graph.duplicate(true)
+	_run_rng.configure(run_seed ^ 0x51ed270b, int(saved.get("rng_state", 0)))
 	run_mode = str(saved.get("run_mode", "normal"))
 	run_ascension = clampi(int(saved.get("ascension", 0)), 0, 10)
 	pending_ascension = run_ascension
@@ -391,8 +395,8 @@ func roll_upgrade_choices(count := 3) -> Array:
 		if not bool(up.get("repeatable", false)) and id in upgrade_ids:
 			continue
 		candidates.append(id)
-	candidates.shuffle()
-	return candidates.slice(0, mini(count, candidates.size()))
+	var shuffled := _run_rng.permute_serialized(candidates)
+	return shuffled.slice(0, mini(count, shuffled.size()))
 
 
 ## Relic choices after an elite battle (each relic can be owned once).
@@ -401,8 +405,8 @@ func roll_relic_choices(count := 3) -> Array:
 	for id in relic_pool:
 		if not id in relic_ids:
 			candidates.append(id)
-	candidates.shuffle()
-	return candidates.slice(0, mini(count, candidates.size()))
+	var shuffled := _run_rng.permute_serialized(candidates)
+	return shuffled.slice(0, mini(count, shuffled.size()))
 
 
 func pick_upgrade(id: String) -> void:

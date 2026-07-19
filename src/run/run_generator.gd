@@ -14,8 +14,8 @@ func generate(seed: int, area_id := "shadow_crypt", ascension := 0) -> Dictionar
 		area_id = "shadow_crypt"
 		area = AREA_GRAMMAR.for_area(area_id)
 	var boss_floor := int(area.get("boss_depth", area.get("run_length", 7))) - 1
-	var rng := RandomNumberGenerator.new()
-	rng.seed = seed
+	var rng := RunRng.new()
+	rng.configure(seed)
 	var director := RunDirector.new()
 	var intro_pool: Array = area.get("enemy_pools", {}).get("intro", ["slime"])
 	var nodes: Array = [_node("f0_l1", 0, 1, "start", str(intro_pool[0]), area)]
@@ -65,7 +65,7 @@ func generate(seed: int, area_id := "shadow_crypt", ascension := 0) -> Dictionar
 			"ascension": _ascension}
 
 
-func _lanes_for_floor(rng: RandomNumberGenerator, expanded: bool) -> Array[int]:
+func _lanes_for_floor(rng: RunRng, expanded: bool) -> Array[int]:
 	if expanded:
 		return [0, 1, 2]
 	var pairs: Array = [[0, 1], [1, 2], [0, 2]]
@@ -73,7 +73,7 @@ func _lanes_for_floor(rng: RandomNumberGenerator, expanded: bool) -> Array[int]:
 	return [int(picked[0]), int(picked[1])]
 
 
-func _enemy_for_floor(floor: int, kind: String, rng: RandomNumberGenerator,
+func _enemy_for_floor(floor: int, kind: String, rng: RunRng,
 		area: Dictionary) -> String:
 	if kind not in ["battle", "elite"]:
 		return str((area.get("enemy_pools", {}).get("intro", ["slime"]) as Array)[0])
@@ -99,7 +99,7 @@ func _node(id: String, floor: int, lane: int, kind: String, enemy: String,
 			"modifier_ids": [], "threat": budget}}
 
 
-func _decorate_contract(node: Dictionary, rng: RandomNumberGenerator,
+func _decorate_contract(node: Dictionary, rng: RunRng,
 		area: Dictionary) -> void:
 	var kind := str(node.kind)
 	var floor := int(node.floor)
@@ -130,7 +130,7 @@ func _enemy_has_intent(enemy: Dictionary, intent_id: String) -> bool:
 	return false
 
 
-func _decorate_event(node: Dictionary, rng: RandomNumberGenerator) -> void:
+func _decorate_event(node: Dictionary, rng: RunRng) -> void:
 	var kind := str(node.kind)
 	match kind:
 		"treasure": node.event_id = "cursed_chest"

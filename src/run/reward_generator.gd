@@ -33,8 +33,8 @@ func choices(kind: String, count: int, seed: int, build: Dictionary) -> Array[St
 		weighted.append({"id": id, "weight": weight, "neutral": not compatible})
 		if not compatible:
 			neutral.append(id)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = seed
+	var rng := RunRng.new()
+	rng.configure(seed)
 	# Guarantee a discovery option instead of presenting only same-build rewards.
 	if not neutral.is_empty() and count > 1:
 		var neutral_id := neutral[rng.randi_range(0, neutral.size() - 1)]
