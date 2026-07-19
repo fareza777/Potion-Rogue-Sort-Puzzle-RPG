@@ -655,7 +655,8 @@ func _build_overlay() -> void:
 	overlay.add_child(center)
 
 	var panel := UiKit.textured_panel("res://assets/art/ui/battle_panel.png", 30)
-	panel.custom_minimum_size = Vector2(560, 0)
+	var viewport_width := get_viewport_rect().size.x
+	panel.custom_minimum_size = Vector2(minf(560.0, maxf(320.0, viewport_width - 32.0)), 0)
 	center.add_child(panel)
 
 	var box := VBoxContainer.new()
@@ -663,6 +664,7 @@ func _build_overlay() -> void:
 	panel.add_child(box)
 
 	overlay_title = UiKit.title_label("", 46)
+	overlay_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(overlay_title)
 
 	overlay_body = UiKit.label("", 23)
@@ -955,8 +957,8 @@ func _show_upgrade_choice() -> void:
 	var body := "+%d crystals\nChoose an upgrade:" % battle.crystals_reward
 	_show_overlay("Victory!", body, [])
 	for id in choices:
-		var card := UiKit.ornate_button("%s\n%s" % [RunState.upgrade_name(id),
-				RunState.upgrade_description(id)], Vector2(520, 84))
+		var card := _reward_choice_button(RunState.upgrade_name(id),
+				RunState.upgrade_description(id))
 		card.pressed.connect(_on_upgrade_picked.bind(str(id)))
 		overlay_choices.add_child(card)
 
@@ -970,10 +972,21 @@ func _show_relic_choice() -> void:
 			% battle.crystals_reward
 	_show_overlay("Elite Vanquished!", body, [])
 	for id in choices:
-		var card := UiKit.ornate_button("%s\n%s" % [RunState.relic_name(id),
-				RunState.relic_description(id)], Vector2(520, 84), Color("c07ce8"))
+		var card := _reward_choice_button(RunState.relic_name(id),
+				RunState.relic_description(id), Color("c07ce8"))
 		card.pressed.connect(_on_relic_picked.bind(str(id)))
 		overlay_choices.add_child(card)
+
+
+func _reward_choice_button(title: String, description: String,
+		accent := UiKit.COLOR_GOLD) -> Button:
+	var card := UiKit.ornate_button("%s\n%s" % [title, description],
+			Vector2(0, 108), accent)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	card.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	card.add_theme_font_size_override("font_size", 18)
+	return card
 
 
 func _on_relic_picked(id: String) -> void:

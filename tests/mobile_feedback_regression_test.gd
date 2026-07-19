@@ -28,6 +28,23 @@ func _ready() -> void:
 		var rect := (button as Control).get_global_rect()
 		all_inside = all_inside and rect.position.x >= 0.0 and rect.end.x <= viewport_width
 	check(all_inside, "every pause action remains inside the visible viewport")
+	screen.call("_show_upgrade_choice")
+	await get_tree().process_frame
+	var choices := screen.get("overlay_choices") as Container
+	var reward_cards_inside := true
+	var reward_cards_wrap := true
+	for card in choices.get_children():
+		var reward_card := card as Button
+		var rect := reward_card.get_global_rect()
+		reward_cards_inside = reward_cards_inside and rect.position.x >= 16.0 \
+				and rect.end.x <= viewport_width - 16.0
+		reward_cards_wrap = reward_cards_wrap \
+				and reward_card.autowrap_mode == TextServer.AUTOWRAP_WORD_SMART \
+				and reward_card.custom_minimum_size.y >= 104.0
+	check(reward_cards_inside,
+			"victory reward cards stay inside 16 px phone safe margins")
+	check(reward_cards_wrap,
+			"victory reward descriptions wrap in readable tall cards")
 	screen.queue_free()
 	await get_tree().process_frame
 

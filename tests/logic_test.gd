@@ -152,6 +152,19 @@ func _test_board_rules() -> void:
 	check(completed[0] == "blue", "completing 4 blue emits tube_completed")
 	check(c.contents.is_empty(), "completed tube empties")
 
+	for tube in board.tubes:
+		tube.set_contents([] as Array[String])
+	a.set_contents(["purple"] as Array[String])
+	c.set_contents(["purple", "purple", "purple"] as Array[String])
+	var refilled := [false]
+	board.board_refilled.connect(func() -> void: refilled[0] = true)
+	board.tube_completed.connect(func(_color: String) -> void: board.enabled = false)
+	board.enabled = true
+	board._try_pour(a, c)
+	check(not refilled[0] and board.total_units() == 0,
+			"winning final potion resolves before and skips an unused board refill")
+
+	a.set_contents(["red"] as Array[String])
 	board.lock_random_tube(2)
 	var locked_count := 0
 	for tube in board.tubes:

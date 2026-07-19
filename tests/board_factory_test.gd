@@ -6,6 +6,12 @@ var _failures := 0
 
 
 func _ready() -> void:
+	if "--performance-only" in OS.get_cmdline_user_args():
+		_test_catalog_generation_latency()
+		print("---")
+		print("%d checks, %d failures" % [_checks, _failures])
+		get_tree().quit(1 if _failures > 0 else 0)
+		return
 	if "--variety-only" in OS.get_cmdline_user_args():
 		_test_generation_variety()
 		print("---")
@@ -24,6 +30,22 @@ func _ready() -> void:
 	print("---")
 	print("%d checks, %d failures" % [_checks, _failures])
 	get_tree().quit(1 if _failures > 0 else 0)
+
+
+func _test_catalog_generation_latency() -> void:
+	var original: Array = [
+		["red", "purple", "blue", "green"],
+		["purple", "red", "blue", "green"],
+		["blue", "purple", "red", "green"],
+		["green", "blue", "purple", "red"], [], [],
+	]
+	var started := Time.get_ticks_msec()
+	for seed in 4:
+		BoardFactory.generate(70_000 + seed, "standard")
+		BoardFactory.remix(original, 80_000 + seed, "standard")
+	var elapsed := Time.get_ticks_msec() - started
+	check(elapsed < 500,
+			"four catalog deals and remixes finish below 500 ms (actual %d ms)" % elapsed)
 
 
 func _test_analysis() -> void:

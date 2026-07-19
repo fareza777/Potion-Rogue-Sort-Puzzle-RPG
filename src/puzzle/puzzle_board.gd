@@ -383,17 +383,17 @@ func _try_pour(from_tube: PotionTube, to_tube: PotionTube) -> bool:
 			curse_cleansed.emit(cursed_count)
 		else:
 			tube_completed.emit(completed_color)
+		# Completion listeners resolve combat synchronously. Do not generate an
+		# unused puzzle behind a victory overlay; refill only if battle continues.
+		if total_units() == 0 and enabled:
+			generate_board()
+			board_refilled.emit()
 	return true
 
 
 func _flash_and_empty(tube: PotionTube) -> void:
 	tube.flash_complete()
 	tube.set_contents([] as Array[String])
-	# Each color exists exactly once per board, so the board only runs dry
-	# when every color has been completed -> brew a fresh batch.
-	if total_units() == 0:
-		generate_board()
-		board_refilled.emit()
 
 
 func _deselect() -> void:
