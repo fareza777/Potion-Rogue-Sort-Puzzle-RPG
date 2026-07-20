@@ -4,6 +4,7 @@ param(
     [int]$WarnApkMB = 60,
     [int]$MaxApkMB = 65,
     [int]$MaxAssetMB = 8,
+    [int]$MaxAudioMB = 4,
     [int]$MaxTotalArtMB = 55,
     [int]$MaxTotalAudioMB = 8,
     [int]$MaxImageDimension = 4096,
@@ -28,6 +29,9 @@ $assets = Get-ChildItem -LiteralPath (Join-Path $root "assets") -Recurse -File |
     Where-Object { $_.Extension -notin @(".import", ".uid") }
 foreach ($asset in $assets) {
     if ($asset.Length -gt $MaxAssetMB * 1MB) { $failures.Add("Asset over ${MaxAssetMB}MiB: $($asset.FullName)") }
+    if ($asset.FullName -Like "*\assets\audio\*" -and $asset.Length -gt $MaxAudioMB * 1MB) {
+        $failures.Add("Audio asset over ${MaxAudioMB}MiB: $($asset.FullName)")
+    }
 }
 $artBytes = ($assets | Where-Object FullName -Like "*\assets\art\*" | Measure-Object Length -Sum).Sum
 $audioBytes = ($assets | Where-Object FullName -Like "*\assets\audio\*" | Measure-Object Length -Sum).Sum

@@ -17,7 +17,7 @@ func _content_contracts() -> void:
 	check(GameState.load_data_file("relics.json", {}).size() == 18, "eighteen relics")
 	check(GameState.load_data_file("catalysts.json", {}).size() == 12, "twelve catalysts")
 	check(GameState.load_data_file("upgrades.json", {}).size() >= 10, "ten supporting upgrades")
-	check(GameState.load_data_file("events.json", {}).size() == 6, "six authored events")
+	check(GameState.load_data_file("events.json", {}).size() >= 15, "at least fifteen authored events")
 	check(GameState.load_data_file("bosses.json", {}).fire_golem.phases.size() == 3, "one three-phase boss")
 	check(GameState.enemies.size() == 42, "forty-two enemy roster")
 	var slime: Dictionary = GameState.enemies.slime
