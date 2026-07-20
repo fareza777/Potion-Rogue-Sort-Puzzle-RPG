@@ -216,8 +216,8 @@ func _position_graph_nodes() -> void:
 
 func _graph_point(node: Dictionary) -> Vector2:
 	var x: float = [0.19, 0.5, 0.81][clampi(int(node.lane), 0, 2)]
-	var usable_top := 127.0
-	var usable_bottom := maxf(size.y - 127.0, usable_top)
+	var usable_top := 155.0
+	var usable_bottom := maxf(size.y - 155.0, usable_top)
 	var progress := clampf(float(node.floor) / maxf(float(_boss_depth), 1.0), 0.0, 1.0)
 	var y := lerpf(usable_bottom, usable_top, progress)
 	return Vector2(clampf(size.x * x, 74.0, size.x - 74.0), y)

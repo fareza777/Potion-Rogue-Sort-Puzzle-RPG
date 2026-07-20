@@ -57,7 +57,7 @@ func _ready() -> void:
 		root.add_child(_make_ascension_selector())
 	_area_scroll = ScrollContainer.new(); _area_scroll.name = "ExpeditionScroll"
 	_area_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_area_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	_area_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	_area_scroll.scroll_deadzone = 8
 	_area_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL; root.add_child(_area_scroll)
 	var area_list := VBoxContainer.new(); area_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -77,18 +77,29 @@ func _ready() -> void:
 	root.add_child(back)
 
 
-func _unhandled_input(event: InputEvent) -> void:
-	if not event is InputEventScreenDrag or not is_instance_valid(_area_scroll):
+func _input(event: InputEvent) -> void:
+	if not is_instance_valid(_area_scroll): return
+	var distance := 0.0
+	var pointer := Vector2.ZERO
+	if event is InputEventScreenDrag:
+		distance = -event.relative.y
+		pointer = event.position
+	elif event is InputEventPanGesture:
+		distance = event.delta.y * 64.0
+		pointer = event.position
+	else:
 		return
-	if not _area_scroll.get_global_rect().has_point(event.position):
-		return
+	if not _area_scroll.get_global_rect().has_point(pointer): return
 	var bar := _area_scroll.get_v_scroll_bar()
 	var limit := maxi(roundi(bar.max_value - bar.page), 0)
-	if limit <= 0:
-		return
+	if limit <= 0: return
 	_area_scroll.scroll_vertical = clampi(
-			_area_scroll.scroll_vertical - roundi(event.relative.y), 0, limit)
+			_area_scroll.scroll_vertical + roundi(distance), 0, limit)
 	get_viewport().set_input_as_handled()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	_input(event)
 
 
 func _area_card(area_id: String) -> PanelContainer:
@@ -97,6 +108,7 @@ func _area_card(area_id: String) -> PanelContainer:
 	var cleared := area_id in SaveSystem.completed_areas()
 	var card := UiKit.textured_panel("res://assets/art/ui/battle_panel.png", 18)
 	card.name = "AreaCard_" + area_id
+	card.mouse_filter = Control.MOUSE_FILTER_PASS
 	card.custom_minimum_size = Vector2(0, 218)
 	card.modulate = Color.WHITE if unlocked else Color(0.55, 0.56, 0.64, 0.88)
 	card.mouse_entered.connect(_preview_area.bind(area_id))
@@ -145,6 +157,7 @@ func _area_card(area_id: String) -> PanelContainer:
 	var action := UiKit.ornate_button("ENTER EXPEDITION" if unlocked else "LOCKED", Vector2(0, 62),
 			_area_color(area_id))
 	action.name = "AreaAction"
+	action.mouse_filter = Control.MOUSE_FILTER_PASS
 	action.disabled = not unlocked
 	action.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	action.pressed.connect(func() -> void:

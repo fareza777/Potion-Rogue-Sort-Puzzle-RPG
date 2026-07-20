@@ -87,6 +87,9 @@ static func remix(state: Array, seed: int, requested_band := "standard",
 		if not recovered.is_empty():
 			return recovered
 	if colors.size() == unique_colors.size() * capacity and tube_count > unique_colors.size():
+		var immediate := _fast_recovery_catalog(seed, unique_colors, capacity, tube_count)
+		if not immediate.is_empty():
+			return immediate
 		var generated := generate(seed, requested_band, unique_colors.size(), capacity,
 				tube_count)
 		if bool(generated.analysis.solvable):

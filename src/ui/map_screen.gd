@@ -32,23 +32,24 @@ func _ready() -> void:
 	margin.add_child(root)
 	root.add_child(_make_header())
 
-	var route_panel := UiKit.textured_panel("res://assets/art/ui/battle_panel.png", 10)
+	var route_panel := UiKit.textured_panel("res://assets/art/ui/battle_panel.png", 14)
 	route_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(route_panel)
 	_route_scroll = ScrollContainer.new()
 	_route_scroll.name = "DungeonRouteScroll"
 	_route_scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_route_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_route_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	_route_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	_route_scroll.scroll_deadzone = 8
 	route_panel.add_child(_route_scroll)
 	route_control = DungeonRoute.new()
 	route_control.name = "DungeonRoute"
-	route_control.custom_minimum_size = Vector2(0, 1040)
+	route_control.custom_minimum_size = Vector2(0, 1320)
 	route_control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_route_scroll.add_child(route_control)
 	if not RunState.run_graph.is_empty():
 		var boss_depth := int(AREA_GRAMMAR.for_area(RunState.area_id).get("run_length", 7)) - 1
+		route_control.custom_minimum_size.y = maxf(1320.0, float(boss_depth + 1) * 170.0)
 		route_control.configure(RunState.run_graph, RunState.current_node_id, boss_depth)
 		route_control.node_selected.connect(_on_node_selected)
 	else:

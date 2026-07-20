@@ -249,10 +249,40 @@ func apply_remix_result(result: Dictionary) -> bool:
 	var layouts: Array = result.get("state", [])
 	if layouts.size() != tubes.size():
 		return false
+	var before := export_snapshot()
+	# New Mix is a board reset boundary. Capacity-changing and locking hazards
+	# must be cleared before dealing, otherwise a valid four-layer result can land
+	# in a three-slot/locked flask and be rejected only for some random seeds.
+	for tube in tubes:
+		tube.capacity = PotionTube.CAPACITY
+		tube.locked_moves = 0
 	_undo_stack.clear()
 	_deselect()
 	_apply_factory_result(result)
-	return integrity_report().status == "valid"
+	if _remix_shape_is_valid():
+		return true
+	restore_snapshot(before)
+	return false
+
+
+func _remix_shape_is_valid() -> bool:
+	var counts := {}
+	var total := 0
+	for tube in tubes:
+		if tube.contents.size() > tube.capacity or tube.is_complete():
+			return false
+		for value in tube.contents:
+			var color := str(value)
+			if color.is_empty():
+				return false
+			counts[color] = int(counts.get(color, 0)) + 1
+			total += 1
+	if total <= 0:
+		return false
+	for color in counts:
+		if int(counts[color]) % PotionTube.CAPACITY != 0:
+			return false
+	return true
 
 
 func _apply_factory_result(result: Dictionary) -> void:
