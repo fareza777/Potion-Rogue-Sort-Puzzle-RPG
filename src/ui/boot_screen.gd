@@ -5,8 +5,8 @@ extends Control
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	var art := UiKit.battle_background(self,
-			"res://assets/art/backgrounds/launch_splash_v2.jpg")
-	art.modulate = Color(0.82, 0.86, 1.0, 1.0)
+			"res://assets/art/backgrounds/launch_splash_v3.jpg")
+	art.modulate = Color(0.9, 0.94, 1.0, 1.0)
 	var shade := ColorRect.new()
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	shade.color = Color(0.004, 0.002, 0.018, 0.22)
@@ -14,7 +14,7 @@ func _ready() -> void:
 	add_child(shade)
 	var stack := VBoxContainer.new()
 	stack.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	stack.position = Vector2(-300, 70)
+	stack.position = Vector2(-300, 58)
 	stack.size = Vector2(600, 180)
 	stack.alignment = BoxContainer.ALIGNMENT_CENTER
 	add_child(stack)
@@ -33,6 +33,6 @@ func _ready() -> void:
 	var tween := create_tween().set_loops()
 	tween.tween_property(loading, "modulate:a", 0.35, 0.55).set_trans(Tween.TRANS_QUINT)
 	tween.tween_property(loading, "modulate:a", 1.0, 0.7).set_trans(Tween.TRANS_QUINT)
-	await get_tree().create_timer(1.15).timeout
+	await get_tree().create_timer(0.45).timeout
 	get_tree().change_scene_to_file("res://scenes/main_menu.tscn" if
 			SaveSystem.is_onboarding_done() else "res://scenes/onboarding.tscn")

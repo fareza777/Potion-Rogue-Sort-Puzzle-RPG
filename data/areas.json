@@ -4,24 +4,24 @@
 		"subtitle": "The dead guard the Crucible Gate", "unlock_after": "",
 		"boss": "fire_golem", "background": "res://assets/art/backgrounds/shadow_crypt_battle_v2.png",
 		"readability": {"center_quiet_width": 0.42, "foreground": "detailed", "fallback": "res://assets/art/backgrounds/shadow_crypt_battle.png"},
-		"music": "dungeon", "accent": "9f6bd2", "particle_preset": "embers",
+		"music": "dungeon", "accent": "9f6bd2", "particle_preset": "embers", "enemy_families": ["crypt"],
 		"difficulty": "INITIATE", "threat_multiplier": 1.0, "first_clear_reward": 30,
 		"enemy_pools": {
 			"intro": ["slime", "skeleton"],
 			"tier_1": ["slime", "skeleton", "bone_rat", "grave_archer"],
-			"tier_2": ["wailing_spirit", "mimic_flask"],
-			"tier_3": ["crypt_knight", "ossuary_priest", "dark_mage", "stone_golem"],
-			"elite": ["crypt_knight", "ossuary_priest", "stone_golem"]
+			"tier_2": ["wailing_spirit", "grave_archer"],
+			"tier_3": ["crypt_knight", "ossuary_priest", "wailing_spirit"],
+			"elite": ["crypt_knight", "ossuary_priest"]
 		}
 	},
 	"verdant_catacombs": {
 		"id": "verdant_catacombs", "order": 1, "name": "Verdant Catacombs",
 		"subtitle": "A buried garden learned to hunger", "unlock_after": "shadow_crypt",
 		"boss": "bloom_horror", "background": "res://assets/art/backgrounds/verdant_catacombs_battle.png",
-		"music": "verdant", "accent": "65c98b", "particle_preset": "spores",
+		"music": "verdant", "accent": "65c98b", "particle_preset": "spores", "enemy_families": ["fungal"],
 		"difficulty": "ADEPT", "threat_multiplier": 1.12, "first_clear_reward": 50,
 		"enemy_pools": {
-			"intro": ["sporeling", "slime"],
+			"intro": ["sporeling"],
 			"tier_1": ["sporeling", "mossback_toad"],
 			"tier_2": ["poison_beast", "myconid_brute", "rotcap_shaman", "mossback_toad"],
 			"tier_3": ["myconid_brute", "rotcap_shaman", "poison_beast"],
@@ -32,7 +32,7 @@
 		"id": "astral_foundry", "order": 2, "name": "Astral Foundry",
 		"subtitle": "Runes turn while the star-forge wakes", "unlock_after": "verdant_catacombs",
 		"boss": "furnace_titan", "background": "res://assets/art/backgrounds/astral_foundry_battle.png",
-		"music": "astral", "accent": "6bbff0", "particle_preset": "sparks",
+		"music": "astral", "accent": "6bbff0", "particle_preset": "sparks", "enemy_families": ["arcane", "infernal"],
 		"difficulty": "MASTER", "threat_multiplier": 1.25, "first_clear_reward": 75,
 		"enemy_pools": {
 			"intro": ["rune_wisp", "mimic_flask"],
@@ -46,7 +46,7 @@
 		"id": "frostbound_reliquary", "order": 3, "name": "Frostbound Reliquary",
 		"subtitle": "Frozen vows guard the last reliquary", "unlock_after": "astral_foundry",
 		"boss": "winter_lich", "background": "res://assets/art/backgrounds/frostbound_reliquary_battle.png",
-		"music": "frost", "accent": "77d9f5", "particle_preset": "frost",
+		"music": "frost", "accent": "77d9f5", "particle_preset": "frost", "enemy_families": ["frost"],
 		"difficulty": "RELIQUARY", "threat_multiplier": 1.35, "first_clear_reward": 100,
 		"run_length": 8, "boss_depth": 8, "miniboss_depths": [4],
 		"landmarks": ["Frozen Nave", "Shattered Choir", "Reliquary Bridge", "Lich Sanctum"],
@@ -65,7 +65,7 @@
 		"id": "abyssal_apothecary", "order": 4, "name": "Abyssal Apothecary",
 		"subtitle": "Blackwater stirs beneath the drowned laboratory", "unlock_after": "frostbound_reliquary",
 		"boss": "leviathan_apothecary", "background": "res://assets/art/backgrounds/abyssal_apothecary_battle.png",
-		"music": "abyss", "accent": "43d6c5", "particle_preset": "bubbles",
+		"music": "abyss", "accent": "43d6c5", "particle_preset": "bubbles", "enemy_families": ["abyss"],
 		"difficulty": "ABYSSAL", "threat_multiplier": 1.48, "first_clear_reward": 130,
 		"run_length": 9, "boss_depth": 9, "miniboss_depths": [4, 6],
 		"landmarks": ["Flooded Stacks", "Pressure Gallery", "Blackwater Vats", "Leviathan Crucible"],

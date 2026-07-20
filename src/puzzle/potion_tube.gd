@@ -225,12 +225,6 @@ func _draw() -> void:
 	else:
 		draw_rect(Rect2(4, 8, w - 8, h - 12), Color("7d7195"), false, 3.0)
 
-	# Selection stays readable without drawing rings or dark masks over bottles.
-	if selected or has_focus():
-		var marker := Color("8eeeff") if has_focus() else Color("f2c65d")
-		draw_line(Vector2(w * 0.30, h * 0.94), Vector2(w * 0.70, h * 0.94),
-				marker, 4.0, true)
-
 	# Magical lock overlay
 	if is_locked():
 		draw_rect(Rect2(5, h * 0.16, w - 10, h * 0.76), Color(0.05, 0.02, 0.12, 0.7))

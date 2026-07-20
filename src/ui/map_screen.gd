@@ -64,15 +64,31 @@ func _ready() -> void:
 				func(_target: String) -> Control: return route_control)
 
 
-func _unhandled_input(event: InputEvent) -> void:
-	if not event is InputEventScreenDrag or not is_instance_valid(_route_scroll): return
-	if not _route_scroll.get_global_rect().has_point(event.position): return
+func _input(event: InputEvent) -> void:
+	if not is_instance_valid(_route_scroll): return
+	var distance := 0.0
+	var pointer := Vector2.ZERO
+	if event is InputEventScreenDrag:
+		distance = -event.relative.y
+		pointer = event.position
+	elif event is InputEventPanGesture:
+		distance = event.delta.y * 64.0
+		pointer = event.position
+	else:
+		return
+	if not _route_scroll.get_global_rect().has_point(pointer): return
 	var bar := _route_scroll.get_v_scroll_bar()
 	var limit := maxi(roundi(bar.max_value - bar.page), 0)
 	if limit <= 0: return
 	_route_scroll.scroll_vertical = clampi(
-			_route_scroll.scroll_vertical - roundi(event.relative.y), 0, limit)
+			_route_scroll.scroll_vertical + roundi(distance), 0, limit)
 	get_viewport().set_input_as_handled()
+
+
+# Compatibility entry point for direct test harnesses and unusual platforms
+# that dispatch touch drags only after GUI propagation.
+func _unhandled_input(event: InputEvent) -> void:
+	_input(event)
 
 
 func _scroll_to_current_chamber() -> void:

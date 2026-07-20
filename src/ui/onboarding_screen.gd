@@ -25,28 +25,37 @@ var _card: PanelContainer
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
-	UiKit.battle_background(self, "res://assets/art/backgrounds/launch_splash_v2.jpg")
+	UiKit.battle_background(self, "res://assets/art/backgrounds/launch_splash_v3.jpg")
 	var shade := ColorRect.new(); shade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	shade.color = Color(0.005, 0.002, 0.02, 0.58); shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	shade.color = Color(0.005, 0.002, 0.02, 0.36); shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(shade)
 	var margin := UiKit.safe_margin(self, 26, 54, 34)
 	var root := VBoxContainer.new(); root.alignment = BoxContainer.ALIGNMENT_END
-	root.add_theme_constant_override("separation", 14); margin.add_child(root)
+	root.add_theme_constant_override("separation", 10); margin.add_child(root)
 	var skip := UiKit.button("SKIP", Vector2(118, 52), Color("b9a9c8"))
 	skip.size_flags_horizontal = Control.SIZE_SHRINK_END; skip.pressed.connect(_finish)
 	root.add_child(skip)
+	var brand := UiKit.title_label("POTION ROGUE", 44, Color("f1cf79"))
+	brand.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	brand.add_theme_color_override("font_shadow_color", Color(0.1, 0.02, 0.18, 0.95))
+	brand.add_theme_constant_override("shadow_offset_x", 3)
+	brand.add_theme_constant_override("shadow_offset_y", 4)
+	root.add_child(brand)
+	var legend := UiKit.label("A ROGUE ALCHEMIST'S JOURNEY", 13, Color("cdb5ef"))
+	legend.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	root.add_child(legend)
 	var spacer := Control.new(); spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(spacer)
 	_card = UiKit.textured_panel("res://assets/art/ui/battle_panel.png", 24)
-	_card.custom_minimum_size = Vector2(0, 430); root.add_child(_card)
+	_card.custom_minimum_size = Vector2(0, 390); root.add_child(_card)
 	var content := VBoxContainer.new(); content.alignment = BoxContainer.ALIGNMENT_CENTER
 	content.add_theme_constant_override("separation", 16); _card.add_child(content)
 	_eyebrow = UiKit.label("", 13, Color("8edcff")); _eyebrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(_eyebrow)
 	_title = UiKit.title_label("", 37); _title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(_title)
-	_body = UiKit.label("", 19, UiKit.COLOR_TEXT); _body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; _body.custom_minimum_size = Vector2(0, 132)
+	_body = UiKit.label("", 18, UiKit.COLOR_TEXT); _body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; _body.custom_minimum_size = Vector2(0, 112)
 	content.add_child(_body)
 	_dots = UiKit.label("", 20, Color("d8b6ff")); _dots.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(_dots)

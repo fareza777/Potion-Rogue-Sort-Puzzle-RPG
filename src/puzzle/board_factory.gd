@@ -144,12 +144,43 @@ static func _recovery_remix(seed: int, requested_band: String,
 	if color_count < 2:
 		return {}
 	palette.resize(color_count)
+	# Small endgame remainders previously invoked a full BFS and could take
+	# seconds on phones. These two/three-color layouts are solver-verified offline;
+	# color/tube permutations preserve the proof while varying each recovery seed.
+	var immediate := _fast_recovery_catalog(seed, palette, capacity, tube_count)
+	if not immediate.is_empty():
+		return immediate
 	var generated := generate(seed, requested_band, color_count, capacity, tube_count)
 	if not bool(generated.get("analysis", {}).get("solvable", false)):
 		return {}
 	generated.state = _rename_colors(generated.state, palette)
 	generated["recovered"] = true
 	return generated
+
+
+static func _fast_recovery_catalog(seed: int, palette: Array[String],
+		capacity: int, tube_count: int) -> Dictionary:
+	if palette.size() not in [2, 3] or capacity != 4 \
+			or tube_count < palette.size() + 1:
+		return {}
+	var ordered := palette.duplicate()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed
+	_shuffle(ordered, rng)
+	var state: Array = []
+	for tube_index in ordered.size():
+		var tube: Array[String] = []
+		for layer in capacity:
+			tube.append(str(ordered[(tube_index + layer) % ordered.size()]))
+		state.append(tube)
+	while state.size() < tube_count:
+		state.append([])
+	_shuffle(state, rng)
+	return {"state": state,
+			"analysis": {"solvable": true,
+					"estimated_moves": 7 if ordered.size() == 2 else 10,
+					"visited_states": 0, "verified_catalog": true},
+			"attempt": 0, "recovered": true}
 
 
 static func _template_state(rng: RandomNumberGenerator, color_count: int,

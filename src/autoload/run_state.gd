@@ -248,11 +248,12 @@ func resume_from_save(saved: Dictionary) -> bool:
 	var loaded_kit := str(saved.get("kit_id", "ember_adept"))
 	kit_id = loaded_kit if GameState.kits.has(loaded_kit) else "ember_adept"
 	run_seed = int(saved.get("seed", 0)); run_graph = saved.graph.duplicate(true)
+	current_node_id = str(saved.get("current_node_id", ""))
+	_repair_graph_enemy_themes()
 	_run_rng.configure(run_seed ^ 0x51ed270b, int(saved.get("rng_state", 0)))
 	run_mode = str(saved.get("run_mode", "normal"))
 	run_ascension = clampi(int(saved.get("ascension", 0)), 0, 10)
 	pending_ascension = run_ascension
-	current_node_id = str(saved.get("current_node_id", ""))
 	if current_node().is_empty(): return false
 	var loaded_phase := str(saved.get("phase", PHASE_MAP)) if boundary_version >= 4 else PHASE_MAP
 	phase = loaded_phase if loaded_phase in VALID_PHASES else PHASE_MAP
@@ -268,6 +269,41 @@ func resume_from_save(saved: Dictionary) -> bool:
 	if boundary_version >= 7:
 		_replay_journal.restore(saved.get("replay", {}))
 	return true
+
+
+func _repair_graph_enemy_themes() -> void:
+	var area := GameState.area(area_id)
+	var allowed: Array = area.get("enemy_families", [])
+	var pools: Dictionary = area.get("enemy_pools", {})
+	if allowed.is_empty() or pools.is_empty():
+		return
+	for node in run_graph.get("nodes", []):
+		var kind := str(node.get("kind", ""))
+		if kind not in ["battle", "elite"]:
+			continue
+		# Never swap an encounter already selected/in progress; repair only the
+		# remaining route so battle snapshots and portraits cannot diverge.
+		if str(node.get("id", "")) == current_node_id:
+			continue
+		var enemy_id := str(node.get("enemy", ""))
+		if str(GameState.enemies.get(enemy_id, {}).get("family", "")) in allowed:
+			continue
+		var floor := int(node.get("floor", 0))
+		var pool_name := "elite" if kind == "elite" else (
+				"intro" if floor <= 1 else "tier_1" if floor == 2 else
+				"tier_2" if floor in [3, 4] else "tier_3")
+		var candidates: Array = []
+		for candidate in pools.get(pool_name, pools.get("intro", [])):
+			if str(GameState.enemies.get(str(candidate), {}).get("family", "")) in allowed:
+				candidates.append(str(candidate))
+		if candidates.is_empty():
+			continue
+		var replacement := str(candidates[posmod(hash(str(node.get("id", ""))
+				+ ":" + str(run_seed)), candidates.size())])
+		node["enemy"] = replacement
+		var contract: Dictionary = node.get("contract", {})
+		contract["enemy_id"] = replacement
+		node["contract"] = contract
 
 
 func record_replay(kind: String, payload := {}) -> void:

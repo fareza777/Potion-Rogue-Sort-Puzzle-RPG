@@ -112,6 +112,9 @@ func _rebuild_graph_nodes() -> void:
 		button.custom_minimum_size = Vector2(148, 70)
 		button.size = button.custom_minimum_size
 		button.text = ""
+		# Preserve taps while allowing swipe gestures to bubble into the route
+		# ScrollContainer for native kinetic scrolling.
+		button.mouse_filter = Control.MOUSE_FILTER_PASS
 		button.disabled = str(node.id) not in graph_reachable
 		button.tooltip_text = "Floor %d - %s" % [int(node.floor) + 1,
 				"Known chamber" if disclosure == "revealed" else "Uncharted path"]
