@@ -56,7 +56,7 @@ func _ready() -> void:
 	]:
 		check(ResourceLoader.exists(path), "loadable art: " + path)
 	check(ProjectSettings.get_setting("application/config/icon", "") ==
-			"res://assets/art/app_icon.png", "branded application icon configured")
+			"res://assets/art/app_icon_v2.png", "branded application icon configured")
 	for scene_path in ["res://scenes/main_menu.tscn", "res://scenes/area_select.tscn", "res://scenes/kit_select.tscn",
 			"res://scenes/map.tscn",
 			"res://scenes/battle.tscn", "res://scenes/shop.tscn",

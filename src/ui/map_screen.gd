@@ -5,6 +5,7 @@ const AREA_GRAMMAR := preload("res://src/run/area_grammar.gd")
 
 var route_control: DungeonRoute
 var tutorial_director: TutorialDirector
+var _route_scroll: ScrollContainer
 
 
 func _ready() -> void:
@@ -34,16 +35,25 @@ func _ready() -> void:
 	var route_panel := UiKit.textured_panel("res://assets/art/ui/battle_panel.png", 10)
 	route_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(route_panel)
+	_route_scroll = ScrollContainer.new()
+	_route_scroll.name = "DungeonRouteScroll"
+	_route_scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_route_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_route_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	_route_scroll.scroll_deadzone = 8
+	route_panel.add_child(_route_scroll)
 	route_control = DungeonRoute.new()
 	route_control.name = "DungeonRoute"
-	route_control.custom_minimum_size = Vector2(0, 860)
-	route_panel.add_child(route_control)
+	route_control.custom_minimum_size = Vector2(0, 1040)
+	route_control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_route_scroll.add_child(route_control)
 	if not RunState.run_graph.is_empty():
 		var boss_depth := int(AREA_GRAMMAR.for_area(RunState.area_id).get("run_length", 7)) - 1
 		route_control.configure(RunState.run_graph, RunState.current_node_id, boss_depth)
 		route_control.node_selected.connect(_on_node_selected)
 	else:
 		route_control.configure_legacy(RunState.battles(), RunState.battle_index)
+	call_deferred("_scroll_to_current_chamber")
 
 	root.add_child(_make_status_panel())
 	root.add_child(_make_route_legend())
@@ -52,6 +62,31 @@ func _ready() -> void:
 		var tutorial := Tutorial.new(); add_child(tutorial)
 		tutorial.setup(self, tutorial_director,
 				func(_target: String) -> Control: return route_control)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not event is InputEventScreenDrag or not is_instance_valid(_route_scroll): return
+	if not _route_scroll.get_global_rect().has_point(event.position): return
+	var bar := _route_scroll.get_v_scroll_bar()
+	var limit := maxi(roundi(bar.max_value - bar.page), 0)
+	if limit <= 0: return
+	_route_scroll.scroll_vertical = clampi(
+			_route_scroll.scroll_vertical - roundi(event.relative.y), 0, limit)
+	get_viewport().set_input_as_handled()
+
+
+func _scroll_to_current_chamber() -> void:
+	if not is_instance_valid(_route_scroll) or not is_instance_valid(route_control): return
+	var target := route_control.get_node_or_null(
+			"GraphNode_" + RunState.current_node_id) as Control
+	var bar := _route_scroll.get_v_scroll_bar()
+	var limit := maxi(roundi(bar.max_value - bar.page), 0)
+	if target == null:
+		_route_scroll.scroll_vertical = limit
+		return
+	var desired := roundi(target.position.y + target.size.y * 0.5
+			- _route_scroll.size.y * 0.68)
+	_route_scroll.scroll_vertical = clampi(desired, 0, limit)
 
 
 func _on_node_selected(node_id: String) -> void:

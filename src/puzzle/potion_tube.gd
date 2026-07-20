@@ -225,14 +225,11 @@ func _draw() -> void:
 	else:
 		draw_rect(Rect2(4, 8, w - 8, h - 12), Color("7d7195"), false, 3.0)
 
+	# Selection stays readable without drawing rings or dark masks over bottles.
 	if selected or has_focus():
-		draw_arc(Vector2(cx, h * 0.56), w * 0.55, 0.0, TAU, 40,
-				Color("8eeeff") if has_focus() else Color(1.0, 0.78, 0.25, 0.78), 4.0, true)
-	elif guidance_state == "valid":
-		draw_arc(Vector2(cx, h * 0.56), w * 0.54, 0.0, TAU, 40,
-				Color(0.35, 0.95, 0.75, 0.82), 4.0, true)
-	elif guidance_state == "dim":
-		draw_rect(Rect2(4, h * 0.12, w - 8, h * 0.8), Color(0.01, 0.01, 0.03, 0.28))
+		var marker := Color("8eeeff") if has_focus() else Color("f2c65d")
+		draw_line(Vector2(w * 0.30, h * 0.94), Vector2(w * 0.70, h * 0.94),
+				marker, 4.0, true)
 
 	# Magical lock overlay
 	if is_locked():

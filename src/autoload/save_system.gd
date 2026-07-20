@@ -8,13 +8,14 @@ const SAVE_PATH := "user://save.json"
 const AREA_GRAMMAR := preload("res://src/run/area_grammar.gd")
 const SAVE_TEMP_PATH := SAVE_PATH + ".tmp"
 const SAVE_BACKUP_PATH := SAVE_PATH + ".bak"
-const SAVE_VERSION := 9
+const SAVE_VERSION := 10
 
 const DEFAULT_DATA := {
 	"version": SAVE_VERSION,
 	"crystals": 0,
 	"perma": {},
 	"tutorial_done": false,
+	"onboarding_done": false,
 	"tutorial_state": "new",
 	"tutorial_step": 0,
 	"tutorial_skipped": false,
@@ -141,6 +142,10 @@ func migrate(source: Dictionary) -> Dictionary:
 		migrated["area_mastery"] = migrated.get("area_mastery", {})
 		migrated["weekly_records"] = migrated.get("weekly_records", {})
 		migrated["seen_scroll_cues"] = migrated.get("seen_scroll_cues", [])
+	if int(migrated.get("version", 1)) < 10:
+		# Existing players go straight to the Hall; only fresh installs see onboarding.
+		migrated["onboarding_done"] = bool(migrated.get("tutorial_done", false)) \
+				or int(migrated.get("stats", {}).get("runs_started", 0)) > 0
 	var history: Array = migrated.get("run_history", [])
 	if history.size() > 20: history.resize(20)
 	migrated["run_history"] = history
@@ -252,6 +257,15 @@ func set_setting(key: String, value: Variant) -> void:
 
 func is_tutorial_done() -> bool:
 	return bool(data.get("tutorial_done", false))
+
+
+func is_onboarding_done() -> bool:
+	return bool(data.get("onboarding_done", false))
+
+
+func mark_onboarding_done() -> void:
+	data["onboarding_done"] = true
+	save()
 
 
 func mark_tutorial_done() -> void:

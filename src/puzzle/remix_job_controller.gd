@@ -3,7 +3,9 @@ extends RefCounted
 ## Runs solver-backed mixes away from the render thread. Generation IDs make
 ## completion order irrelevant: only the latest request may be consumed.
 
-const TIMEOUT_MS := 1000
+## Android devices can need several seconds for solver-backed recovery mixes.
+## Keep this as an instance value so platform QA can assert the real budget.
+var timeout_ms := 10_000
 
 var _generation_id := 0
 var _latest_task := -1
@@ -45,7 +47,7 @@ func poll() -> Dictionary:
 			return {}
 		payload["ready"] = true
 		return payload
-	if Time.get_ticks_msec() - _started_msec >= TIMEOUT_MS:
+	if Time.get_ticks_msec() - _started_msec >= timeout_ms:
 		var timed_out_id := _generation_id
 		_latest_task = -1
 		return {"ready":true, "generation_id":timed_out_id, "error":"timeout"}
