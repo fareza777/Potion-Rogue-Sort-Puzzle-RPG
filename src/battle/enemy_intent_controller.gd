@@ -51,6 +51,7 @@ func preview() -> Dictionary:
 		"damage_min": minimum,
 		"damage_max": maximum,
 		"moves": _moves,
+		"reaction_counter": (config.get("reaction_counter", {}) as Dictionary).duplicate(true),
 	}
 
 

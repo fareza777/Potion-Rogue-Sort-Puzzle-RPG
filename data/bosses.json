@@ -3,7 +3,7 @@
 		"name": "The Crucible Warden",
 		"phases": [
 			{"id":"armored_core","threshold":1.0,"title":"ARMORED CORE","armor":24,"description":"Break the obsidian shell."},
-			{"id":"molten_floor","threshold":0.7,"title":"MOLTEN FLOOR","modifier":"volatile_liquid","board_action":"heat_seal","description":"Volatile essence floods the table."},
+			{"id":"molten_floor","threshold":0.7,"title":"MOLTEN FLOOR","modifier":"volatile_liquid","board_action":"heat_seal","reaction_counter":{"tag":"ward","result":"delay","moves":1,"label":"Ward reactions cool the molten floor"},"description":"Volatile essence floods the table. Ward reactions delay its assault."},
 			{"id":"inferno","threshold":0.4,"title":"INFERNO","attack_interval_delta":-1,"ultimate_window":true,"description":"The core is exposed. Finish it now!"}
 		]
 	},
@@ -11,7 +11,7 @@
 		"name": "The Root That Dreams",
 		"phases": [
 			{"id":"thorn_crown","threshold":1.0,"title":"THORN CROWN","armor":18,"description":"Crack the living bark before it regenerates."},
-			{"id":"spore_bloom","threshold":0.68,"title":"SPORE BLOOM","modifier":"corruption","board_action":"spore_corrupt","description":"Toxic spores infect exposed layers."},
+			{"id":"spore_bloom","threshold":0.68,"title":"SPORE BLOOM","modifier":"corruption","board_action":"spore_corrupt","reaction_counter":{"tag":"fire","result":"damage","damage":4,"label":"Fire reactions burn the bloom"},"description":"Toxic spores infect exposed layers. Fire reactions burn through it."},
 			{"id":"hungry_garden","threshold":0.35,"title":"HUNGRY GARDEN","attack_interval_delta":-1,"ultimate_window":true,"description":"The buried garden wakes. Burn the heart now!"}
 		]
 	},

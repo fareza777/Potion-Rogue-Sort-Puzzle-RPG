@@ -44,6 +44,11 @@ func snapshot() -> Dictionary:
 			"pending_phase_indices": _pending_phase_indices.duplicate()}
 
 
+func current_phase() -> Dictionary:
+	if phase_index < 0 or phase_index >= phases.size(): return {}
+	return (phases[phase_index] as Dictionary).duplicate(true)
+
+
 func restore(data: Dictionary) -> bool:
 	if str(data.get("boss_id", "")).is_empty() or int(data.get("max_hp", 0)) <= 0:
 		return false

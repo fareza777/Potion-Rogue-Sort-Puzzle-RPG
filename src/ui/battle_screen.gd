@@ -35,6 +35,7 @@ var modifier_controller: ModifierController
 var combo_resolver: ComboResolver
 var reaction_effects := ReactionEffectExecutor.new()
 var reaction_pipeline: ReactionModifierPipeline
+var reaction_counterplay: ReactionCounterplayController
 var skill_controller: SkillController
 var objective_label: Label
 var intent_label: Label
@@ -190,6 +191,7 @@ func _capture_encounter() -> Dictionary:
 		"modifier": modifier_controller.snapshot(),
 		"combo": combo_resolver.snapshot(),
 		"reaction_pipeline": reaction_pipeline.snapshot(),
+		"reaction_counterplay": reaction_counterplay.snapshot(),
 		"remix_economy": remix_economy.snapshot(),
 		"boss_phase": boss_phase_controller.snapshot() if boss_phase_controller != null else {},
 		"encounter_format": encounter_format.snapshot(),
@@ -220,6 +222,8 @@ func _restore_encounter(snapshot: Dictionary) -> bool:
 			boss_phase_controller.configure(battle.enemy_id, battle.enemy_max_hp,
 					int(boss_data.get("phase_index", -1)),
 					boss_data.get("applied_phase_actions", []))
+	if not reaction_counterplay.restore(snapshot.get("reaction_counterplay", {})):
+		_refresh_reaction_counterplay()
 	return true
 
 
@@ -272,6 +276,8 @@ func _setup_tactical_controllers(enemy_id: String) -> void:
 		boss_phase_controller = BossPhaseController.new()
 		boss_phase_controller.phase_changed.connect(_on_boss_phase_changed)
 		boss_phase_controller.configure(enemy_id, battle.enemy_max_hp)
+	reaction_counterplay = ReactionCounterplayController.new()
+	_refresh_reaction_counterplay()
 	modifier_controller = ModifierController.new()
 	var modifier_ids: Array[String] = []
 	for id in contract.get("modifier_ids", []): modifier_ids.append(str(id))
@@ -384,6 +390,8 @@ func _on_depth_potion_completed(color: String) -> void:
 	var result := combo_resolver.push_essence(essence, {"kit_id":RunState.kit_id})
 	if not result.is_empty() and not battle.battle_over:
 		result = reaction_pipeline.modify_result(result)
+		_refresh_reaction_counterplay()
+		result = reaction_counterplay.modify_reaction(result)
 		var paid_hp := battle.spend_reaction_hp(int(result.get("hp_cost", 0)))
 		var applied := reaction_effects.apply(result, battle)
 		if bool(applied.get("ok", false)):
@@ -429,6 +437,11 @@ func _refresh_tactical_hud() -> void:
 	intent_controller.set_battle_values(battle.enemy_attack, 0.0, battle.moves_until_attack)
 	var preview := intent_controller.preview()
 	preview.moves = battle.moves_until_attack
+	_refresh_reaction_counterplay()
+	var counter := reaction_counterplay.preview()
+	if not str(counter.get("counter_tag", "")).is_empty():
+		preview.label = "%s  [COUNTER: %s]" % [str(preview.label),
+				str(counter.counter_tag).to_upper()]
 	var trick := signature_controller.preview() if signature_controller != null else {}
 	if tactical_readout != null:
 		tactical_readout.update_payload(objective_label.text, preview, trick)
@@ -441,6 +454,12 @@ func _refresh_tactical_hud() -> void:
 	skill_button.disabled = not skill_controller.can_cast(str(kit.get("active", "")))
 	ultimate_button.text = "ULT %d%%" % skill_controller.ultimate_charge()
 	ultimate_button.disabled = not skill_controller.ultimate_ready()
+
+
+func _refresh_reaction_counterplay() -> void:
+	if reaction_counterplay == null or intent_controller == null: return
+	var phase := boss_phase_controller.current_phase() if boss_phase_controller != null else {}
+	reaction_counterplay.configure(intent_controller.preview(), phase)
 
 
 func _on_skill_pressed() -> void:

@@ -7,6 +7,7 @@
 	"guard": {
 		"label": "Raise 8 Armor",
 		"icon": "armor",
+		"reaction_counter": {"tag":"ward", "result":"delay", "moves":1, "label":"Ward reactions delay this defense"},
 		"actions": [{"type": "armor", "amount": 8}]
 	},
 	"lock": {
@@ -17,6 +18,7 @@
 	"poison": {
 		"label": "Venom Spit",
 		"icon": "poison",
+		"reaction_counter": {"tag":"venom", "result":"delay", "moves":1, "label":"Venom reactions disrupt this cast"},
 		"actions": [{"type": "poison", "damage": 3, "turns": 2}]
 	},
 	"corruption": {
