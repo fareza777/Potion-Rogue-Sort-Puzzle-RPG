@@ -6,6 +6,7 @@
 			"fire"
 		],
 		"repeatable": false,
+		"reaction_hooks": [{"trigger":"modify_reaction", "tag":"fire", "power_mult":1.15, "copy":"Fire reactions are 15% stronger."}],
 		"effects": [
 			{
 				"stat": "red_damage",
@@ -21,6 +22,7 @@
 			"heal"
 		],
 		"repeatable": false,
+		"reaction_hooks": [{"trigger":"modify_reaction", "tag":"healing", "heal_add":3, "copy":"Healing reactions restore 3 additional HP."}],
 		"effects": [
 			{
 				"stat": "green_heal",
@@ -36,6 +38,7 @@
 			"shield"
 		],
 		"repeatable": false,
+		"reaction_hooks": [{"trigger":"modify_reaction", "tag":"ward", "shield_add":4, "copy":"Ward reactions grant 4 additional shield."}],
 		"effects": [
 			{
 				"stat": "blue_shield",
@@ -51,6 +54,7 @@
 			"poison"
 		],
 		"repeatable": false,
+		"reaction_hooks": [{"trigger":"modify_reaction", "tag":"venom", "power_mult":1.15, "copy":"Venom reactions are 15% stronger."}],
 		"effects": [
 			{
 				"stat": "purple_damage",
@@ -97,6 +101,7 @@
 			"combo"
 		],
 		"repeatable": false,
+		"reaction_hooks": [{"trigger":"modify_reaction", "charge_mult":1.30, "copy":"Reaction charge is multiplied by 1.30."}],
 		"effects": [
 			{
 				"stat": "combo_charge",

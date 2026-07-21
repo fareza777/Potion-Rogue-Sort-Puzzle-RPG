@@ -52,6 +52,11 @@ func configure(kit_id: String, relics: Array, upgrades: Array, mutations: Array,
 	for id in catalysts: details.append("Catalyst: " + _pretty(str(id)))
 	for synergy in active:
 		details.append("Synergy: %s â€” %s" % [synergy.name, _effect_copy(synergy.effects)])
+	var reaction_rows := BuildSynergy.new().reaction_synergies({"kit_id":kit_id,
+			"relics":relics, "upgrades":upgrades, "mutations":mutations,
+			"catalysts":catalysts})
+	for reaction in reaction_rows:
+		details.append("Reaction: %s — %s" % [reaction.source, reaction.copy])
 	tooltip_text = "Current build\n" + ("No additions yet" if details.is_empty() else "\n".join(details))
 
 

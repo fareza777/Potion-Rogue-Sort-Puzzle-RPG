@@ -87,6 +87,7 @@ func _matches_suffix(pattern: Array) -> bool:
 		return false
 	var offset := _history.size() - pattern.size()
 	for index in pattern.size():
-		if str(pattern[index]) != _history[offset + index]:
+		var actual := _history[offset + index]
+		if actual != "wild" and str(pattern[index]) != actual:
 			return false
 	return true

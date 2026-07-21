@@ -527,6 +527,14 @@ func delay_enemy_attack(moves: int) -> void:
 	stats_changed.emit()
 
 
+func spend_reaction_hp(amount: int) -> int:
+	if battle_over: return 0
+	var spent := mini(maxi(amount, 0), maxi(player_hp - 1, 0))
+	player_hp -= spent
+	stats_changed.emit()
+	return spent
+
+
 ## Last Remedy upgrade: once per battle, dropping below 20% HP auto-heals.
 func _try_last_remedy() -> void:
 	if _last_remedy_used or player_hp <= 0:

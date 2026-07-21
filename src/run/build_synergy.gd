@@ -29,6 +29,19 @@ func evaluate(build: Dictionary) -> Array[Dictionary]:
 	return active
 
 
+func reaction_synergies(build: Dictionary) -> Array[Dictionary]:
+	var rows: Array[Dictionary] = []
+	for source in _reaction_sources(build):
+		for hook in source.get("reaction_hooks", []):
+			rows.append({"source":source.get("name", "Unknown"),
+					"trigger":hook.get("trigger", ""), "tag":hook.get("tag", ""),
+					"copy":hook.get("copy", "Reaction rule"),
+					"power_mult":hook.get("power_mult", 1.0),
+					"charge_add":hook.get("charge_add", 0),
+					"limit":hook.get("limit", 0)})
+	return rows
+
+
 func _collect_tags(build: Dictionary) -> Array:
 	var tags: Array = build.get("tags", []).duplicate()
 	var pools := {
@@ -41,3 +54,20 @@ func _collect_tags(build: Dictionary) -> Array:
 		for id in build.get(group, []):
 			tags.append_array(pools[group].get(str(id), {}).get("tags", []))
 	return tags
+
+
+func _reaction_sources(build: Dictionary) -> Array[Dictionary]:
+	var sources: Array[Dictionary] = []
+	var kit_id := str(build.get("kit_id", build.get("kit", "")))
+	if GameState.kits.has(kit_id):
+		sources.append(GameState.kits[kit_id])
+	var pools := {
+		"relics": GameState.load_data_file("relics.json", {}),
+		"mutations": GameState.load_data_file("mutations.json", {}),
+		"catalysts": GameState.load_data_file("catalysts.json", {}),
+	}
+	for group in pools:
+		for id in build.get(group, []):
+			var config: Dictionary = pools[group].get(str(id), {})
+			if not config.is_empty(): sources.append(config)
+	return sources

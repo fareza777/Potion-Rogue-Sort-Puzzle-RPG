@@ -35,6 +35,11 @@ func _ready() -> void:
 			"unknown essence cannot resolve")
 	check(resolver.history() == before,
 			"unknown essence cannot mutate the chamber")
+	var wild := ComboResolver.new()
+	wild.push_essence("red")
+	var wild_result := wild.push_essence("wild")
+	check(str(wild_result.get("id", "")) == "fire_burst",
+			"Wild essence substitutes for a formula color")
 
 	for id in GameState.combos:
 		var formula: Dictionary = GameState.combos[id]

@@ -34,6 +34,7 @@ var signature_controller: EnemySignatureController
 var modifier_controller: ModifierController
 var combo_resolver: ComboResolver
 var reaction_effects := ReactionEffectExecutor.new()
+var reaction_pipeline: ReactionModifierPipeline
 var skill_controller: SkillController
 var objective_label: Label
 var intent_label: Label
@@ -188,6 +189,7 @@ func _capture_encounter() -> Dictionary:
 		"signature": signature_controller.snapshot(),
 		"modifier": modifier_controller.snapshot(),
 		"combo": combo_resolver.snapshot(),
+		"reaction_pipeline": reaction_pipeline.snapshot(),
 		"remix_economy": remix_economy.snapshot(),
 		"boss_phase": boss_phase_controller.snapshot() if boss_phase_controller != null else {},
 		"encounter_format": encounter_format.snapshot(),
@@ -207,6 +209,9 @@ func _restore_encounter(snapshot: Dictionary) -> bool:
 	signature_controller.restore(snapshot.get("signature", {}))
 	modifier_controller.restore(snapshot.get("modifier", {}), board)
 	combo_resolver.restore(snapshot.get("combo", {}))
+	if not reaction_pipeline.restore(snapshot.get("reaction_pipeline", {})):
+		reaction_pipeline.configure(RunState.kit_id, RunState.relic_ids,
+				RunState.catalyst_ids, RunState.mutation_ids)
 	remix_economy.restore(snapshot.get("remix_economy", {}))
 	encounter_format.restore(snapshot.get("encounter_format", {}))
 	if boss_phase_controller != null:
@@ -283,6 +288,9 @@ func _setup_tactical_controllers(enemy_id: String) -> void:
 		_set_message(reason.to_upper()))
 	combo_resolver = ComboResolver.new()
 	combo_resolver.combo_resolved.connect(_on_depth_combo)
+	reaction_pipeline = ReactionModifierPipeline.new()
+	reaction_pipeline.configure(RunState.kit_id, RunState.relic_ids,
+			RunState.catalyst_ids, RunState.mutation_ids)
 	skill_controller = SkillController.new()
 	skill_controller.configure(RunState.kit_id, board)
 	skill_controller.mana_changed.connect(_on_mana_changed)
@@ -372,15 +380,24 @@ func _on_depth_potion_completed(color: String) -> void:
 	skill_controller.gain_mana(18 if color == "wild" else 25)
 	_tutorial_action("gain_mana")
 	skill_controller.tick_cooldowns()
-	var result := combo_resolver.push_essence(color, {"kit_id":RunState.kit_id})
+	var essence := reaction_pipeline.transform_essence(color)
+	var result := combo_resolver.push_essence(essence, {"kit_id":RunState.kit_id})
 	if not result.is_empty() and not battle.battle_over:
+		result = reaction_pipeline.modify_result(result)
+		var paid_hp := battle.spend_reaction_hp(int(result.get("hp_cost", 0)))
 		var applied := reaction_effects.apply(result, battle)
 		if bool(applied.get("ok", false)):
+			var extra_heal := battle.restore_player_hp(int(result.get("bonus_heal", 0)))
+			var extra_shield := battle.grant_player_shield(int(result.get("bonus_shield", 0)))
+			battle.delay_enemy_attack(int(result.get("enemy_delay", 0)))
 			skill_controller.gain_ultimate(int(result.get("charge", 0)))
 			RunState.record_replay("reaction", {"id":result.id,
 					"history":combo_resolver.history(), "result":applied})
 			_set_message(str(result.get("name", result.id)) + " — "
-					+ str(applied.get("summary", "Reaction resolved")))
+					+ str(applied.get("summary", "Reaction resolved"))
+					+ (" • +%d HP" % extra_heal if extra_heal > 0 else "")
+					+ (" • +%d shield" % extra_shield if extra_shield > 0 else "")
+					+ (" • %d HP cost" % paid_hp if paid_hp > 0 else ""))
 	_refresh_tactical_hud()
 
 

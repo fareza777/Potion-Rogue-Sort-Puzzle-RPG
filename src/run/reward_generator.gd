@@ -54,3 +54,23 @@ func choices(kind: String, count: int, seed: int, build: Dictionary) -> Array[St
 				weighted.remove_at(index)
 				break
 	return result
+
+
+func describe_choice(kind: String, id: String, build: Dictionary) -> Dictionary:
+	if not FILES.has(kind): return {}
+	var item: Dictionary = GameState.load_data_file(FILES[kind], {}).get(id, {})
+	if item.is_empty(): return {}
+	var build_tags: Array = build.get("tags", []).duplicate()
+	var kit_id := str(build.get("kit_id", build.get("kit", "")))
+	build_tags.append_array(GameState.kits.get(kit_id, {}).get("tags", []))
+	var affected: Array = item.get("tags", []).duplicate()
+	var compatible := false
+	for tag in affected:
+		if tag in build_tags: compatible = true; break
+	var reaction_copy: Array[String] = []
+	for hook in item.get("reaction_hooks", []):
+		reaction_copy.append(str(hook.get("copy", "Reaction rule")))
+	return {"id":id, "name":item.get("name", id.capitalize()),
+			"compatible":compatible, "affected_tags":affected,
+			"reaction_delta":" ".join(reaction_copy),
+			"description":item.get("description", "")}

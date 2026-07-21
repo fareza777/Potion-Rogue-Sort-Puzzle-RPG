@@ -6,6 +6,7 @@
 			"fire"
 		],
 		"repeatable": false,
+		"reaction_hooks": [{"trigger":"modify_reaction", "tag":"fire", "power_mult":1.10, "copy":"Fire reactions are 10% stronger."}],
 		"effects": [
 			{
 				"stat": "red_damage",
@@ -21,6 +22,7 @@
 			"shield"
 		],
 		"repeatable": false,
+		"reaction_hooks": [{"trigger":"modify_reaction", "tag":"ward", "shield_add":3, "copy":"Ward reactions grant 3 additional shield."}],
 		"effects": [
 			{
 				"stat": "start_shield",
@@ -156,6 +158,7 @@
 			"combo"
 		],
 		"repeatable": false,
+		"reaction_hooks": [{"trigger":"modify_reaction", "charge_add":8, "copy":"Reactions grant 8 additional ultimate charge."}],
 		"effects": [
 			{
 				"stat": "combo_charge",
