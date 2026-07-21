@@ -382,7 +382,6 @@ func _on_tube_tapped(tube: PotionTube) -> void:
 		if not tube.contents.is_empty():
 			selected_tube = tube
 			tube.selected = true
-			_refresh_guidance()
 			tube_selected.emit()
 		return
 	if selected_tube == tube:
@@ -400,7 +399,6 @@ func _on_tube_tapped(tube: PotionTube) -> void:
 		if not tube.contents.is_empty():
 			selected_tube = tube
 			tube.selected = true
-			_refresh_guidance()
 		invalid_move.emit()
 		guidance_changed.emit(reason)
 
@@ -468,14 +466,3 @@ func _deselect() -> void:
 	if selected_tube != null:
 		selected_tube.selected = false
 		selected_tube = null
-	for tube in tubes: tube.guidance_state = "neutral"
-
-
-func _refresh_guidance() -> void:
-	if selected_tube == null: return
-	var source_index := tubes.find(selected_tube)
-	var valid: Array = BoardGuidance.new().for_selection(export_state(), source_index,
-			selected_tube.capacity).get("valid_targets", [])
-	for index in tubes.size():
-		tubes[index].guidance_state = "neutral" if index == source_index else (
-				"valid" if index in valid else "dim")

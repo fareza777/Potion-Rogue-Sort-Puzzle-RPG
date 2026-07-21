@@ -34,11 +34,6 @@ var selected := false:
 		selected = value
 		queue_redraw()
 
-var guidance_state := "neutral":
-	set(value):
-		guidance_state = value
-		queue_redraw()
-
 var _bottle_texture: Texture2D
 var _feedback_tween: Tween
 var _surface_clock := 0.0
@@ -68,6 +63,10 @@ func _process(delta: float) -> void:
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton \
 			and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		release_focus()
+		tapped.emit(self)
+	elif event is InputEventScreenTouch and event.pressed:
+		release_focus()
 		tapped.emit(self)
 	elif event.is_action_pressed("ui_accept"):
 		tapped.emit(self)
@@ -256,13 +255,6 @@ func _draw() -> void:
 		glow.a = 0.14 if not selected else 0.34
 		draw_circle(Vector2(cx, h * 0.61), w * (0.50 if not selected else 0.68), glow)
 
-	# Board guidance: legal pour targets glow, illegal ones recede. This is the
-	# visual half of PuzzleBoard._refresh_guidance and Assist Mode.
-	if guidance_state == "valid" and not selected:
-		draw_circle(Vector2(cx, h * 0.61), w * 0.58, Color(0.55, 0.95, 0.62, 0.20))
-		draw_arc(Vector2(cx, h * 0.58), w * 0.52, 0, TAU, 40,
-				Color(0.62, 1.0, 0.70, 0.55), 3.0, true)
-
 	# Dynamic liquid remains tied directly to the four logical capacity units.
 	for i in contents.size():
 		var style := VisualRegistry.potion(contents[i])
@@ -317,9 +309,11 @@ func _draw() -> void:
 	else:
 		draw_rect(Rect2(4, 8, w - 8, h - 12), Color("7d7195"), false, 3.0)
 
-	# Keyboard/controller focus ring for non-touch accessibility.
+	# Keyboard/controller focus uses a restrained inner glass glint. Touch taps
+	# release focus above, so this can never become a persistent battle guide.
 	if has_focus():
-		draw_rect(Rect2(2, 2, w - 4, h - 4), Color("ffd36b"), false, 3.0)
+		draw_arc(Vector2(cx, h * 0.58), w * 0.43, -PI * 0.72, -PI * 0.28,
+				18, Color("d8ecff", 0.72), 2.0, true)
 
 	# Magical lock overlay
 	if is_locked():
