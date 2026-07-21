@@ -8,10 +8,13 @@ func _ready() -> void:
 	SaveSystem.data = SaveSystem.DEFAULT_DATA.duplicate(true)
 	var director := TutorialDirector.new()
 	director.configure()
-	check(director.active and director.steps.size() == 10, "first run starts ten-step tutorial")
+	check(director.active and director.steps.size() == 11, "first run starts eleven-step tutorial")
+	check(director.steps.any(func(step): return str(step.get("action", "")) == "trigger_reaction"),
+			"tutorial teaches one reaction")
 	check(not director.accept_action("wrong"), "incorrect action cannot advance tutorial")
 	var actions := ["intro", "inspect_enemy", "inspect_intent", "select_source",
-			"select_target", "undo", "complete_potion", "gain_mana", "cast_skill", "choose_path"]
+			"select_target", "undo", "complete_potion", "gain_mana", "trigger_reaction",
+			"cast_skill", "choose_path"]
 	for action in actions: check(director.accept_action(action), "tutorial accepts " + action)
 	check(SaveSystem.is_tutorial_done() and SaveSystem.data.tutorial_state == "complete",
 			"completion persists")

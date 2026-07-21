@@ -8,6 +8,7 @@
 		{"id":"undo","action":"undo","target":"UndoAction","title":"Mistakes are reversible","body":"Undo restores the previous pour and also restores the enemy countdown."},
 		{"id":"complete","action":"complete_potion","target":"PotionBoardBand","title":"Complete a potion","body":"Build four layers of one color. Red damages, green heals, blue shields, and purple poisons."},
 		{"id":"mana","action":"gain_mana","target":"ManaMeter","title":"Brewing creates mana","body":"Each completed potion fills this meter. Mana powers your brewer's active skill."},
+		{"id":"reaction","action":"trigger_reaction","target":"ReactionChamber","title":"Reaction: Fire Burst","body":"Complete a second Fire Potion. The order of completed colors creates an Alchemy Reaction; Red then Red amplifies fire damage."},
 		{"id":"skill","action":"cast_skill","target":"SkillButton","title":"Cast your active skill","body":"Use the lit skill button. Your starting kit changes this ability and its play style."},
 		{"id":"path","action":"choose_path","target":"DungeonRoute","title":"Choose your route","body":"Glowing nodes are reachable. Compare battles, events, shops, and safe campfires before choosing."}
 	]

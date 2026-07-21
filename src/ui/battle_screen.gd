@@ -240,6 +240,7 @@ func _tutorial_target(target_name: String) -> Control:
 	match target_name:
 		"TutorialSource": return board.tubes[0] if board.tubes.size() > 0 else board
 		"TutorialTarget": return board.tubes[1] if board.tubes.size() > 1 else board
+		"ReactionChamber": return reaction_chamber
 		_: return find_child(target_name, true, false) as Control
 
 
@@ -416,6 +417,8 @@ func _on_depth_potion_completed(color: String) -> void:
 
 func _on_depth_combo(combo_id: String, payload: Dictionary) -> void:
 	battle_fx.play_combo(combo_resolver.history().size(), Color("c871ff"))
+	if combo_id == "fire_burst":
+		_tutorial_action("trigger_reaction")
 	if reaction_chamber != null:
 		reaction_chamber.set_history(combo_resolver.history())
 		reaction_chamber.play_activation(payload)
