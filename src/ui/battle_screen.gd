@@ -41,7 +41,7 @@ var intent_label: Label
 var tactical_readout: TacticalReadout
 var mana_bar: ProgressBar
 var mana_label: Label
-var combo_label: Label
+var reaction_chamber: ReactionChamber
 var skill_button: Button
 var ultimate_button: Button
 var boss_phase_controller: BossPhaseController
@@ -393,16 +393,24 @@ func _on_depth_potion_completed(color: String) -> void:
 			skill_controller.gain_ultimate(int(result.get("charge", 0)))
 			RunState.record_replay("reaction", {"id":result.id,
 					"history":combo_resolver.history(), "result":applied})
+			var first_discovery := SaveSystem.discover_formula(str(result.id))
 			_set_message(str(result.get("name", result.id)) + " — "
 					+ str(applied.get("summary", "Reaction resolved"))
 					+ (" • +%d HP" % extra_heal if extra_heal > 0 else "")
 					+ (" • +%d shield" % extra_shield if extra_shield > 0 else "")
 					+ (" • %d HP cost" % paid_hp if paid_hp > 0 else ""))
+			if first_discovery:
+				overlay_controller.show_notice("NEW FORMULA DISCOVERED",
+						str(result.get("name", result.id)),
+						str(result.get("description", applied.get("summary", ""))))
 	_refresh_tactical_hud()
 
 
-func _on_depth_combo(combo_id: String, _payload: Dictionary) -> void:
+func _on_depth_combo(combo_id: String, payload: Dictionary) -> void:
 	battle_fx.play_combo(combo_resolver.history().size(), Color("c871ff"))
+	if reaction_chamber != null:
+		reaction_chamber.set_history(combo_resolver.history())
+		reaction_chamber.play_activation(payload)
 	_set_message(str(GameState.combos.get(combo_id, {}).get("name", combo_id.capitalize())))
 
 
@@ -426,10 +434,8 @@ func _refresh_tactical_hud() -> void:
 		tactical_readout.update_payload(objective_label.text, preview, trick)
 	mana_bar.value = skill_controller.mana
 	mana_label.text = "MANA  %d/100" % skill_controller.mana
-	var history := combo_resolver.history(); var slots: Array[String] = []
-	for color in history: slots.append(str(color).substr(0, 1).to_upper())
-	while slots.size() < 3: slots.push_front("◇")
-	combo_label.text = "  ".join(slots)
+	if reaction_chamber != null:
+		reaction_chamber.set_history(combo_resolver.history())
 	var kit: Dictionary = GameState.kits.get(RunState.kit_id, {})
 	skill_button.text = str(kit.get("active", "skill")).replace("_", " ").to_upper()
 	skill_button.disabled = not skill_controller.can_cast(str(kit.get("active", "")))
@@ -675,13 +681,19 @@ func _build_power_strip() -> PanelContainer:
 	mana_label = UiKit.label("MANA 0/100", 13, Color("73d9ff")); mana_stack.add_child(mana_label)
 	mana_bar = UiKit.bar(Color("368ed8"), 18); mana_bar.name = "ManaMeter"; mana_bar.max_value = 100
 	mana_stack.add_child(mana_bar); row.add_child(mana_stack)
-	combo_label = UiKit.label("◇  ◇  ◇", 18, Color("d998ff")); combo_label.name = "ComboSlots"
-	combo_label.custom_minimum_size = Vector2(84, 0); row.add_child(combo_label)
+	reaction_chamber = ReactionChamber.new(); reaction_chamber.name = "ComboSlots"
+	reaction_chamber.codex_requested.connect(_on_reaction_codex_requested)
+	row.add_child(reaction_chamber)
 	skill_button = UiKit.button("SKILL", Vector2(112, 50), Color("70d9ff")); skill_button.name = "SkillButton"
 	skill_button.add_theme_font_size_override("font_size", 14); skill_button.pressed.connect(_on_skill_pressed); row.add_child(skill_button)
 	ultimate_button = UiKit.button("ULT", Vector2(88, 50), Color("ffb84d")); ultimate_button.name = "UltimateButton"
 	ultimate_button.add_theme_font_size_override("font_size", 14); ultimate_button.pressed.connect(_on_ultimate_pressed); row.add_child(ultimate_button)
 	return panel
+
+
+func _on_reaction_codex_requested() -> void:
+	_checkpoint_encounter()
+	get_tree().change_scene_to_file("res://scenes/reaction_codex.tscn")
 
 
 func _build_turn_banner() -> Control:

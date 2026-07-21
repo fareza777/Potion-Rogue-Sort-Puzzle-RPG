@@ -8,7 +8,7 @@ const SAVE_PATH := "user://save.json"
 const AREA_GRAMMAR := preload("res://src/run/area_grammar.gd")
 const SAVE_TEMP_PATH := SAVE_PATH + ".tmp"
 const SAVE_BACKUP_PATH := SAVE_PATH + ".bak"
-const SAVE_VERSION := 10
+const SAVE_VERSION := 11
 
 const DEFAULT_DATA := {
 	"version": SAVE_VERSION,
@@ -39,6 +39,7 @@ const DEFAULT_DATA := {
 	"run_history": [],
 	"max_ascension": 0,
 	"selected_ascension": 0,
+	"discovered_formulas": [],
 }
 
 ## Frequent low-stakes mutations (crystals, stats, settings sliders) mark the
@@ -171,6 +172,8 @@ func migrate(source: Dictionary) -> Dictionary:
 		# Existing players go straight to the Hall; only fresh installs see onboarding.
 		migrated["onboarding_done"] = bool(migrated.get("tutorial_done", false)) \
 				or int(migrated.get("stats", {}).get("runs_started", 0)) > 0
+	if int(migrated.get("version", 1)) < 11:
+		migrated["discovered_formulas"] = migrated.get("discovered_formulas", [])
 	var history: Array = migrated.get("run_history", [])
 	if history.size() > 20: history.resize(20)
 	migrated["run_history"] = history
@@ -187,6 +190,20 @@ func migrate(source: Dictionary) -> Dictionary:
 			0, int(migrated["max_ascension"]))
 	migrated["version"] = SAVE_VERSION
 	return migrated
+
+
+func discover_formula(formula_id: String) -> bool:
+	if not GameState.combos.has(formula_id): return false
+	var formulas: Array = data.get("discovered_formulas", [])
+	if formula_id in formulas: return false
+	formulas.append(formula_id)
+	data["discovered_formulas"] = formulas
+	request_save()
+	return true
+
+
+func discovered_formulas() -> Array:
+	return (data.get("discovered_formulas", []) as Array).duplicate()
 
 
 func save() -> bool:

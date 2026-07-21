@@ -22,6 +22,10 @@ func show_pause(buttons: Array = []) -> void:
 	show("Paused", "Your exact battle state is saved automatically.", buttons)
 
 
+func show_notice(kicker: String, title: String, body: String) -> void:
+	show(kicker + "\n" + title, body, [["CONTINUE", Callable(self, "hide")]])
+
+
 func show(title: String, body: String, buttons: Array) -> void:
 	if _root == null: return
 	_title.text = title
