@@ -9,7 +9,7 @@ var _row: HBoxContainer
 
 func _init() -> void:
 	name = "BottomNavigation"
-	custom_minimum_size = Vector2(0, 108)
+	custom_minimum_size = Vector2(0, 124)
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_apply_dock_style()
@@ -54,7 +54,7 @@ func _apply_dock_style() -> void:
 func add_item(id: String, caption: String, action: Callable, active := false) -> Button:
 	var button := Button.new()
 	button.name = "Nav_" + id
-	button.custom_minimum_size = Vector2(72, 88)
+	button.custom_minimum_size = Vector2(72, 106)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.focus_mode = Control.FOCUS_ALL
 	button.flat = true
@@ -65,7 +65,8 @@ func add_item(id: String, caption: String, action: Callable, active := false) ->
 	button.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
 	button.text = caption.to_upper()
 	button.alignment = HORIZONTAL_ALIGNMENT_CENTER
-	button.add_theme_constant_override("icon_max_width", 54)
+	button.add_theme_constant_override("icon_max_width",
+			icon_width_for(get_viewport_rect().size.x))
 	button.add_theme_constant_override("h_separation", 0)
 	button.add_theme_font_override("font", UiKit.title_font())
 	button.add_theme_font_size_override("font_size", 11)
@@ -80,16 +81,10 @@ func add_item(id: String, caption: String, action: Callable, active := false) ->
 	# soft gold wash so it still reads as selected without becoming a box.
 	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
 		var style := StyleBoxFlat.new()
-		if active:
-			style.bg_color = Color(0.55, 0.38, 0.12, 0.28 if state == "normal" else 0.38)
-			style.border_color = Color("e7bc59", 0.55)
-			style.set_border_width_all(1)
-			style.set_corner_radius_all(12)
-		else:
-			style.bg_color = Color(1, 1, 1, 0.06 if state == "hover" else 0.0)
-			style.border_color = Color(0, 0, 0, 0)
-			style.set_border_width_all(0)
-			style.set_corner_radius_all(12)
+		style.bg_color = Color(1, 1, 1, 0.06 if state == "hover" else 0.0)
+		style.border_color = Color(0, 0, 0, 0)
+		style.set_border_width_all(0)
+		style.set_corner_radius_all(12)
 		style.content_margin_top = 4
 		style.content_margin_bottom = 4
 		style.content_margin_left = 2
@@ -103,3 +98,7 @@ func add_item(id: String, caption: String, action: Callable, active := false) ->
 			action.call())
 	_row.add_child(button)
 	return button
+
+
+func icon_width_for(viewport_width: float) -> int:
+	return 70 if viewport_width < 640.0 else 76
