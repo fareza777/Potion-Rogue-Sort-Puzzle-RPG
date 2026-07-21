@@ -1,13 +1,13 @@
 {
-	"fire_burst": {"pattern": ["red", "red"], "effect": "damage_multiplier", "value": 1.5, "charge": 20},
-	"restorative_barrier": {"pattern": ["green", "blue"], "effect": "heal_and_shield", "heal": 5, "shield": 4, "charge": 20},
-	"reflected_blaze": {"pattern": ["blue", "red"], "effect": "shield_to_damage", "ratio": 0.5, "charge": 20},
-	"toxic_detonation": {"pattern": ["purple", "red"], "effect": "consume_poison", "charge": 20},
-	"burning_venom": {"pattern": ["red", "purple"], "effect": "burning_poison", "value": 2, "charge": 20},
-	"fortify": {"pattern": ["blue", "blue"], "effect": "fortify", "reflect": 0.25, "charge": 20},
-	"regeneration": {"pattern": ["green", "green"], "effect": "regeneration", "turns": 3, "charge": 20},
-	"venom_ward": {"pattern": ["purple", "blue"], "effect": "venom_ward", "damage": 3, "charge": 20},
-	"inferno_catalyst": {"pattern": ["red", "purple", "red"], "effect": "ultimate_inferno", "charge": 45},
-	"sanctuary": {"pattern": ["blue", "green", "blue"], "effect": "ultimate_sanctuary", "charge": 45},
-	"plague_nova": {"pattern": ["purple", "purple", "red"], "effect": "ultimate_plague", "charge": 45}
+	"fire_burst": {"name":"Fire Burst", "description":"The second Fire Potion deals 50% more damage.", "pattern":["red","red"], "effect":"damage_multiplier", "value":1.5, "charge":20, "tags":["fire","burst"], "vfx":"fire_burst"},
+	"restorative_barrier": {"name":"Restorative Barrier", "description":"Restore 5 HP and gain 4 shield after Life flows into Ward.", "pattern":["green","blue"], "effect":"heal_and_shield", "heal":5, "shield":4, "charge":20, "tags":["healing","ward"], "vfx":"restorative_barrier"},
+	"reflected_blaze": {"name":"Reflected Blaze", "description":"Convert half of the current shield into bonus Fire damage.", "pattern":["blue","red"], "effect":"shield_to_damage", "ratio":0.5, "charge":20, "tags":["ward","fire","burst"], "vfx":"reflected_blaze"},
+	"toxic_detonation": {"name":"Toxic Detonation", "description":"Consume the enemy's remaining poison and deal it immediately.", "pattern":["purple","red"], "effect":"consume_poison", "charge":20, "tags":["venom","fire","burst"], "vfx":"toxic_detonation"},
+	"burning_venom": {"name":"Burning Venom", "description":"Empower poison by 2 damage for its remaining duration.", "pattern":["red","purple"], "effect":"burning_poison", "value":2, "charge":20, "tags":["fire","venom"], "vfx":"burning_venom"},
+	"fortify": {"name":"Fortify", "description":"Reinforce Ward and reflect 25% of the next absorbed attack.", "pattern":["blue","blue"], "effect":"fortify", "reflect":0.25, "charge":20, "tags":["ward","control"], "vfx":"fortify"},
+	"regeneration": {"name":"Regeneration", "description":"Regenerate health across the next 3 enemy turns.", "pattern":["green","green"], "effect":"regeneration", "turns":3, "charge":20, "tags":["healing","sustain"], "vfx":"regeneration"},
+	"venom_ward": {"name":"Venom Ward", "description":"Gain a toxic ward that retaliates for 3 damage when struck.", "pattern":["purple","blue"], "effect":"venom_ward", "damage":3, "charge":20, "tags":["venom","ward"], "vfx":"venom_ward"},
+	"inferno_catalyst": {"name":"Inferno Catalyst", "description":"Ignite all poison and add 24 armor-piercing Fire damage.", "pattern":["red","purple","red"], "effect":"ultimate_inferno", "damage":24, "charge":45, "tags":["fire","venom","ultimate"], "vfx":"inferno_catalyst"},
+	"sanctuary": {"name":"Sanctuary", "description":"Restore 12 HP, gain 16 shield, and delay the next attack.", "pattern":["blue","green","blue"], "effect":"ultimate_sanctuary", "heal":12, "shield":16, "charge":45, "tags":["ward","healing","ultimate"], "vfx":"sanctuary"},
+	"plague_nova": {"name":"Plague Nova", "description":"Deepen poison by 5 damage and detonate one full poison cycle.", "pattern":["purple","purple","red"], "effect":"ultimate_plague", "damage":5, "charge":45, "tags":["venom","burst","ultimate"], "vfx":"plague_nova"}
 }

@@ -29,8 +29,14 @@ const DEFAULT_INTENTS := {
 }
 const DEFAULT_COMBOS := {
 	"fire_burst": {"pattern": ["red", "red"],
-		"effect": "damage_multiplier", "value": 1.5, "charge": 20},
+		"effect": "damage_multiplier", "value": 1.5, "charge": 20,
+		"name":"Fire Burst", "description":"The second Fire Potion deals 50% more damage.",
+		"tags":["fire", "burst"], "vfx":"fire_burst"},
 }
+const REACTION_EFFECT_IDS: Array[String] = ["damage_multiplier", "heal_and_shield",
+		"shield_to_damage", "consume_poison", "burning_poison", "fortify",
+		"regeneration", "venom_ward", "ultimate_inferno",
+		"ultimate_sanctuary", "ultimate_plague"]
 const DEFAULT_AREAS := {
 	"shadow_crypt": {"id":"shadow_crypt", "order":0, "name":"Shadow Crypt",
 		"boss":"fire_golem", "background":"res://assets/art/backgrounds/shadow_crypt_battle.png",
@@ -56,7 +62,7 @@ func _ready() -> void:
 	objectives = load_data_file("objectives.json", DEFAULT_OBJECTIVES)
 	modifiers = load_data_file("modifiers.json", DEFAULT_MODIFIERS)
 	intents = load_data_file("intents.json", DEFAULT_INTENTS)
-	combos = load_data_file("combos.json", DEFAULT_COMBOS)
+	combos = _validated_combos(load_data_file("combos.json", DEFAULT_COMBOS))
 	kits = load_data_file("kits.json", {"ember_adept":{"active":"flash_boil","cost":50}})
 	areas = load_data_file("areas.json", DEFAULT_AREAS)
 
@@ -89,3 +95,33 @@ func load_data_file(file_name: String, fallback: Dictionary) -> Dictionary:
 		push_warning("Invalid JSON, using defaults: " + path)
 		return fallback.duplicate(true)
 	return parsed
+
+
+func _validated_combos(raw: Dictionary) -> Dictionary:
+	var result := {}
+	for id in raw:
+		var config: Dictionary = raw[id]
+		if _valid_combo(str(id), config):
+			result[str(id)] = config.duplicate(true)
+		else:
+			push_warning("Invalid alchemy formula ignored: " + str(id))
+	return result if not result.is_empty() else DEFAULT_COMBOS.duplicate(true)
+
+
+func _valid_combo(id: String, config: Dictionary) -> bool:
+	var pattern: Array = config.get("pattern", [])
+	if id.is_empty() or pattern.size() < 2 or pattern.size() > 3:
+		return false
+	for color in pattern:
+		if not str(color) in ComboResolver.VALID_ESSENCES:
+			return false
+	if not str(config.get("effect", "")) in REACTION_EFFECT_IDS:
+		return false
+	for key in ["damage", "heal", "shield", "charge", "value", "ratio",
+			"reflect", "turns"]:
+		if config.has(key) and float(config[key]) < 0.0:
+			return false
+	return not str(config.get("name", "")).is_empty() \
+			and not str(config.get("description", "")).is_empty() \
+			and not (config.get("tags", []) as Array).is_empty() \
+			and not str(config.get("vfx", "")).is_empty()
