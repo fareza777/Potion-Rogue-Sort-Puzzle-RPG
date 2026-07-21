@@ -41,6 +41,7 @@ var guidance_state := "neutral":
 
 var _bottle_texture: Texture2D
 var _feedback_tween: Tween
+var _surface_clock := 0.0
 
 
 func _ready() -> void:
@@ -50,6 +51,18 @@ func _ready() -> void:
 			"res://assets/art/potions/bottle_frame.png")
 	resized.connect(func() -> void: pivot_offset = size * 0.5)
 	pivot_offset = size * 0.5
+	set_process(true)
+
+
+## Gentle liquid-surface motion at a low tick rate: alive without shaders or
+## per-frame redraws. Reduced Effects freezes the surface entirely.
+func _process(delta: float) -> void:
+	if contents.is_empty() or bool(SaveSystem.setting("reduced_effects")):
+		return
+	_surface_clock += delta
+	if _surface_clock >= 0.12:
+		_surface_clock = 0.0
+		queue_redraw()
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -156,6 +169,21 @@ func flash_complete() -> void:
 	_feedback_tween.tween_property(self, "modulate", Color.WHITE, 0.32)
 
 
+## Pour anticipation: the tube leans toward its target and settles back.
+func play_pour_tilt(direction: float) -> void:
+	if bool(SaveSystem.setting("reduced_effects")):
+		return
+	if _feedback_tween != null and _feedback_tween.is_valid():
+		_feedback_tween.kill()
+	rotation_degrees = 0.0
+	var lean := clampf(direction, -1.0, 1.0) * 9.0
+	_feedback_tween = create_tween()
+	_feedback_tween.tween_property(self, "rotation_degrees", lean, 0.09) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_feedback_tween.tween_property(self, "rotation_degrees", 0.0, 0.22) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
 func play_invalid() -> void:
 	if bool(SaveSystem.setting("reduced_effects")):
 		queue_redraw(); return
@@ -167,6 +195,46 @@ func play_invalid() -> void:
 	_feedback_tween.tween_property(self, "position:x", base_x + 5.0, 0.07)
 	_feedback_tween.tween_property(self, "position:x", base_x - 3.0, 0.06)
 	_feedback_tween.tween_property(self, "position:x", base_x, 0.05)
+
+
+## Colorblind support: every potion color carries a unique sigil so liquids
+## can be told apart without hue. Flame = red, leaf cross = green,
+## wave = blue, diamond = purple, ring = wild.
+func _draw_color_sigil(color_id: String, at: Vector2, radius: float) -> void:
+	var ink := Color(1, 1, 1, 0.82)
+	var shadow := Color(0, 0, 0, 0.45)
+	match color_id:
+		"red":
+			var flame := PackedVector2Array([at + Vector2(0, -radius),
+					at + Vector2(radius * 0.8, radius * 0.7),
+					at + Vector2(-radius * 0.8, radius * 0.7)])
+			draw_colored_polygon(flame, shadow)
+			draw_polyline(PackedVector2Array([flame[0], flame[1], flame[2],
+					flame[0]]), ink, 2.0, true)
+		"green":
+			draw_line(at + Vector2(0, -radius), at + Vector2(0, radius), shadow, 5.0)
+			draw_line(at + Vector2(-radius, 0), at + Vector2(radius, 0), shadow, 5.0)
+			draw_line(at + Vector2(0, -radius), at + Vector2(0, radius), ink, 2.5, true)
+			draw_line(at + Vector2(-radius, 0), at + Vector2(radius, 0), ink, 2.5, true)
+		"blue":
+			for wave_row in [-0.4, 0.4]:
+				var points := PackedVector2Array()
+				for step in 7:
+					var t := float(step) / 6.0
+					points.append(at + Vector2((t - 0.5) * radius * 2.0,
+							wave_row * radius + sin(t * TAU) * radius * 0.3))
+				draw_polyline(points, shadow, 4.5)
+				draw_polyline(points, ink, 2.0, true)
+		"purple":
+			var diamond := PackedVector2Array([at + Vector2(0, -radius),
+					at + Vector2(radius, 0), at + Vector2(0, radius),
+					at + Vector2(-radius, 0)])
+			draw_colored_polygon(diamond, shadow)
+			draw_polyline(PackedVector2Array([diamond[0], diamond[1], diamond[2],
+					diamond[3], diamond[0]]), ink, 2.0, true)
+		_:
+			draw_arc(at, radius * 0.8, 0, TAU, 20, shadow, 4.5)
+			draw_arc(at, radius * 0.8, 0, TAU, 20, ink, 2.0, true)
 
 
 func _draw() -> void:
@@ -188,6 +256,13 @@ func _draw() -> void:
 		glow.a = 0.14 if not selected else 0.34
 		draw_circle(Vector2(cx, h * 0.61), w * (0.50 if not selected else 0.68), glow)
 
+	# Board guidance: legal pour targets glow, illegal ones recede. This is the
+	# visual half of PuzzleBoard._refresh_guidance and Assist Mode.
+	if guidance_state == "valid" and not selected:
+		draw_circle(Vector2(cx, h * 0.61), w * 0.58, Color(0.55, 0.95, 0.62, 0.20))
+		draw_arc(Vector2(cx, h * 0.58), w * 0.52, 0, TAU, 40,
+				Color(0.62, 1.0, 0.70, 0.55), 3.0, true)
+
 	# Dynamic liquid remains tied directly to the four logical capacity units.
 	for i in contents.size():
 		var style := VisualRegistry.potion(contents[i])
@@ -204,12 +279,29 @@ func _draw() -> void:
 				color.lightened(0.32))
 		# Each cell receives a readable surface and small deterministic bubble.
 		if i == contents.size() - 1:
-			draw_line(Vector2(inner_left, seg_top + 2.0),
-					Vector2(inner_left + inner_w, seg_top + 2.0),
-					color.lightened(0.55), 3.0, true)
+			if bool(SaveSystem.setting("reduced_effects")):
+				draw_line(Vector2(inner_left, seg_top + 2.0),
+						Vector2(inner_left + inner_w, seg_top + 2.0),
+						color.lightened(0.55), 3.0, true)
+			else:
+				# Live liquid surface: a slow sine ripple so potions read as
+				# fluid rather than painted blocks.
+				var phase := Time.get_ticks_msec() / 1000.0 * 2.2 \
+						+ float(get_index()) * 1.7
+				var points := PackedVector2Array()
+				for step in 9:
+					var t := float(step) / 8.0
+					points.append(Vector2(inner_left + inner_w * t,
+							seg_top + 2.0 + sin(t * 9.0 + phase) * 1.6))
+				draw_polyline(points, color.lightened(0.55), 3.0, true)
 		var bubble_r := maxf(1.5, w * 0.025)
 		draw_circle(Vector2(inner_left + inner_w * (0.67 if i % 2 == 0 else 0.78),
 				seg_top + seg_h * 0.55), bubble_r, Color(1, 1, 1, 0.28))
+		if bool(SaveSystem.setting("color_patterns")) \
+				and not has_layer_effect(i, "hidden"):
+			_draw_color_sigil(contents[i],
+					Vector2(inner_left + inner_w * 0.5, seg_top + seg_h * 0.5),
+					minf(inner_w, seg_h) * 0.30)
 		if has_layer_effect(i, "cursed"):
 			draw_line(Vector2(inner_left + 3, seg_top + 3),
 					Vector2(inner_left + inner_w - 3, seg_top + seg_h - 3),
@@ -224,6 +316,10 @@ func _draw() -> void:
 				false)
 	else:
 		draw_rect(Rect2(4, 8, w - 8, h - 12), Color("7d7195"), false, 3.0)
+
+	# Keyboard/controller focus ring for non-touch accessibility.
+	if has_focus():
+		draw_rect(Rect2(2, 2, w - 4, h - 4), Color("ffd36b"), false, 3.0)
 
 	# Magical lock overlay
 	if is_locked():

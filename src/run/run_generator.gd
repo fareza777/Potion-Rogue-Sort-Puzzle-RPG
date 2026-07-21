@@ -5,10 +5,14 @@ const AREA_GRAMMAR := preload("res://src/run/area_grammar.gd")
 const INTRO_MODIFIERS := ["hidden_layer", "frozen_tube"]
 const ADVANCED_MODIFIERS := ["cursed_layer", "volatile_liquid", "wild_essence", "chain_lock", "corruption", "unstable_flask"]
 var _ascension := 0
+## Optional board modifier forced into every battle contract (daily twist).
+var _forced_modifier := ""
 
 
-func generate(seed: int, area_id := "shadow_crypt", ascension := 0) -> Dictionary:
+func generate(seed: int, area_id := "shadow_crypt", ascension := 0,
+		forced_modifier := "") -> Dictionary:
 	_ascension = clampi(ascension, 0, 10)
+	_forced_modifier = forced_modifier
 	var area: Dictionary = AREA_GRAMMAR.for_area(area_id)
 	if area.is_empty():
 		area_id = "shadow_crypt"
@@ -40,7 +44,12 @@ func generate(seed: int, area_id := "shadow_crypt", ascension := 0) -> Dictionar
 			secret_slot = rng.randi_range(0, lanes.size() - 1)
 		for slot in lanes.size():
 			var lane: int = int(lanes[slot])
-			var context := {"hp_ratio": 1.0, "power": float(_ascension)}
+			# Anticipated pressure grows with floor so late-route recovery /
+			# assistance branches can fire at generation time (live HP is
+			# unknown until mid-run; RunState still passes real hp_ratio then).
+			var context := {
+				"hp_ratio": clampf(1.0 - float(floor) * 0.09, 0.32, 1.0),
+				"power": float(_ascension)}
 			var kind := ("elite" if is_miniboss else "event" if authored_kind == "event" else
 					"campfire" if authored_kind == "recovery" and slot == noncombat_slot else
 					"treasure" if slot == secret_slot else
@@ -110,8 +119,19 @@ func _decorate_contract(node: Dictionary, rng: RunRng,
 		if str(modifier_id) not in pool:
 			pool.append(str(modifier_id))
 	var count := 2 if kind == "elite" else (1 if floor <= 2 else rng.randi_range(1, 2))
-	if _ascension >= 3 and floor >= 3:
-		count = mini(count + 1, 3)
+	# Daily twist: the authored modifier leads every battle of the day.
+	if not _forced_modifier.is_empty() \
+			and GameState.modifiers.has(_forced_modifier):
+		node.contract.modifier_ids.append(_forced_modifier)
+		count = maxi(count, 1)
+	var ascension := AscensionRules.new().active(_ascension)
+	if int(ascension.extra_modifier) > 0 and floor >= 3:
+		count = mini(count + int(ascension.extra_modifier), 3)
+	# "Fractured Flask": late battles may open with one concealed layer.
+	if int(ascension.late_hidden_layer) > 0 and floor >= 5 \
+			and "hidden_layer" not in node.contract.modifier_ids \
+			and rng.randf() < 0.5:
+		node.contract.modifier_ids.append("hidden_layer")
 	while node.contract.modifier_ids.size() < count:
 		var id := str(pool[rng.randi_range(0, pool.size() - 1)])
 		if id not in node.contract.modifier_ids: node.contract.modifier_ids.append(id)

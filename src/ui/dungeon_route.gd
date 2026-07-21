@@ -109,7 +109,7 @@ func _rebuild_graph_nodes() -> void:
 		var disclosure := disclosure_state(str(node.id))
 		var button := Button.new()
 		button.name = "GraphNode_" + str(node.id)
-		button.custom_minimum_size = Vector2(148, 70)
+		button.custom_minimum_size = Vector2(162, 76)
 		button.size = button.custom_minimum_size
 		button.text = ""
 		# Preserve taps while allowing swipe gestures to bubble into the route
@@ -163,15 +163,16 @@ func _populate_graph_card(button: Button, node: Dictionary) -> void:
 		mystery_rune.custom_minimum_size = Vector2(40, 40)
 		icon_holder.add_child(mystery_rune)
 	var copy := VBoxContainer.new()
-	copy.position = Vector2(62, 11)
-	copy.size = Vector2(80, 48)
-	copy.add_theme_constant_override("separation", -2)
+	copy.position = Vector2(62, 9)
+	copy.size = Vector2(94, 58)
+	copy.add_theme_constant_override("separation", -1)
 	copy.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(copy)
 	var heading := kind.to_upper() if revealed else (
 			str(node.get("reveal_kind", "PATH")).to_upper()
 			if disclosure == "mystery" else "UNCHARTED")
-	var kind_label := UiKit.label(heading, 11, _graph_color(node))
+	# Font sizes stay >= 12 so route decisions are readable on phone screens.
+	var kind_label := UiKit.label(heading, 14, _graph_color(node))
 	kind_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	copy.add_child(kind_label)
 	var detail_text := "CHAMBER" if revealed else (
@@ -181,7 +182,7 @@ func _populate_graph_card(button: Button, node: Dictionary) -> void:
 		detail_text = str(GameState.enemies.get(str(node.enemy), {}).get("name", "Unknown"))
 	elif revealed and node.has("event_id"):
 		detail_text = str(node.event_id).replace("_", " ")
-	var detail := UiKit.label(detail_text.to_upper(), 9, UiKit.COLOR_TEXT_DIM)
+	var detail := UiKit.label(detail_text.to_upper(), 12, UiKit.COLOR_TEXT_DIM)
 	detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	detail.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	copy.add_child(detail)

@@ -28,6 +28,10 @@ func inspect(snapshot: Dictionary) -> Dictionary:
 		if int(counts[color]) % capacity != 0:
 			return _report("recoverable", "incomplete_color_set")
 	var analysis := BoardSolver.analyze(state, 50000, capacity)
+	if str(analysis.get("status", "")) == BoardSolver.STATUS_EXHAUSTED:
+		# Unknown is not stuck: keep the standard remix price instead of
+		# handing out free emergency recoveries on merely complex boards.
+		return _report("valid", "budget_exhausted", analysis)
 	if not bool(analysis.get("solvable", false)):
 		return _report("recoverable", "unsolvable", analysis)
 	return _report("valid", "", analysis)

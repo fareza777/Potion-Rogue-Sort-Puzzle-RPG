@@ -47,10 +47,12 @@ func apply(event_id: String, choice_id: String, run: Node) -> Dictionary:
 	if int(result.cost) > run.run_crystals:
 		return {"ok": false, "reason": "unaffordable"}
 	run.run_crystals -= int(result.cost)
+	# "Withered Rest" and similar Ascension rules scale event healing down.
+	var recovery_mult := AscensionRules.new().multiplier(int(run.run_ascension), "recovery_mult")
 	for effect in result.effects:
 		match str(effect.op):
-			"heal": run.heal(int(effect.value))
-			"heal_percent": run.heal(int(run.max_hp() * float(effect.value)))
+			"heal": run.heal(roundi(int(effect.value) * recovery_mult))
+			"heal_percent": run.heal(roundi(run.max_hp() * float(effect.value) * recovery_mult))
 			"damage": run.player_hp = max(1, run.current_hp() - int(effect.value))
 			"crystals": run.run_crystals += int(effect.value)
 			"cleanse": run.cleanse_curse(int(effect.value))

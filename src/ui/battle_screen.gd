@@ -168,8 +168,10 @@ func _ready() -> void:
 		tutorial_overlay = Tutorial.new(); add_child(tutorial_overlay)
 		tutorial_overlay.setup(self, tutorial_director, _tutorial_target)
 	board.move_made.connect(_checkpoint_encounter_deferred)
+	# Replay stores the pour delta, not the whole board: full states balloon
+	# every checkpoint write, and remix/undo events already anchor full boards.
 	board.move_made.connect(func() -> void:
-		RunState.record_replay("move", {"board":board.export_state()}))
+		RunState.record_replay("move", board.last_pour))
 	board.tube_completed.connect(func(_color: String) -> void: _checkpoint_encounter_deferred())
 	_checkpoint_encounter()
 	_refresh()
@@ -424,6 +426,12 @@ func _on_skill_pressed() -> void:
 		"purify":
 			battle.shield = mini(battle.max_shield, battle.shield + 12)
 			RunState.cleanse_curse(1)
+		"foresight":
+			battle.shield = mini(battle.max_shield, battle.shield + 8)
+		"blood_price":
+			# Sacrifice fuel: the alchemist trades HP for burst damage.
+			battle.player_hp = maxi(battle.player_hp - 4, 1)
+			battle.deal_skill_damage(15)
 	battle_fx.play_combo(2, Color("6edcff")); _set_message("ACTIVE SKILL — " + skill_id.replace("_", " ").to_upper())
 	_checkpoint_encounter()
 	_refresh()
@@ -860,6 +868,7 @@ func _on_potion_activated(color: String, text: String) -> void:
 func _on_pour_presented(from: Vector2, to: Vector2, color: String, count: int) -> void:
 	var style := VisualRegistry.potion(color)
 	battle_fx.pour(from, to, style.get("glow", Color.WHITE), count)
+	AudioManager.haptic("pour")
 
 
 func _on_enemy_damaged(amount: int) -> void:
@@ -1055,7 +1064,13 @@ func _on_relic_picked(id: String) -> void:
 
 
 func _on_upgrade_picked(id: String) -> void:
+	var first_reward := RunState.upgrade_ids.is_empty()
 	RunState.pick_upgrade(id)
+	# "Cursed Draft": at high Ascension the first claimed reward binds a curse.
+	if first_reward and AscensionRules.new().addition(RunState.run_ascension,
+			"reward_curse") > 0:
+		RunState.active_curses += 1
+		_set_message("The cursed draft clings to your first prize.")
 	# Instant-effect extras carried by some upgrades (e.g. Vital Tonic).
 	var heal_now := int(RunState.upgrade_pool.get(id, {}).get("heal_now", 0))
 	if heal_now > 0:

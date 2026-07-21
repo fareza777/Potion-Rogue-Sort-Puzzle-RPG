@@ -32,7 +32,8 @@ func _ready() -> void:
 		var choice: Dictionary = event.choices[choice_id]
 		var summary := resolver.choice_summary(event_id, str(choice_id))
 		var button := UiKit.ornate_button("%s\n%s" % [str(choice.label).to_upper(), summary],
-				Vector2(560, 88))
+				Vector2(560, 108))
+		button.add_theme_font_size_override("font_size", 20)
 		button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		button.pressed.connect(_choose.bind(str(choice_id))); choice_box.add_child(button)
 

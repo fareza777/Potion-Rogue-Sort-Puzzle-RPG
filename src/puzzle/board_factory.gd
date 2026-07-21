@@ -81,7 +81,12 @@ static func remix(state: Array, seed: int, requested_band := "standard",
 	for color in colors:
 		if not color in unique_colors:
 			unique_colors.append(color)
-	if not _forms_complete_color_sets(colors, unique_colors, capacity):
+	# A single-color remainder (e.g. one full purple set left by a corruption
+	# layer) can never form a playable one-color puzzle: every reshuffle is a
+	# complete tube or a no-op. Route it through recovery, which pads the
+	# palette to two verified colors, instead of falling back to the old board.
+	if unique_colors.size() < 2 \
+			or not _forms_complete_color_sets(colors, unique_colors, capacity):
 		var recovered := _recovery_remix(seed, requested_band, unique_colors,
 				capacity, tube_count)
 		if not recovered.is_empty():

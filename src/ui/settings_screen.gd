@@ -54,6 +54,9 @@ func _ready() -> void:
 	var reduced_row := _make_toggle_row("REDUCED EFFECTS", "reduced_effects",
 			"Shorter flashes, no camera shake, and fewer particles.")
 	reduced_row.name = "ReducedEffectsRow"; rows.add_child(reduced_row)
+	var sigil_row := _make_toggle_row("POTION SIGILS", "color_patterns",
+			"Marks every potion color with a unique symbol for colorblind play.")
+	sigil_row.name = "PotionSigilsRow"; rows.add_child(sigil_row)
 	var text_scale_row := _make_text_scale_row()
 	text_scale_row.name = "TextScaleRow"; rows.add_child(text_scale_row)
 	var contrast_row := _make_toggle_row("HIGH CONTRAST", "high_contrast",

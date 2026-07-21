@@ -25,6 +25,7 @@ func _ready() -> void:
 	_test_generation_variety()
 	_test_generation_property()
 	_test_remix_multiset()
+	_test_remix_single_color_remainder()
 	_test_remix_fallback_shape()
 	_test_puzzle_board_remix_routing()
 	print("---")
@@ -129,6 +130,29 @@ func _test_remix_multiset() -> void:
 			"remix preserves the color multiset on a verified board")
 
 
+func _test_remix_single_color_remainder() -> void:
+	# A corruption layer or replace_top hazard can leave exactly one full color
+	# set on the board (e.g. four purple in one tube). One color can never form
+	# a playable puzzle, so New Mix must recover with a padded verified palette
+	# rather than echoing the stuck board back.
+	var cases := {
+		"one full tube": [["purple", "purple", "purple", "purple"], [], [], [], [], []],
+		"split complete set": [["purple", "purple"], ["purple", "purple"], [], [], [], []],
+		"three-unit remainder": [["purple", "purple", "purple"], [], [], [], [], []],
+	}
+	for label in cases:
+		var all_playable := true
+		for seed in 25:
+			var result := BoardFactory.remix((cases[label] as Array).duplicate(true),
+					seed, "standard")
+			var independent := BoardSolver.analyze(result.state)
+			all_playable = all_playable and bool(result.analysis.solvable) \
+					and independent.solvable and independent.estimated_moves > 0 \
+					and not _is_complete(result.state)
+		check(all_playable,
+				"single-color remainder (%s) always remixes into a playable board" % label)
+
+
 func _test_remix_fallback_shape() -> void:
 	var exhausted: Array = [["red", "blue"], ["blue", "red"]]
 	var first := BoardFactory.remix(exhausted, 73, "hard")
@@ -154,7 +178,8 @@ func _test_puzzle_board_remix_routing() -> void:
 	check(has_route and _colors(board.export_state()) == _colors(partial) \
 			and BoardSolver.analyze(board.export_state()).solvable,
 			"PuzzleBoard New Mix preserves and independently verifies live colors")
-	check(battle_source.contains("board.remix_board()") \
+	check(battle_source.contains("remix_jobs.request(") \
+			and battle_source.contains("apply_remix_result(") \
 			and battle_source.contains("battle.on_move()") \
 			and battle_source.contains("_checkpoint_encounter()"),
 			"production New Mix routes through remix and retains its move/checkpoint")

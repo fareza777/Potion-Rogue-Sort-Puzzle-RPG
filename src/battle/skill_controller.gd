@@ -42,6 +42,12 @@ func cast(skill_id: String, target: Dictionary) -> Dictionary:
 		if _board == null or not _board.apply_board_command({"type":"replace_top",
 				"tube":int(target.get("tube", -1)), "color":"wild"}):
 			return {"ok": false, "reason": "invalid_target"}
+	elif skill_id == "foresight":
+		# Reveals every concealed layer on the board.
+		if _board != null:
+			for tube in _board.tubes:
+				for layer in tube.contents.size():
+					tube.remove_layer_effect(layer, "hidden")
 	var kit: Dictionary = GameState.kits[kit_id]
 	mana -= int(kit.get("cost", 0))
 	_cooldowns[skill_id] = int(kit.get("cooldown", 1))
@@ -75,6 +81,12 @@ func cast_ultimate(_context: Dictionary) -> Dictionary:
 		"void_brewer":
 			return {"ok": true, "effect_id": "void_distill", "poison": 9,
 					"poison_turns": 4, "delay": 1, "wild_layer": true}
+		"tide_oracle":
+			return {"ok": true, "effect_id": "riptide", "damage": 18,
+					"shield": 12, "delay": 2}
+		"marrow_alchemist":
+			return {"ok": true, "effect_id": "marrow_feast", "damage": 26,
+					"heal": 14, "poison": 5, "poison_turns": 3}
 		_:
 			return {"ok": true, "effect_id": "inferno_break", "damage": 42,
 					"break_armor": 999}

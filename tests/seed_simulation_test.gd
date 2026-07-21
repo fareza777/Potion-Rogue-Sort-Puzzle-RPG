@@ -10,7 +10,9 @@ func _ready() -> void:
 	get_tree().quit(1 if failures else 0)
 
 func _content_contracts() -> void:
-	check(GameState.kits.size() == 3, "three starting kits")
+	check(GameState.kits.size() == 5, "five starting kits")
+	check(GameState.kits.has("tide_oracle") and GameState.kits.has("marrow_alchemist"),
+			"tide oracle and marrow alchemist kits are registered")
 	check(GameState.objectives.size() == 5, "five encounter objectives")
 	check(GameState.modifiers.size() == 12, "twelve puzzle modifiers")
 	check(GameState.load_data_file("mutations.json", {}).size() == 24, "twenty-four mutations")

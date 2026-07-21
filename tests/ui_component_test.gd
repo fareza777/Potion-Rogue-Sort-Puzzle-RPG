@@ -14,11 +14,19 @@ func _ready() -> void:
 			"action icon button is large and illustrated")
 	check(action.has_theme_stylebox_override("focus"), "action buttons have visible focus state")
 	var nav := BottomNav.new()
+	add_child(nav)
 	for id in ["hero", "upgrades", "home", "map", "settings"]:
 		nav.add_item(id, id.capitalize(), Callable(), id == "home")
-	check(nav.get_child_count() == 5, "Hall nav owns five consistently aligned destinations")
-	var registry := VisualRegistry
-	check(ResourceLoader.exists(registry.ui_icon("undo")) and ResourceLoader.exists(registry.ui_icon("home")),
+	var nav_row := nav.get_node_or_null("NavRow") as HBoxContainer
+	check(nav_row != null and nav_row.get_child_count() == 5,
+			"Hall nav owns five consistently aligned destinations")
+	check(ResourceLoader.exists(VisualRegistry.ui_icon("areas")) \
+			and ResourceLoader.exists(VisualRegistry.ui_icon("build")) \
+			and ResourceLoader.exists(VisualRegistry.ui_icon("history")) \
+			and ResourceLoader.exists(VisualRegistry.ui_icon("credits")),
+			"generated expedition nav medallions resolve")
+	check(ResourceLoader.exists(VisualRegistry.ui_icon("undo")) \
+			and ResourceLoader.exists(VisualRegistry.ui_icon("home")),
 			"generated Hall and battle art resolves")
 	var hall := FileAccess.get_file_as_string("res://src/ui/main_menu.gd")
 	check(hall.contains("BottomNav.new()"), "Hall consumes reusable bottom navigation")

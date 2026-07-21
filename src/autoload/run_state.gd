@@ -103,16 +103,35 @@ func start_new_run(selected_kit := "ember_adept", selected_area_id := "",
 	var requested_seed := forced_seed if forced_seed != 0 else pending_run_seed
 	run_seed = requested_seed if requested_seed != 0 else \
 			int(Time.get_unix_time_from_system() * 1000000.0) ^ Time.get_ticks_usec()
+	# Daily and Weekly runs are authored packages, not just a shared seed:
+	# dailies inject one deterministic board twist into every battle, weeklies
+	# fix the kit so scores within a week stay comparable.
+	var daily_twist := ""
+	if run_mode == "daily":
+		daily_twist = str(MetaProgression.new().daily_spec(
+				Time.get_date_string_from_system(true)).get("twist", ""))
+	elif run_mode == "weekly":
+		var weekly := MetaProgression.new().weekly_spec(
+				MetaProgression.new().current_week_key())
+		if GameState.kits.has(str(weekly.get("kit_id", ""))):
+			kit_id = str(weekly.kit_id)
 	_run_rng.configure(run_seed ^ 0x51ed270b)
 	_replay_journal.clear()
 	_replay_journal.record("run_started", {"seed":run_seed, "area":area_id,
-			"mode":run_mode, "ascension":run_ascension, "kit":kit_id})
-	run_graph = RunGenerator.new().generate(run_seed, area_id, run_ascension)
+			"mode":run_mode, "ascension":run_ascension, "kit":kit_id,
+			"twist":daily_twist})
+	run_graph = RunGenerator.new().generate(run_seed, area_id, run_ascension,
+			daily_twist)
 	current_node_id = str(run_graph.get("start", "f0_l1"))
 	if run_mode == "rematch":
 		for node in run_graph.get("nodes", []):
 			if str(node.get("kind", "")) == "boss":
 				current_node_id = str(node.get("id", current_node_id)); phase = PHASE_BATTLE; break
+	# Mastery perks reward long-term play in normal runs; challenge modes stay
+	# on a level field.
+	if run_mode in ["normal", "rematch"]:
+		run_crystals += int(MetaProgression.new().mastery_perks(area_id).get(
+				"start_crystals", 0))
 	active = true
 	SaveSystem.bump_stat("runs_started")
 	SaveSystem.record_area_depth(area_id, 0)
@@ -186,10 +205,34 @@ func select_node(id: String) -> bool:
 	current["visited"] = true
 	current_node_id = id
 	ensure_current_encounter_profile()
+	_adapt_route_to_condition()
 	record_replay("route_selected", {"node_id":id})
 	var kind := str(current_node().get("kind", "battle"))
 	checkpoint(PHASE_BATTLE if kind in ["battle", "elite", "boss"] else PHASE_EVENT)
 	return true
+
+
+## Adaptive pacing: a struggling player finds a rest site ahead. Deterministic
+## (first eligible node), additive-only (never removes content), and marked so
+## the map can show it honestly.
+func _adapt_route_to_condition() -> void:
+	var ratio := float(current_hp()) / float(maxi(max_hp(), 1))
+	if ratio > 0.35:
+		return
+	var next_floor := int(current_node().get("floor", 0)) + 1
+	for node in run_graph.get("nodes", []):
+		if int(node.get("floor", -1)) != next_floor:
+			continue
+		if str(node.get("kind", "")) != "event" or bool(node.get("visited", false)) \
+				or bool(node.get("adapted", false)):
+			continue
+		node["kind"] = "campfire"
+		node["reveal_kind"] = "REST"
+		node["event_id"] = "ember_camp"
+		node["adapted"] = true
+		record_replay("route_adapted", {"node_id": str(node.get("id", "")),
+				"hp_ratio": ratio})
+		return
 
 
 func checkpoint(next_phase: String, payload := {}) -> void:
@@ -529,7 +572,9 @@ func complete_battle(hp_left: int, crystals_reward: int) -> Dictionary:
 		MetaProgression.new().add_area_mastery(area_id, 30 + run_ascension * 5)
 		if run_mode == "normal" and MetaProgression.new().ascension_unlocked():
 			MetaProgression.new().record_ascension_clear(run_ascension)
-		if run_mode == "daily": MetaProgression.new().complete_daily(Time.get_date_string_from_system(true))
+		if run_mode == "daily": MetaProgression.new().complete_daily(
+				Time.get_date_string_from_system(true),
+				int(current_area().get("run_length", 7)), run_crystals)
 		if run_mode == "weekly": MetaProgression.new().complete_weekly(
 				MetaProgression.new().current_week_key(), 1000 + run_crystals * 10)
 		var result := SaveSystem.complete_area(area_id)

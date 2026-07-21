@@ -16,6 +16,48 @@ func current_week_key() -> String:
 	return "W%d" % int(floor(Time.get_unix_time_from_system() / 604800.0))
 
 
+## Twists a battle contract can carry. Kept to board-modifier ids that exist
+## in data/modifiers.json so the package is honest and testable.
+const DAILY_TWISTS := ["cursed_layer", "volatile_liquid", "wild_essence",
+		"chain_lock", "hidden_layer", "unstable_flask", "corruption",
+		"frozen_tube"]
+
+
+## The authored identity of a calendar day: same date, same package, for
+## everyone. Locked realms fall back to the player's furthest unlocked realm
+## so the challenge is always playable; the UI labels the realm truthfully.
+func daily_spec(date_text: String) -> Dictionary:
+	var seed := daily_seed(date_text)
+	var areas := GameState.area_ids()
+	var target_area := str(areas[posmod(seed, areas.size())]) \
+			if not areas.is_empty() else "shadow_crypt"
+	if not SaveSystem.is_area_unlocked(target_area):
+		for candidate in areas:
+			if SaveSystem.is_area_unlocked(str(candidate)):
+				target_area = str(candidate)
+	var twist := str(DAILY_TWISTS[posmod(seed / 7, DAILY_TWISTS.size())])
+	return {"seed": seed, "area_id": target_area, "twist": twist,
+			"twist_name": str(GameState.modifiers.get(twist, {}).get("name", twist))}
+
+
+## Weekly expedition: fixed realm AND fixed kit, so scores within a week are
+## comparable across attempts.
+func weekly_spec(week_key: String) -> Dictionary:
+	var seed := weekly_seed(week_key)
+	var areas := GameState.area_ids()
+	var target_area := str(areas[posmod(seed, areas.size())]) \
+			if not areas.is_empty() else "shadow_crypt"
+	if not SaveSystem.is_area_unlocked(target_area):
+		for candidate in areas:
+			if SaveSystem.is_area_unlocked(str(candidate)):
+				target_area = str(candidate)
+	var kit_ids := GameState.kits.keys()
+	kit_ids.sort()
+	var kit := str(kit_ids[posmod(seed / 11, kit_ids.size())]) \
+			if not kit_ids.is_empty() else "ember_adept"
+	return {"seed": seed, "area_id": target_area, "kit_id": kit}
+
+
 func record_run(summary: Dictionary) -> void:
 	var record := summary.duplicate(true)
 	record["recorded_at"] = int(Time.get_unix_time_from_system())
@@ -58,6 +100,33 @@ func area_mastery_rank(area_id: String) -> int:
 	var xp := int((SaveSystem.data.get("area_mastery", {}) as Dictionary).get(
 			area_id, {}).get("xp", 0))
 	return mini(xp / 30, 10)
+
+
+## Mastery rank thresholds and what each one unlocks, per realm. Perks apply
+## to normal runs and rematches only; Daily/Weekly stay comparable for everyone.
+const MASTERY_UNLOCKS := [
+	{"rank": 2, "label": "+10 starting run crystals"},
+	{"rank": 4, "label": "+1 undo per battle"},
+	{"rank": 6, "label": "+15 more starting run crystals"},
+	{"rank": 9, "label": "+1 more undo per battle"},
+]
+
+
+func mastery_perks(area_id: String) -> Dictionary:
+	var rank := area_mastery_rank(area_id)
+	return {
+		"start_crystals": (10 if rank >= 2 else 0) + (15 if rank >= 6 else 0),
+		"extra_undos": (1 if rank >= 4 else 0) + (1 if rank >= 9 else 0),
+	}
+
+
+func next_mastery_unlock(area_id: String) -> String:
+	var rank := area_mastery_rank(area_id)
+	for unlock in MASTERY_UNLOCKS:
+		if rank < int(unlock.rank):
+			return "RANK %d UNLOCKS %s" % [int(unlock.rank),
+					str(unlock.label).to_upper()]
+	return "ALL MASTERY PERKS UNLOCKED"
 
 
 func complete_weekly(week_key: String, score: int) -> int:
@@ -105,7 +174,9 @@ func daily_claimed(date_text: String) -> bool:
 	return str((SaveSystem.data.get("daily", {}) as Dictionary).get("last_claim", "")) == date_text
 
 
-func complete_daily(date_text: String) -> int:
+## Records a REAL daily result: the depth actually reached and a score built
+## from run performance, not hardcoded placeholders.
+func complete_daily(date_text: String, depth := 7, run_crystals := 0) -> int:
 	if daily_claimed(date_text):
 		return 0
 	var daily: Dictionary = SaveSystem.data.get("daily", {}).duplicate(true)
@@ -113,8 +184,9 @@ func complete_daily(date_text: String) -> int:
 	daily["streak"] = int(daily.get("streak", 0)) + 1 if previous != date_text else int(daily.get("streak", 0))
 	daily["last_claim"] = date_text
 	daily["last_played"] = date_text
-	daily["best_depth"] = maxi(int(daily.get("best_depth", 0)), 7)
-	daily["score"] = maxi(int(daily.get("score", 0)), 1000 + int(daily.streak) * 100)
+	daily["best_depth"] = maxi(int(daily.get("best_depth", 0)), maxi(depth, 0))
+	daily["score"] = maxi(int(daily.get("score", 0)),
+			depth * 100 + run_crystals * 10 + int(daily.streak) * 50)
 	SaveSystem.data["daily"] = daily
 	SaveSystem.add_crystals(15)
 	return 15

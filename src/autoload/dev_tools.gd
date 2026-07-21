@@ -38,6 +38,9 @@ func _ready() -> void:
 			# Capture-only memory mutation; intentionally does not call save().
 			SaveSystem.data["tutorial_done"] = true
 			SaveSystem.data["tutorial_state"] = "complete"
+		elif arg == "--sigils":
+			# Capture-only: preview the colorblind sigil overlay.
+			(SaveSystem.data.get("settings", {}) as Dictionary)["color_patterns"] = true
 	if not requested_area.is_empty() or not requested_phase.is_empty() \
 			or not requested_enemy.is_empty() or requested_battle_index >= 0:
 		_prepare_area(requested_area if not requested_area.is_empty() else "shadow_crypt")

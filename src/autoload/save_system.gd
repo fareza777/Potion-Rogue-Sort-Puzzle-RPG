@@ -41,11 +41,36 @@ const DEFAULT_DATA := {
 	"selected_ascension": 0,
 }
 
+## Frequent low-stakes mutations (crystals, stats, settings sliders) mark the
+## save dirty and are written once per quiet window instead of once per call.
+## Run boundaries and app lifecycle events always flush immediately.
+const SAVE_DEBOUNCE_MS := 800
+
 var data: Dictionary = {}
+var _dirty := false
+var _dirty_since_ms := 0
 
 
 func _ready() -> void:
 	load_save()
+	set_process(true)
+
+
+func _process(_delta: float) -> void:
+	if _dirty and Time.get_ticks_msec() - _dirty_since_ms >= SAVE_DEBOUNCE_MS:
+		save()
+
+
+func _notification(what: int) -> void:
+	if what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_WM_CLOSE_REQUEST]:
+		if _dirty:
+			save()
+
+
+func request_save() -> void:
+	if not _dirty:
+		_dirty_since_ms = Time.get_ticks_msec()
+	_dirty = true
 
 
 func load_save() -> void:
@@ -165,6 +190,7 @@ func migrate(source: Dictionary) -> Dictionary:
 
 
 func save() -> bool:
+	_dirty = false
 	var succeeded := write_atomic(data, SAVE_PATH)
 	if not succeeded:
 		push_warning("Could not write save file.")
@@ -176,7 +202,9 @@ func write_atomic(payload: Dictionary, path := SAVE_PATH) -> bool:
 	var backup_path: String = path + ".bak"
 	var temp := FileAccess.open(temp_path, FileAccess.WRITE)
 	if temp == null: return false
-	temp.store_string(JSON.stringify(payload, "\t"))
+	# Compact JSON: pretty-printing roughly doubles write size for zero
+	# player value, and this file is rewritten at every checkpoint.
+	temp.store_string(JSON.stringify(payload))
 	temp.flush()
 	temp.close()
 	if parse_save_text(_read_text(temp_path)).is_empty():
@@ -217,14 +245,14 @@ func crystals() -> int:
 
 func add_crystals(amount: int) -> void:
 	data["crystals"] = crystals() + amount
-	save()
+	request_save()
 
 
 func spend_crystals(amount: int) -> bool:
 	if crystals() < amount:
 		return false
 	data["crystals"] = crystals() - amount
-	save()
+	request_save()
 	return true
 
 
@@ -238,7 +266,7 @@ func raise_perma_level(id: String) -> void:
 	var perma: Dictionary = data.get("perma", {})
 	perma[id] = perma_level(id) + 1
 	data["perma"] = perma
-	save()
+	request_save()
 
 
 # --- Settings & flags ---------------------------------------------------------
@@ -252,7 +280,7 @@ func set_setting(key: String, value: Variant) -> void:
 	var settings: Dictionary = data.get("settings", {})
 	settings[key] = value
 	data["settings"] = settings
-	save()
+	request_save()
 
 
 func is_tutorial_done() -> bool:
@@ -279,7 +307,7 @@ func tutorial_step() -> int:
 func set_tutorial_step(step: int) -> void:
 	data["tutorial_state"] = "active"
 	data["tutorial_step"] = maxi(step, 0)
-	save()
+	request_save()
 
 
 func complete_tutorial() -> void:
@@ -310,7 +338,7 @@ func bump_stat(stat_name: String, amount := 1) -> void:
 	var stats: Dictionary = data.get("stats", {})
 	stats[stat_name] = int(stats.get(stat_name, 0)) + amount
 	data["stats"] = stats
-	save()
+	request_save()
 
 
 func save_run_boundary(run_data: Dictionary) -> bool:
@@ -383,7 +411,7 @@ func record_area_depth(area_id: String, depth: int) -> void:
 	stats["best_depth"] = maxi(int(stats.get("best_depth", 0)), depth)
 	all_stats[area_id] = stats
 	data["area_stats"] = all_stats
-	save()
+	request_save()
 
 
 func complete_area(area_id: String) -> Dictionary:

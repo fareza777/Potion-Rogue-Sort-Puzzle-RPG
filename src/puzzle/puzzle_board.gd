@@ -22,6 +22,9 @@ const LAYOUT_COLUMNS := 6
 var tubes: Array[PotionTube] = []
 var selected_tube: PotionTube = null
 var enabled := true
+## Compact record of the most recent pour, for replay journaling. Storing the
+## delta instead of the whole board keeps checkpoint writes small.
+var last_pour: Dictionary = {}
 var _tube_size := TUBE_SIZE
 
 ## Undo history entries: {"from": PotionTube, "to": PotionTube, "count": int}.
@@ -150,7 +153,11 @@ func try_board_commands(commands: Array[Dictionary]) -> bool:
 		if not apply_board_command(command):
 			restore_snapshot(before)
 			return false
-	if not BoardSolver.has_solution(export_state(), PotionTube.CAPACITY):
+	# Combat hazards run on the render thread, so use a small search budget
+	# and only reject boards PROVEN unsolvable. An exhausted budget means
+	# "unknown", and rejecting those would make abilities fail on slow phones.
+	if not BoardSolver.is_not_proven_unsolvable(export_state(),
+			PotionTube.CAPACITY, 8000):
 		restore_snapshot(before)
 		return false
 	_undo_stack.clear()
@@ -426,8 +433,11 @@ func _try_pour(from_tube: PotionTube, to_tube: PotionTube) -> bool:
 		to_tube.layer_effects.append(moved_effects)
 	from_tube.queue_redraw()
 	to_tube.queue_redraw()
+	from_tube.play_pour_tilt(signf(to_global.x - from_global.x))
 
 	_undo_stack.append({"from": from_tube, "to": to_tube, "count": count})
+	last_pour = {"from": tubes.find(from_tube), "to": tubes.find(to_tube),
+			"color": poured_color, "count": count}
 	_tick_locks()
 	move_made.emit()
 	pour_presented.emit(from_global, to_global, poured_color, count)

@@ -8,11 +8,10 @@ var _rows_box: VBoxContainer
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
-	UiKit.battle_background(self,
-			"res://assets/art/backgrounds/shadow_crypt_battle.png")
+	UiKit.battle_background(self, VisualRegistry.background("main_hall"))
 	var shade := ColorRect.new()
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	shade.color = Color(0.015, 0.01, 0.025, 0.58)
+	shade.color = Color(0.012, 0.008, 0.03, 0.62)
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(shade)
 

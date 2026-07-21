@@ -144,12 +144,26 @@ static func ornate_button(text: String, min_size := Vector2(340, 72),
 	var texture := VisualRegistry.texture_or_null("res://assets/art/ui/battle_panel.png")
 	if texture == null:
 		return b
+	# Expand-fill CTAs pass width 0; treat them as wide enough for the ornate
+	# frame so they do not fall back to the flat purple box style.
+	var frame_width := min_size.x if min_size.x > 0.0 else 340.0
+	if frame_width < 200.0:
+		return _accent_chip(b, accent)
+	# Dark outline keeps gold text legible over the busy frame texture.
+	b.add_theme_color_override("font_color", Color("fff6d8"))
+	b.add_theme_color_override("font_hover_color", Color.WHITE)
+	b.add_theme_color_override("font_pressed_color", Color("f1d69a"))
+	b.add_theme_color_override("font_disabled_color", Color("8a8198"))
+	b.add_theme_color_override("font_outline_color", Color(0.07, 0.03, 0.11, 0.92))
+	b.add_theme_constant_override("outline_size", 7)
+	var warm := Color(accent.r * 0.35 + 0.65, accent.g * 0.28 + 0.55,
+			accent.b * 0.18 + 0.40)
 	var state_tints := {
-		"normal": Color("eee5d4"),
-		"hover": Color("fff5cf"),
-		"pressed": Color("c8b58c"),
-		"focus": Color("fff5cf"),
-		"disabled": Color("8d8583"),
+		"normal": warm,
+		"hover": warm.lightened(0.12),
+		"pressed": warm.darkened(0.12),
+		"focus": warm.lightened(0.12),
+		"disabled": Color("6a6570"),
 	}
 	for state in state_tints:
 		var style := StyleBoxTexture.new()
@@ -159,11 +173,92 @@ static func ornate_button(text: String, min_size := Vector2(340, 72),
 		style.texture_margin_right = 76.0
 		style.texture_margin_top = 58.0
 		style.texture_margin_bottom = 58.0
-		style.content_margin_left = 28.0
-		style.content_margin_right = 28.0
+		style.content_margin_left = 22.0
+		style.content_margin_right = 22.0
 		style.content_margin_top = 10.0
 		style.content_margin_bottom = 10.0
 		b.add_theme_stylebox_override(state, style)
+	return b
+
+
+## Compact mode chips (Daily / Weekly / History) — gold rim, no flat purple slab.
+static func _accent_chip(b: Button, accent: Color) -> Button:
+	b.add_theme_color_override("font_color", Color("fff4dc"))
+	b.add_theme_color_override("font_hover_color", Color.WHITE)
+	b.add_theme_color_override("font_outline_color", accent.darkened(0.55))
+	b.add_theme_constant_override("outline_size", 5)
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		var style := StyleBoxFlat.new()
+		style.bg_color = accent.darkened(0.55 if state == "normal" else 0.42)
+		if state == "disabled":
+			style.bg_color = Color(0.12, 0.09, 0.16, 0.9)
+		style.border_color = Color("e8c069") if state != "pressed" else Color("9f7a31")
+		style.set_border_width_all(2)
+		style.set_corner_radius_all(14)
+		style.content_margin_left = 12
+		style.content_margin_right = 12
+		style.content_margin_top = 8
+		style.content_margin_bottom = 8
+		style.shadow_color = Color(accent, 0.35)
+		style.shadow_size = 6 if state == "hover" else 3
+		b.add_theme_stylebox_override(state, style)
+	return b
+
+
+## Full-width call-to-action for use INSIDE an ornate panel. Avoids stacking
+## a second battle_panel frame on top of the card frame.
+static func cta_bar(text: String, accent := COLOR_GOLD, height := 58.0) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.custom_minimum_size = Vector2(0, maxf(height, UiThemeTokens.TOUCH_MIN))
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	b.clip_text = true
+	b.focus_mode = Control.FOCUS_ALL
+	b.pressed.connect(func() -> void:
+		var audio := _audio()
+		if audio != null:
+			audio.play("click"))
+	b.add_theme_font_override("font", title_font())
+	b.add_theme_font_size_override("font_size", 24)
+	b.add_theme_color_override("font_color", Color("fff7df"))
+	b.add_theme_color_override("font_hover_color", Color.WHITE)
+	b.add_theme_color_override("font_pressed_color", Color("f1d69a"))
+	b.add_theme_color_override("font_disabled_color", Color("675c6f"))
+	b.add_theme_color_override("font_outline_color", accent.darkened(0.65))
+	b.add_theme_constant_override("outline_size", 6)
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		var style := StyleBoxFlat.new()
+		match state:
+			"hover":
+				style.bg_color = accent.darkened(0.28)
+			"pressed":
+				style.bg_color = accent.darkened(0.48)
+			"disabled":
+				style.bg_color = Color(0.10, 0.07, 0.14, 0.92)
+			_:
+				style.bg_color = accent.darkened(0.38)
+		style.border_color = Color("f2cc68") if state != "disabled" \
+				else Color("5a4f3a")
+		style.set_border_width_all(2)
+		style.set_corner_radius_all(11)
+		style.content_margin_left = 18
+		style.content_margin_right = 18
+		style.content_margin_top = 8
+		style.content_margin_bottom = 8
+		style.shadow_color = Color(accent, 0.40)
+		style.shadow_size = 8 if state == "hover" else 4
+		b.add_theme_stylebox_override(state, style)
+	# Thin gold filigree line via banner overlay when available.
+	var ornament := TextureRect.new()
+	ornament.name = "CtaOrnament"
+	ornament.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ornament.texture = VisualRegistry.texture_or_null(
+			"res://assets/art/ui/banner_turn.png")
+	ornament.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	ornament.stretch_mode = TextureRect.STRETCH_SCALE
+	ornament.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ornament.modulate = Color(1.0, 0.92, 0.70, 0.55)
+	b.add_child(ornament)
 	return b
 
 

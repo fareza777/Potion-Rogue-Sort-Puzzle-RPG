@@ -78,16 +78,25 @@ func setup(new_enemy_id: String) -> void:
 	enemy_color = str(e.get("color", "6fce4e"))
 	var threat_scale := maxf(float(RunState.current_contract().get("threat", {}).get(
 			"enemy_scale", 1.0)), 0.5)
-	enemy_max_hp = roundi(float(e.get("hp", 60)) * threat_scale)
+	# Authored Ascension rules (data/ascension_rules.json) apply on top of the
+	# generic threat curve so each ladder level changes real decisions.
+	var ascension := AscensionRules.new().active(RunState.run_ascension)
+	var kind := str(RunState.current_battle().get("kind", "battle"))
+	enemy_max_hp = roundi(float(e.get("hp", 60)) * threat_scale \
+			* float(ascension.enemy_hp_mult))
 	enemy_hp = enemy_max_hp
-	enemy_armor = int(e.get("armor", 0))
+	enemy_armor = roundi(float(e.get("armor", 0)) * float(ascension.enemy_armor_mult))
 	# Damage rises more gently than vitality so later realms require stronger
 	# builds without turning a single unlucky enemy action into a run killer.
 	var damage_scale := 1.0 + (threat_scale - 1.0) * 0.35
-	enemy_attack = roundi(float(e.get("attack", 8)) * damage_scale)
+	enemy_attack = roundi(float(e.get("attack", 8)) * damage_scale) \
+			+ int(ascension.enemy_damage_add) \
+			+ (int(ascension.boss_damage_add) if kind == "boss" else 0)
 	attack_every = int(e.get("attack_every", 3)) + int(RunState.stat("enemy_delay", 0.0)) \
 			+ (1 if bool(SaveSystem.setting("assist_mode")) else 0) \
-			+ int(RunState.ensure_current_encounter_profile().get("countdown_bonus", 0))
+			+ int(RunState.ensure_current_encounter_profile().get("countdown_bonus", 0)) \
+			+ (int(ascension.elite_delay_add) if kind == "elite" else 0)
+	attack_every = maxi(attack_every, 1)
 	moves_until_attack = attack_every
 	crystals_reward = int(e.get("crystals", 5))
 	crystals_reward = roundi(float(crystals_reward) * float(
@@ -146,8 +155,12 @@ func fail_by_objective() -> void:
 
 
 func undos_allowed() -> int:
+	var mastery_bonus := 0
+	if RunState.run_mode in ["normal", "rematch"]:
+		mastery_bonus = int(MetaProgression.new().mastery_perks(
+				RunState.area_id).get("extra_undos", 0))
 	return int(RunState.stat("extra_undos",
-			float(GameState.player.get("undos_per_battle", 3))))
+			float(GameState.player.get("undos_per_battle", 3)))) + mastery_bonus
 
 
 func export_snapshot() -> Dictionary:

@@ -8,6 +8,10 @@ const KIT_COPY := {
 			"PURIFY", "Cleanse a curse and gain shield"],
 	"void_brewer": ["VOID BREWER", "Poison, wild essence and control",
 			"TRANSMUTE", "Turn one exposed layer into Wild Essence"],
+	"tide_oracle": ["TIDE ORACLE", "Foresight, shields and tempo control",
+			"FORESIGHT", "Reveal all hidden layers and gain shield"],
+	"marrow_alchemist": ["MARROW ALCHEMIST", "Sacrifice health for raw power",
+			"BLOOD PRICE", "Pay 4 HP to deal heavy damage"],
 }
 
 
@@ -27,8 +31,27 @@ func _ready() -> void:
 	root.add_child(UiKit.title_label("CHOOSE YOUR BREWER", 42))
 	root.add_child(UiKit.label("Each kit changes your active skill and ultimate.",
 			17, UiKit.COLOR_TEXT_DIM))
-	for kit_id in ["ember_adept", "verdant_warden", "void_brewer"]:
-		root.add_child(_kit_choice(kit_id))
+	if RunState.pending_run_mode == "weekly":
+		var weekly := MetaProgression.new()
+		var fixed_kit := str(weekly.weekly_spec(weekly.current_week_key()).get("kit_id", ""))
+		var kit_name := str(GameState.kits.get(fixed_kit, {}).get("name", fixed_kit))
+		var notice := UiKit.label("WEEKLY EXPEDITION — this week everyone brews as %s."
+				% kit_name.to_upper(), 14, Color("e88cff"))
+		notice.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		root.add_child(notice)
+	var kit_list := VBoxContainer.new()
+	kit_list.add_theme_constant_override("separation", 12)
+	var kit_scroll := ScrollContainer.new()
+	kit_scroll.name = "KitScroll"
+	kit_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	kit_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	kit_scroll.add_child(kit_list)
+	kit_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	root.add_child(kit_scroll)
+	for kit_id in KIT_COPY:
+		if GameState.kits.has(str(kit_id)):
+			kit_list.add_child(_kit_choice(str(kit_id)))
 	var back := UiKit.ornate_button("BACK TO HALL", Vector2(360, 64))
 	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	back.pressed.connect(func() -> void:
@@ -40,7 +63,7 @@ func _kit_choice(kit_id: String) -> PanelContainer:
 	var copy: Array = KIT_COPY[kit_id]
 	var panel := UiKit.textured_panel("res://assets/art/ui/battle_panel.png", 22)
 	panel.name = "KitChoice"
-	panel.custom_minimum_size = Vector2(0, 210)
+	panel.custom_minimum_size = Vector2(0, 228)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 18)
 	panel.add_child(row)
@@ -73,4 +96,6 @@ func _kit_color(kit_id: String) -> Color:
 	match kit_id:
 		"verdant_warden": return Color("66d978")
 		"void_brewer": return Color("c26cff")
+		"tide_oracle": return Color("5cb8ff")
+		"marrow_alchemist": return Color("e0576b")
 		_: return Color("ff8a42")
