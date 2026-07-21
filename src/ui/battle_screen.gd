@@ -33,6 +33,7 @@ var intent_controller: EnemyIntentController
 var signature_controller: EnemySignatureController
 var modifier_controller: ModifierController
 var combo_resolver: ComboResolver
+var reaction_effects := ReactionEffectExecutor.new()
 var skill_controller: SkillController
 var objective_label: Label
 var intent_label: Label
@@ -371,8 +372,15 @@ func _on_depth_potion_completed(color: String) -> void:
 	skill_controller.gain_mana(18 if color == "wild" else 25)
 	_tutorial_action("gain_mana")
 	skill_controller.tick_cooldowns()
-	var result := combo_resolver.push_potion(color)
-	if not result.is_empty(): skill_controller.gain_ultimate(int(result.get("charge", 0)))
+	var result := combo_resolver.push_essence(color, {"kit_id":RunState.kit_id})
+	if not result.is_empty() and not battle.battle_over:
+		var applied := reaction_effects.apply(result, battle)
+		if bool(applied.get("ok", false)):
+			skill_controller.gain_ultimate(int(result.get("charge", 0)))
+			RunState.record_replay("reaction", {"id":result.id,
+					"history":combo_resolver.history(), "result":applied})
+			_set_message(str(result.get("name", result.id)) + " — "
+					+ str(applied.get("summary", "Reaction resolved")))
 	_refresh_tactical_hud()
 
 

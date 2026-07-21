@@ -54,8 +54,11 @@ var poison_turns := 0
 # Poison on the player (from Poison Beast)
 var player_poison_damage := 0
 var player_poison_turns := 0
+var reaction_reflect_ratio := 0.0
+var reaction_regen_amount := 0
+var reaction_regen_turns := 0
+var reaction_retaliation_damage := 0
 
-var _last_potion := ""
 var _last_remedy_used := false
 var battle_over := false
 
@@ -114,7 +117,10 @@ func setup(new_enemy_id: String) -> void:
 	poison_turns = 0
 	player_poison_damage = 0
 	player_poison_turns = 0
-	_last_potion = ""
+	reaction_reflect_ratio = 0.0
+	reaction_regen_amount = 0
+	reaction_regen_turns = 0
+	reaction_retaliation_damage = 0
 	_last_remedy_used = false
 	battle_over = false
 	stats_changed.emit()
@@ -182,7 +188,11 @@ func export_snapshot() -> Dictionary:
 		"poison_turns": poison_turns,
 		"player_poison_damage": player_poison_damage,
 		"player_poison_turns": player_poison_turns,
-		"last_potion": _last_potion,
+		"last_potion": "",
+		"reaction_reflect_ratio": reaction_reflect_ratio,
+		"reaction_regen_amount": reaction_regen_amount,
+		"reaction_regen_turns": reaction_regen_turns,
+		"reaction_retaliation_damage": reaction_retaliation_damage,
 		"last_remedy_used": _last_remedy_used,
 		"attacks_done": _attacks_done,
 		"enraged": enraged,
@@ -207,7 +217,10 @@ func restore_snapshot(snapshot: Dictionary) -> bool:
 	poison_turns = maxi(int(snapshot.get("poison_turns", 0)), 0)
 	player_poison_damage = maxi(int(snapshot.get("player_poison_damage", 0)), 0)
 	player_poison_turns = maxi(int(snapshot.get("player_poison_turns", 0)), 0)
-	_last_potion = str(snapshot.get("last_potion", ""))
+	reaction_reflect_ratio = clampf(float(snapshot.get("reaction_reflect_ratio", 0.0)), 0.0, 1.0)
+	reaction_regen_amount = maxi(int(snapshot.get("reaction_regen_amount", 0)), 0)
+	reaction_regen_turns = maxi(int(snapshot.get("reaction_regen_turns", 0)), 0)
+	reaction_retaliation_damage = maxi(int(snapshot.get("reaction_retaliation_damage", 0)), 0)
 	_last_remedy_used = bool(snapshot.get("last_remedy_used", false))
 	_attacks_done = maxi(int(snapshot.get("attacks_done", 0)), 0)
 	enraged = bool(snapshot.get("enraged", false))
@@ -251,11 +264,6 @@ func on_potion_completed(color: String) -> void:
 			var amount := int(RunState.stat("blue_shield", float(data.get("shield", 12))))
 			shield = mini(shield + amount, max_shield)
 			potion_activated.emit(color, "Shield Potion  +%d shield" % amount)
-			if _last_potion == "green":
-				var bonus_hp: int = mini(5, player_max_hp - player_hp)
-				player_hp += bonus_hp
-				shield = mini(shield + 4, max_shield)
-				combo_triggered.emit("Regeneration Guard! +%d HP, +4 shield" % bonus_hp)
 		"purple":
 			# Re-applying poison refreshes the duration (no stacking in MVP).
 			poison_damage = int(RunState.stat("purple_damage",
@@ -266,7 +274,6 @@ func on_potion_completed(color: String) -> void:
 					% [poison_damage, poison_turns])
 		_:
 			push_warning("Unknown potion color: " + color)
-	_last_potion = color
 	stats_changed.emit()
 	_check_victory()
 
@@ -278,21 +285,6 @@ func _activate_fire(data: Dictionary) -> void:
 	if randf() < RunState.stat("crit_chance", 0.0):
 		damage *= 2
 		notes.append("CRITICAL!")
-	if _last_potion == "red":
-		damage = int(damage * 1.5)
-		combo_triggered.emit("Fire Burst! +50% damage")
-	elif _last_potion == "blue" and shield > 0:
-		var converted := shield / 2
-		shield -= converted
-		damage += converted
-		combo_triggered.emit("Shield Bash! +%d damage" % converted)
-	elif _last_potion == "purple" and poison_turns > 0:
-		var burst := poison_damage * poison_turns
-		damage += burst
-		poison_damage = 0
-		poison_turns = 0
-		combo_triggered.emit("Toxic Flame! +%d burst damage" % burst)
-
 	var dealt := _damage_enemy(damage, false)
 	var text := "Fire Potion  %d damage" % dealt
 	if not notes.is_empty():
@@ -328,6 +320,11 @@ func _check_enrage() -> void:
 
 func _enemy_turn() -> void:
 	moves_until_attack = attack_every
+	if reaction_regen_turns > 0:
+		restore_player_hp(reaction_regen_amount)
+		reaction_regen_turns -= 1
+		if reaction_regen_turns == 0:
+			reaction_regen_amount = 0
 
 	# Status effects tick first: poison can kill the enemy before it attacks.
 	if poison_turns > 0:
@@ -382,7 +379,15 @@ func resolve_enemy_attack(multiplier := 1.0) -> Dictionary:
 	shield -= blocked
 	player_hp = maxi(player_hp - (damage - blocked), 0)
 	enemy_attacked.emit(damage, blocked, crit)
+	if blocked > 0 and reaction_reflect_ratio > 0.0:
+		_damage_enemy(maxi(roundi(float(blocked) * reaction_reflect_ratio), 1), true)
+		reaction_reflect_ratio = 0.0
+	if reaction_retaliation_damage > 0:
+		_damage_enemy(reaction_retaliation_damage, true)
+		reaction_retaliation_damage = 0
 	_attacks_done += 1
+	if _check_victory():
+		return {"damage": damage, "blocked": blocked, "crit": crit}
 	_check_defeat()
 	_try_last_remedy()
 	stats_changed.emit()
@@ -446,6 +451,80 @@ func deal_skill_damage(amount: int) -> int:
 	stats_changed.emit()
 	_check_victory()
 	return dealt
+
+
+func deal_reaction_damage(amount: int, bypass_armor := false) -> int:
+	if battle_over: return 0
+	var dealt := _damage_enemy(maxi(amount, 0), bypass_armor)
+	stats_changed.emit()
+	_check_victory()
+	return dealt
+
+
+func restore_player_hp(amount: int) -> int:
+	if battle_over: return 0
+	var restored := mini(maxi(amount, 0), player_max_hp - player_hp)
+	player_hp += restored
+	stats_changed.emit()
+	return restored
+
+
+func grant_player_shield(amount: int) -> int:
+	if battle_over: return 0
+	var granted := mini(maxi(amount, 0), max_shield - shield)
+	shield += granted
+	stats_changed.emit()
+	return granted
+
+
+func convert_shield_to_damage(ratio: float) -> int:
+	var converted := mini(shield, maxi(roundi(float(shield) *
+			clampf(ratio, 0.0, 1.0)), 0))
+	shield -= converted
+	return deal_reaction_damage(converted)
+
+
+func consume_enemy_poison() -> int:
+	if battle_over: return 0
+	var burst := poison_damage * poison_turns
+	poison_damage = 0
+	poison_turns = 0
+	return deal_reaction_damage(burst, true)
+
+
+func empower_enemy_poison(amount: int) -> int:
+	if poison_turns <= 0:
+		return 0
+	var added := maxi(amount, 0)
+	poison_damage += added
+	stats_changed.emit()
+	return added
+
+
+func trigger_poison_tick() -> int:
+	if poison_turns <= 0: return 0
+	return deal_reaction_damage(poison_damage, true)
+
+
+func set_reaction_reflect(ratio: float) -> void:
+	reaction_reflect_ratio = clampf(ratio, 0.0, 1.0)
+	stats_changed.emit()
+
+
+func set_reaction_regeneration(amount: int, turns: int) -> void:
+	reaction_regen_amount = maxi(amount, 0)
+	reaction_regen_turns = maxi(turns, 0)
+	stats_changed.emit()
+
+
+func set_reaction_retaliation(amount: int) -> void:
+	reaction_retaliation_damage = maxi(amount, 0)
+	stats_changed.emit()
+
+
+func delay_enemy_attack(moves: int) -> void:
+	moves_until_attack = mini(moves_until_attack + maxi(moves, 0), attack_every + 2)
+	stats_changed.emit()
 
 
 ## Last Remedy upgrade: once per battle, dropping below 20% HP auto-heals.
