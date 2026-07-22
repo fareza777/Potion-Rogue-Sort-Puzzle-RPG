@@ -616,8 +616,21 @@ func _build_top_strip() -> PanelContainer:
 	currency.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	currency.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	currency.custom_minimum_size = Vector2(78, 0)
+	var guide := UiKit.button("?", Vector2(46, 46), Color("ad80db"))
+	guide.name = "BattleGuideButton"
+	guide.tooltip_text = "Open Player Guide — battle is saved"
+	guide.pressed.connect(_on_battle_guide_pressed)
+	row.add_child(guide)
 	row.add_child(currency)
 	return panel
+
+
+func _on_battle_guide_pressed() -> void:
+	_checkpoint_encounter()
+	RunState.flush_checkpoint("battle_guide")
+	GuideScreen.return_scene = "res://scenes/battle.tscn"
+	GuideScreen.initial_section = "battle"
+	get_tree().change_scene_to_file("res://scenes/guide.tscn")
 
 
 func _build_enemy_panel() -> VBoxContainer:

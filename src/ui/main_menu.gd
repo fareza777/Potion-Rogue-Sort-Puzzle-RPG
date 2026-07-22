@@ -76,13 +76,19 @@ func _build_interface() -> void:
 	secondary.alignment = BoxContainer.ALIGNMENT_CENTER
 	secondary.add_theme_constant_override("separation", 10)
 	commands.add_child(secondary)
-	var upgrades := _command_button("UPGRADES", Color("52a83f"), btn_w * 0.48, 58)
-	upgrades.add_theme_font_size_override("font_size", 22)
+	var guide := _command_button("GUIDE", Color("257fa9"), btn_w * 0.31, 58)
+	guide.add_theme_font_size_override("font_size", 19)
+	guide.pressed.connect(func() -> void:
+		GuideScreen.return_scene = "res://scenes/main_menu.tscn"
+		get_tree().change_scene_to_file("res://scenes/guide.tscn"))
+	secondary.add_child(guide)
+	var upgrades := _command_button("UPGRADES", Color("52a83f"), btn_w * 0.31, 58)
+	upgrades.add_theme_font_size_override("font_size", 19)
 	upgrades.pressed.connect(func() -> void:
 		get_tree().change_scene_to_file("res://scenes/shop.tscn"))
 	secondary.add_child(upgrades)
-	var settings := _command_button("SETTINGS", Color("7948aa"), btn_w * 0.48, 58)
-	settings.add_theme_font_size_override("font_size", 22)
+	var settings := _command_button("SETTINGS", Color("7948aa"), btn_w * 0.31, 58)
+	settings.add_theme_font_size_override("font_size", 19)
 	settings.pressed.connect(func() -> void:
 		get_tree().change_scene_to_file("res://scenes/settings.tscn"))
 	secondary.add_child(settings)
