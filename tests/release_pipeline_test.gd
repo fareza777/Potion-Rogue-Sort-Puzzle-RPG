@@ -13,7 +13,7 @@ func _ready() -> void:
 	check(validator.contains("config/version") and validator.contains("version/name"),
 			"release validator checks project/export version agreement")
 	var preset := FileAccess.get_file_as_string("res://export_presets.cfg")
-	check(preset.contains('version/name="1.6.0"') and preset.contains("version/code=25"),
+	check(preset.contains('version/name="1.6.1"') and preset.contains("version/code=26"),
 			"Android package version is bumped")
 	check(preset.contains("tests/**") and preset.contains("atlas_*.png")
 			and preset.contains("review_shots/**"),
