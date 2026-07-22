@@ -61,6 +61,10 @@ func _process(delta: float) -> void:
 
 
 func _gui_input(event: InputEvent) -> void:
+	# Godot may synthesize a mouse event from the same Android touch. Handling
+	# both would select and immediately deselect the tube, making it look stuck.
+	if event.device == InputEvent.DEVICE_ID_EMULATION:
+		return
 	if event is InputEventMouseButton \
 			and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		release_focus()
