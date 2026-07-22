@@ -1,15 +1,18 @@
 {
 	"steps": [
-		{"id":"welcome","action":"intro","target":"ArenaBand","title":"Your first expedition","body":"Sort four matching layers into one flask. A completed potion activates immediately."},
-		{"id":"enemy","action":"inspect_enemy","target":"EnemyVitalBar","title":"Defeat the guardian","body":"Reduce Enemy Vitality to zero. Armor absorbs direct damage, but poison bypasses it."},
-		{"id":"intent","action":"inspect_intent","target":"EnemyIntent","title":"Read the next move","body":"This card reveals what the enemy will do, its damage, and how many pours remain."},
-		{"id":"source","action":"select_source","target":"TutorialSource","title":"Pick up a flask","body":"Tap the glowing flask. You always pour the connected color from the top."},
-		{"id":"target","action":"select_target","target":"TutorialTarget","title":"Pour onto a match","body":"Tap the second glowing flask. Colors must match, or the destination must be empty."},
-		{"id":"undo","action":"undo","target":"UndoAction","title":"Mistakes are reversible","body":"Undo restores the previous pour and also restores the enemy countdown."},
-		{"id":"complete","action":"complete_potion","target":"PotionBoardBand","title":"Complete a potion","body":"Build four layers of one color. Red damages, green heals, blue shields, and purple poisons."},
-		{"id":"mana","action":"gain_mana","target":"ManaMeter","title":"Brewing creates mana","body":"Each completed potion fills this meter. Mana powers your brewer's active skill."},
-		{"id":"reaction","action":"trigger_reaction","target":"ReactionChamber","title":"Reaction: Fire Burst","body":"Complete a second Fire Potion. The order of completed colors creates an Alchemy Reaction; Red then Red amplifies fire damage."},
-		{"id":"skill","action":"cast_skill","target":"SkillButton","title":"Cast your active skill","body":"Use the lit skill button. Your starting kit changes this ability and its play style."},
-		{"id":"path","action":"choose_path","target":"DungeonRoute","title":"Choose your route","body":"Glowing nodes are reachable. Compare battles, events, shops, and safe campfires before choosing."}
+		{"id":"welcome","action":"intro","target":"ArenaBand","title":"Your first expedition","body":"Your goal is to defeat the guardian by brewing complete potions. This guided battle saves automatically and every required action remains fully playable."},
+		{"id":"enemy","action":"inspect_enemy","target":"EnemyVitalBar","title":"Defeat the guardian","body":"Reduce Enemy Vitality to zero. Armor absorbs direct damage, while Poison bypasses Armor and deals damage over enemy turns."},
+		{"id":"intent","action":"inspect_intent","target":"EnemyIntent","title":"Read the next move","body":"NEXT shows exactly what the enemy will do and how many successful pours remain. Every legal pour advances this countdown by one."},
+		{"id":"source","action":"select_source","target":"TutorialSource","title":"Pick up a flask","body":"Tap the highlighted flask. A pour always moves the connected run of one color from the very top."},
+		{"id":"target","action":"select_target","target":"TutorialTarget","title":"Pour onto a legal target","body":"Tap the second flask. Its top must match the moving color, or it must be completely empty. Enough free space is also required."},
+		{"id":"undo","action":"undo","target":"UndoAction","title":"Mistakes are reversible","body":"Undo restores the exact previous flask state and restores the enemy countdown. Your remaining Undo count is shown below its icon."},
+		{"id":"complete","action":"complete_potion","target":"PotionBoardBand","title":"Complete a potion","body":"Build four layers of one color. Red deals damage, Green restores HP, Blue grants Shield, and Purple applies Armor-piercing Poison."},
+		{"id":"mana","action":"gain_mana","target":"ManaMeter","title":"Potions generate Mana","body":"A completed normal potion grants 25 Mana; Wild grants 18. Mana pays for your active Skill. It is separate from Ultimate charge. Tap GOT IT to fill Mana for this lesson."},
+		{"id":"essence","action":"observe_essence","target":"ReactionChamber","title":"The three colored dots","body":"These are your last three completed potion essences. They are a history display, not extra moves. Order matters because formulas match the latest two or three colors."},
+		{"id":"reaction","action":"trigger_reaction","target":"ReactionChamber","title":"Create Fire Burst","body":"Complete a second Red Fire Potion. Red then Red matches Fire Burst, amplifies the second potion, and grants Ultimate charge. The board remains fully touchable."},
+		{"id":"ultimate","action":"observe_ultimate","target":"UltimateButton","title":"Reactions charge Ultimate","body":"Alchemy Reactions add Ultimate charge independently from Mana. At 100%, ULT lights up and unleashes the selected hero kit's strongest effect."},
+		{"id":"skill","action":"cast_skill","target":"SkillButton","title":"Cast your active Skill","body":"The lit Skill button spends Mana. Its exact effect, cost, and potion-based cooldown come from your selected hero kit; hold or focus it to read the details."},
+		{"id":"remix","action":"learn_remix","target":"NewMixAction","title":"When to use New Mix","body":"New Mix replaces the entire board and always spends one move. The first normal New Mix costs no Mana; repeat mixes cost 20 Mana. A genuinely stuck board always gets emergency recovery."},
+		{"id":"path","action":"choose_path","target":"DungeonRoute","title":"Choose your route","body":"Only glowing connected nodes are reachable. Future encounters stay hidden. Compare node types, current HP, and your build before choosing the next risk."}
 	]
 }

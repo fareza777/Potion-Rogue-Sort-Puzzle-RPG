@@ -59,7 +59,8 @@ func _show_step(step: Dictionary, index: int, total: int) -> void:
 	title_label.text = str(step.get("title", "Tutorial"))
 	body_label.text = str(step.get("body", ""))
 	var action := str(step.get("action", ""))
-	continue_button.visible = action in ["intro", "inspect_enemy", "inspect_intent", "gain_mana"]
+	continue_button.visible = action in ["intro", "inspect_enemy", "inspect_intent",
+			"gain_mana", "observe_essence", "observe_ultimate", "learn_remix"]
 	# The reaction lesson requires unrestricted bottle input to create the
 	# second completed potion. Its spotlight is informational, not a blocker.
 	var needs_board_input := action == "trigger_reaction"

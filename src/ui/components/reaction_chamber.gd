@@ -21,7 +21,7 @@ func _init() -> void:
 	flat = true
 	focus_mode = Control.FOCUS_ALL
 	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	tooltip_text = "REACTION CHAMBER\nYour three most recently completed essences. Tap for formulas."
+	tooltip_text = "REACTION CHAMBER\nLast three completed potion essences. Order creates reactions. Tap for formulas."
 	for state in ["normal", "hover", "pressed", "focus"]:
 		var frame := StyleBoxFlat.new()
 		frame.bg_color = Color(0.045, 0.02, 0.075, 0.88 if state == "normal" else 0.96)

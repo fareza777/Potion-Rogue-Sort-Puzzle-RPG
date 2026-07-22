@@ -52,18 +52,38 @@ static func kit_cards() -> Array[Dictionary]:
 		var kit: Dictionary = GameState.kits.get(id, {})
 		var active := str(kit.get("active", "active_skill"))
 		var ultimate := str(kit.get("ultimate_name", kit.get("ultimate", "Ultimate")))
+		var effect := skill_effect(active)
 		cards.append({
 			"id":id, "name":str(kit.get("name", id.replace("_", " ").capitalize())),
 			"title":str(kit.get("name", id.replace("_", " ").capitalize())).to_upper(),
 			"active":active, "cost":int(kit.get("cost", 0)),
-			"cooldown":int(kit.get("cooldown", 0)), "ultimate":ultimate,
-			"copy":"%s costs %d Mana and has a %d-potion cooldown. Ultimate: %s. %s" % [
-				active.replace("_", " ").capitalize(), int(kit.get("cost", 0)),
-				int(kit.get("cooldown", 0)), ultimate,
-				_reaction_identity(kit)],
+			"cooldown":int(kit.get("cooldown", 0)), "ultimate":ultimate, "effect":effect,
+			"copy":"%s Costs %d Mana and has a %d-potion cooldown. Ultimate — %s: %s %s" % [
+				effect, int(kit.get("cost", 0)), int(kit.get("cooldown", 0)), ultimate,
+				ultimate_effect(id), _reaction_identity(kit)],
 			"accent":"d99aff",
 		})
 	return cards
+
+
+static func skill_effect(skill_id: String) -> String:
+	return {
+		"flash_boil":"Flash Boil deals 16 direct damage.",
+		"purify":"Purify grants 12 Shield and cleanses one expedition curse.",
+		"transmute":"Transmute changes one flask's top layer into Wild essence.",
+		"foresight":"Foresight reveals concealed layers and grants 8 Shield.",
+		"blood_price":"Blood Price spends 4 HP to deal 15 direct damage.",
+	}.get(skill_id, "Use the kit's active alchemy technique.")
+
+
+static func ultimate_effect(kit_id: String) -> String:
+	return {
+		"ember_adept":"Break all enemy Armor and deal 42 damage.",
+		"verdant_warden":"Heal 22, gain 24 Shield, and cleanse one curse.",
+		"void_brewer":"Apply 9 Poison for four turns, delay the enemy, and create Wild essence.",
+		"tide_oracle":"Deal 18 damage, gain 12 Shield, and delay the enemy by two moves.",
+		"marrow_alchemist":"Deal 26 damage, heal 14, and apply Poison.",
+	}.get(kit_id, "Unleash the kit's strongest alchemy effect.")
 
 
 static func _potion_cards() -> Array[Dictionary]:

@@ -385,7 +385,6 @@ func _on_depth_potion_completed(color: String) -> void:
 	objective_controller.on_potion_completed(color)
 	modifier_controller.on_potion_completed(color)
 	skill_controller.gain_mana(18 if color == "wild" else 25)
-	_tutorial_action("gain_mana")
 	skill_controller.tick_cooldowns()
 	var essence := reaction_pipeline.transform_essence(color)
 	var result := combo_resolver.push_essence(essence, {"kit_id":RunState.kit_id})
@@ -453,10 +452,20 @@ func _refresh_tactical_hud() -> void:
 	if reaction_chamber != null:
 		reaction_chamber.set_history(combo_resolver.history())
 	var kit: Dictionary = GameState.kits.get(RunState.kit_id, {})
-	skill_button.text = str(kit.get("active", "skill")).replace("_", " ").to_upper()
-	skill_button.disabled = not skill_controller.can_cast(str(kit.get("active", "")))
+	var active_id := str(kit.get("active", "skill"))
+	var mana_cost := int(kit.get("cost", 0))
+	skill_button.text = active_id.replace("_", " ").to_upper()
+	skill_button.disabled = not skill_controller.can_cast(active_id)
+	mana_bar.tooltip_text = "MANA\nCompleted potion: +25 (+18 Wild). Active skill cost: %d." % mana_cost
+	mana_label.tooltip_text = mana_bar.tooltip_text
+	skill_button.tooltip_text = "%s\n%s\nCost: %d Mana • Cooldown: %d completed potion(s)." % [
+			active_id.replace("_", " ").to_upper(), GuideContent.skill_effect(active_id),
+			mana_cost, int(kit.get("cooldown", 0))]
 	ultimate_button.text = "ULT %d%%" % skill_controller.ultimate_charge()
 	ultimate_button.disabled = not skill_controller.ultimate_ready()
+	ultimate_button.tooltip_text = "%s\n%s\nAlchemy Reactions charge this meter; Mana does not." % [
+			str(kit.get("ultimate_name", kit.get("ultimate", "Ultimate"))).to_upper(),
+			GuideContent.ultimate_effect(RunState.kit_id)]
 
 
 func _refresh_reaction_counterplay() -> void:
@@ -771,6 +780,8 @@ func _build_button_row() -> HBoxContainer:
 
 	var restart := ActionIconButton.new().configure("mix", "New Mix",
 			"Brew a new potion mix — costs 1 move")
+	restart.name = "NewMixAction"
+	restart.tooltip_text = "Replace the board: always 1 move. First normal mix is Mana-free; repeats cost 20 Mana. Stuck recovery is always available."
 	restart.pressed.connect(_on_restart_pressed)
 	row.add_child(_action_stack(restart, "New Mix\n1 Move"))
 
