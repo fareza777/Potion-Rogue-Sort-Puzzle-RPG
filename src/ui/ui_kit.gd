@@ -385,7 +385,9 @@ static func label(text: String, size: int, color := COLOR_TEXT) -> Label:
 	var l := Label.new()
 	l.text = text
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	l.add_theme_font_size_override("font_size", scaled_text_size(size))
+	# Body copy receives one restrained readability step without inflating
+	# display titles or changing the player's saved text-scale preference.
+	l.add_theme_font_size_override("font_size", scaled_text_size(size + 1))
 	l.add_theme_color_override("font_color", accessible_color(color))
 	return l
 

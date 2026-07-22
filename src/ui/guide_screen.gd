@@ -11,6 +11,7 @@ const ESSENCE_COLORS := {
 }
 
 var _tabs: HBoxContainer
+var _tab_scroll: ScrollContainer
 var _cards: VBoxContainer
 var _title: Label
 var _intro: Label
@@ -27,15 +28,17 @@ func _ready() -> void:
 	var margin := UiKit.safe_margin(self, 18, 30, 20)
 	var root := VBoxContainer.new(); root.add_theme_constant_override("separation", 10)
 	margin.add_child(root)
-	var eyebrow := UiKit.label("ALCHEMIST'S ARCHIVE", 13, Color("88dcff"))
+	var eyebrow := UiKit.label("ALCHEMIST'S ARCHIVE", 14, Color("88dcff"))
 	eyebrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; root.add_child(eyebrow)
 	var heading := UiKit.title_label("PLAYER GUIDE", 38, Color("f4d27a"))
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; root.add_child(heading)
-	var tab_scroll := ScrollContainer.new(); tab_scroll.name = "GuideTabScroll"
-	tab_scroll.custom_minimum_size.y = 58; tab_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	tab_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO; root.add_child(tab_scroll)
+	_tab_scroll = ScrollContainer.new(); _tab_scroll.name = "GuideTabScroll"
+	_tab_scroll.custom_minimum_size.y = 58
+	_tab_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_tab_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+	_tab_scroll.scroll_deadzone = 6; root.add_child(_tab_scroll)
 	_tabs = HBoxContainer.new(); _tabs.name = "GuideTabs"; _tabs.add_theme_constant_override("separation", 7)
-	tab_scroll.add_child(_tabs)
+	_tab_scroll.add_child(_tabs)
 	for item in GuideContent.sections():
 		var id := str(item.id)
 		var tab := UiKit.button(str(item.title), Vector2(126, 50), Color("9f73cf"))
@@ -44,14 +47,14 @@ func _ready() -> void:
 	_scroll = ScrollContainer.new(); _scroll.name = "GuideScroll"
 	_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	_scroll.scroll_deadzone = 8; root.add_child(_scroll)
 	_cards = VBoxContainer.new(); _cards.name = "GuideCards"
 	_cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_cards.add_theme_constant_override("separation", 10); _scroll.add_child(_cards)
 	_title = UiKit.title_label("", 29, Color("f5d681")); _title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_cards.add_child(_title)
-	_intro = UiKit.label("", 17, UiKit.COLOR_TEXT); _intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_intro = UiKit.label("", 18, UiKit.COLOR_TEXT); _intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_intro.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; _cards.add_child(_intro)
 	var back := UiKit.ornate_button("RETURN", Vector2(340, 62)); back.name = "ReturnButton"
 	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER; back.pressed.connect(_return)
@@ -91,12 +94,44 @@ func _guide_card(data: Dictionary) -> PanelContainer:
 		var style := StyleBoxFlat.new(); style.bg_color = ESSENCE_COLORS.get(str(essence), Color("7f718b"))
 		style.border_color = Color("fff3cf"); style.set_border_width_all(2); style.set_corner_radius_all(15)
 		dot.add_theme_stylebox_override("panel", style); row.add_child(dot)
-	var title := UiKit.title_label(str(data.get("title", "LESSON")), 20, Color(str(data.get("accent", "f2cc72"))))
+	var title := UiKit.title_label(str(data.get("title", "LESSON")), 22, Color(str(data.get("accent", "f2cc72"))))
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL; title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	row.add_child(title)
-	var copy := UiKit.label(str(data.get("copy", "")), 16, UiKit.COLOR_TEXT)
+	var copy := UiKit.label(str(data.get("copy", "")), 17, UiKit.COLOR_TEXT)
 	copy.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; column.add_child(copy)
 	return card
+
+
+func _input(event: InputEvent) -> void:
+	var movement := Vector2.ZERO
+	var pointer := Vector2.ZERO
+	if event is InputEventScreenDrag:
+		movement = -event.relative; pointer = event.position
+	elif event is InputEventPanGesture:
+		movement = event.delta * 64.0; pointer = event.position
+	elif event is InputEventMouseMotion and event.button_mask & MOUSE_BUTTON_MASK_LEFT:
+		movement = -event.relative; pointer = event.position
+	else:
+		return
+	if is_instance_valid(_tab_scroll) and _tab_scroll.get_global_rect().has_point(pointer):
+		_scroll_axis(_tab_scroll, movement.x, true)
+		get_viewport().set_input_as_handled()
+	elif is_instance_valid(_scroll) and _scroll.get_global_rect().has_point(pointer):
+		_scroll_axis(_scroll, movement.y, false)
+		get_viewport().set_input_as_handled()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	_input(event)
+
+
+func _scroll_axis(container: ScrollContainer, distance: float, horizontal: bool) -> void:
+	var bar: ScrollBar = container.get_h_scroll_bar() if horizontal else container.get_v_scroll_bar()
+	var limit := maxi(roundi(bar.max_value - bar.page), 0)
+	if horizontal:
+		container.scroll_horizontal = clampi(container.scroll_horizontal + roundi(distance), 0, limit)
+	else:
+		container.scroll_vertical = clampi(container.scroll_vertical + roundi(distance), 0, limit)
 
 
 func _return() -> void:

@@ -9,7 +9,7 @@ var _row: HBoxContainer
 
 func _init() -> void:
 	name = "BottomNavigation"
-	custom_minimum_size = Vector2(0, 124)
+	custom_minimum_size = Vector2(0, 130)
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_apply_dock_style()
@@ -54,7 +54,7 @@ func _apply_dock_style() -> void:
 func add_item(id: String, caption: String, action: Callable, active := false) -> Button:
 	var button := Button.new()
 	button.name = "Nav_" + id
-	button.custom_minimum_size = Vector2(72, 106)
+	button.custom_minimum_size = Vector2(72, 112)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.focus_mode = Control.FOCUS_ALL
 	button.flat = true
@@ -69,7 +69,7 @@ func add_item(id: String, caption: String, action: Callable, active := false) ->
 			icon_width_for(get_viewport_rect().size.x))
 	button.add_theme_constant_override("h_separation", 0)
 	button.add_theme_font_override("font", UiKit.title_font())
-	button.add_theme_font_size_override("font_size", 11)
+	button.add_theme_font_size_override("font_size", UiKit.scaled_text_size(14))
 	button.add_theme_color_override("font_color",
 			Color("ffe28a") if active else Color("cbb26f"))
 	button.add_theme_color_override("font_hover_color", Color("fff3c0"))
