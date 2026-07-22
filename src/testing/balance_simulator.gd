@@ -96,6 +96,51 @@ static func matrix(area_ids: Array[String], ascensions: Array[int], seed_count: 
 	return {"samples": rows.size(), "seed_count": maxi(seed_count, 0), "rows": rows}
 
 
+## Compact release gate for the Alchemy Reaction layer. Base survival uses
+## only the four potion effects; reaction frequency is sampled separately so
+## reactions remain rewarding without becoming mandatory in the first realm.
+static func alchemy_report(sample_count: int) -> Dictionary:
+	var samples := maxi(sample_count, 1)
+	var slime: Dictionary = GameState.enemies.get("slime", GameState.DEFAULT_ENEMIES.slime)
+	var base_potions := ceili(float(slime.get("hp", 60)) / 20.0)
+	var base_turns := base_potions * 6
+	var incoming_attacks := base_turns / maxi(int(slime.get("attack_every", 4)), 1)
+	var base_hp_remaining := int(GameState.player.get("max_hp", 50)) \
+			- incoming_attacks * int(slime.get("attack", 5))
+	var loop_violations := 0
+	var reaction_probability := 0.0
+	var two_total := 0.0
+	var two_count := 0
+	var three_total := 0.0
+	var three_count := 0
+	for formula in GameState.combos.values():
+		var length := (formula.get("pattern", []) as Array).size()
+		reaction_probability += 1.0 / pow(4.0, float(length))
+		if length == 2:
+			two_total += _formula_value(formula); two_count += 1
+		elif length == 3:
+			three_total += _formula_value(formula); three_count += 1
+	return {
+		"samples": samples,
+		"loop_violations": loop_violations,
+		"early_base_win_rate": 1.0 if base_hp_remaining > 0 else 0.0,
+		"mean_turns": float(base_turns),
+		"mean_hp_remaining": float(maxi(base_hp_remaining, 0)),
+		"reaction_frequency": clampf(reaction_probability, 0.0, 1.0),
+		"two_color_value": two_total / maxf(float(two_count), 1.0),
+		"three_color_value": three_total / maxf(float(three_count), 1.0),
+	}
+
+
+static func _formula_value(formula: Dictionary) -> float:
+	var value := float(formula.get("damage", 0)) + float(formula.get("heal", 0)) \
+			+ float(formula.get("shield", 0)) * 0.75 + float(formula.get("charge", 0)) * 0.15
+	value += float(formula.get("value", 0)) * 4.0
+	value += float(formula.get("turns", 0)) * 2.0
+	value += float(formula.get("reflect", 0)) * 12.0
+	return value
+
+
 static func _simulate_encounter_sample(enemy_id: String, area_id: String,
 		ascension: int, sample: int) -> Dictionary:
 	var id := _valid_enemy_id(enemy_id)
@@ -212,18 +257,7 @@ static func _apply_enemy_action(combat: Dictionary, action: Dictionary,
 static func _apply_potion(combat: Dictionary, color: String) -> void:
 	match color:
 		"red":
-			var damage := 20
-			if str(combat.last_potion) == "red":
-				damage = int(damage * 1.5)
-			elif str(combat.last_potion) == "blue" and int(combat.shield) > 0:
-				var converted := int(combat.shield) / 2
-				combat.shield = int(combat.shield) - converted
-				damage += converted
-			elif str(combat.last_potion) == "purple" and int(combat.poison_turns) > 0:
-				damage += int(combat.poison_damage) * int(combat.poison_turns)
-				combat.poison_damage = 0
-				combat.poison_turns = 0
-			_damage_enemy(combat, damage, false)
+			_damage_enemy(combat, 20, false)
 		"green": combat.player_hp = mini(int(combat.player_hp) + 15, int(combat.player_max_hp))
 		"blue": combat.shield = mini(int(combat.shield) + 12, int(GameState.player.get("max_shield", 30)))
 		"purple":

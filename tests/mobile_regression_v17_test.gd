@@ -23,11 +23,11 @@ func _test_remix_wait_budget() -> void:
 
 func _test_clean_bottle_rendering() -> void:
 	var source := FileAccess.get_file_as_string("res://src/puzzle/potion_tube.gd")
-	# Valid pour targets may glow, but darkening masks over other tubes are
-	# still banned: absence of glow is the signal for illegal targets.
-	check(source.contains('guidance_state == "valid"')
+	# Normal play is intentionally natural: selection lift and invalid shake
+	# replace both legal-target rings and darkening masks.
+	check(not source.contains('guidance_state == "valid"')
 			and not source.contains('guidance_state == "dim"'),
-			"potion guidance glows valid targets and never draws black masks")
+			"bottles render without target rings or black masks")
 
 
 func _test_dungeon_route_scrolls_on_touch() -> void:

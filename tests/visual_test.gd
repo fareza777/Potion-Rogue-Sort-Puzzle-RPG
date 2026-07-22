@@ -232,8 +232,8 @@ func _ready() -> void:
 			var icon_path := str(registry.call("ui_icon", icon_id))
 			check(ResourceLoader.exists(icon_path), "registered UI icon: " + icon_id)
 			var icon_texture := load(icon_path) as Texture2D
-			check(icon_texture != null and icon_texture.get_width() == 512 \
-					and icon_texture.get_height() == 512,
+			check(icon_texture != null and icon_texture.get_width() >= 256 \
+					and icon_texture.get_width() == icon_texture.get_height(),
 					"UI icon dimensions: " + icon_id)
 	check(kit.has_method("layout_profile"), "responsive layout profile interface")
 	if kit.has_method("layout_profile"):

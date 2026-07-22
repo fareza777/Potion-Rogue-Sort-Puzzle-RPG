@@ -53,9 +53,14 @@ func _test_battle_basics() -> void:
 
 func _test_fire_burst_combo() -> void:
 	var b := _fresh_battle()
+	var resolver := ComboResolver.new()
 	b.on_potion_completed("red")
+	resolver.push_essence("red")
 	b.on_potion_completed("red")
-	check(b.enemy_hp == 60 - 20 - 30, "Fire Burst: second red deals 30")
+	var result := resolver.push_essence("red")
+	ReactionEffectExecutor.new().apply(result, b)
+	check(b.enemy_hp == 60 - 20 - 20 - 10,
+			"Fire Burst applies its 10 bonus after two base potions")
 	b.free()
 
 

@@ -24,11 +24,11 @@ jobs:
             godot --headless --path . "$scene"
           done
       - name: Export Android debug APK
-        run: godot --headless --path . --export-debug "Android Debug" builds/PotionRogue-v19-debug.apk
+        run: godot --headless --path . --export-debug "Android Debug" builds/PotionRogue-v22-debug.apk
       - name: Validate release budgets and balance
         shell: pwsh
-        run: ./tools/validate_release.ps1 -ProjectRoot . -ApkPath builds/PotionRogue-v19-debug.apk
+        run: ./tools/validate_release.ps1 -ProjectRoot . -ApkPath builds/PotionRogue-v22-debug.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: PotionRogue-v19-debug
-          path: builds/PotionRogue-v19-debug.apk
+          name: PotionRogue-v22-debug
+          path: builds/PotionRogue-v22-debug.apk

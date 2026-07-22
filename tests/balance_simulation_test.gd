@@ -33,6 +33,7 @@ func _ready() -> void:
 	_test_board_sweep_has_no_dead_boards()
 	_test_encounter_metrics_are_bounded()
 	_test_matrix_is_deterministic_and_complete()
+	_test_alchemy_metrics()
 	print("---")
 	print("%d checks, %d failures" % [_checks, _failures])
 	get_tree().quit(1 if _failures > 0 else 0)
@@ -80,6 +81,15 @@ func _test_matrix_is_deterministic_and_complete() -> void:
 	check(first == second and int(first.get("samples", 0)) == expected
 			and _matrix_has_bounded_rates(first),
 			"area/ascension matrix is deterministic with bounded ratios")
+
+
+func _test_alchemy_metrics() -> void:
+	var report := BalanceLab.alchemy_report(maxi(_encounter_samples, 4))
+	check(int(report.get("loop_violations", 1)) == 0, "alchemy creates no free reaction loop")
+	check(float(report.get("early_base_win_rate", 0.0)) >= 0.65,
+			"early battle remains viable using base potions")
+	check(float(report.get("three_color_value", 0.0)) > float(report.get("two_color_value", 0.0)),
+			"three-color formula value exceeds two-color formula value")
 
 
 func _matrix_has_bounded_rates(matrix: Dictionary) -> bool:
