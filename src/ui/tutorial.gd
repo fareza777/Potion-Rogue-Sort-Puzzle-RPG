@@ -60,6 +60,12 @@ func _show_step(step: Dictionary, index: int, total: int) -> void:
 	body_label.text = str(step.get("body", ""))
 	var action := str(step.get("action", ""))
 	continue_button.visible = action in ["intro", "inspect_enemy", "inspect_intent", "gain_mana"]
+	# The reaction lesson requires unrestricted bottle input to create the
+	# second completed potion. Its spotlight is informational, not a blocker.
+	var needs_board_input := action == "trigger_reaction"
+	for dim in dim_panels:
+		dim.mouse_filter = Control.MOUSE_FILTER_IGNORE if needs_board_input \
+				else Control.MOUSE_FILTER_STOP
 	_target = target_resolver.call(str(step.get("target", ""))) as Control
 	_update_layout()
 
