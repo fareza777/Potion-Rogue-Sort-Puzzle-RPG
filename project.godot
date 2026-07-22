@@ -8,7 +8,7 @@ config_version=5
 
 config/name="Potion Rogue: Sort Puzzle RPG"
 config/description="Sort potions, cast powerful spells, and conquer the dungeon."
-config/version="1.5.3"
+config/version="1.6.0"
 run/main_scene="res://scenes/boot.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 config/icon="res://assets/art/app_icon_v2.png"

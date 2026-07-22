@@ -13,10 +13,11 @@ func _ready() -> void:
 	check(validator.contains("config/version") and validator.contains("version/name"),
 			"release validator checks project/export version agreement")
 	var preset := FileAccess.get_file_as_string("res://export_presets.cfg")
-	check(preset.contains('version/name="1.5.3"') and preset.contains("version/code=24"),
+	check(preset.contains('version/name="1.6.0"') and preset.contains("version/code=25"),
 			"Android package version is bumped")
-	check(preset.contains("tests/**") and preset.contains("atlas_*.png"),
-			"export excludes tests and legacy atlases")
+	check(preset.contains("tests/**") and preset.contains("atlas_*.png")
+			and preset.contains("review_shots/**"),
+			"export excludes tests, QA captures, and legacy atlases")
 	check(FileAccess.file_exists("res://.github/workflows/android-ci.yml"),
 			"CI imports, tests, exports, validates, and uploads Android artifact")
 	for atlas in ["atlas_crypt.png", "atlas_fungal.png", "atlas_arcane.png", "atlas_infernal.png"]:
