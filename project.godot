@@ -21,9 +21,14 @@ boot_splash/use_filter=true
 
 GameState="*res://src/autoload/game_state.gd"
 SaveSystem="*res://src/autoload/save_system.gd"
+BillingService="*res://src/autoload/billing_service.gd"
 AudioManager="*res://src/autoload/audio_manager.gd"
 RunState="*res://src/autoload/run_state.gd"
 DevTools="*res://src/autoload/dev_tools.gd"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/GodotGooglePlayBilling/plugin.cfg")
 
 [display]
 
