@@ -30,6 +30,13 @@ func _ready() -> void:
 	var campaign_offer := CampaignUnlockCard.new().configure(true)
 	campaign_offer.name = "CampaignUnlockSettingsOffer"
 	rows.add_child(campaign_offer)
+	var privacy := UiKit.button("PRIVACY POLICY", Vector2(260, 48), Color("9bb9ff"))
+	privacy.name = "PrivacyPolicyButton"
+	privacy.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	privacy.add_theme_font_size_override("font_size", 14)
+	privacy.tooltip_text = "Read the English Potion Rogue privacy policy."
+	privacy.pressed.connect(func() -> void: OS.shell_open(AppLinks.PRIVACY_POLICY_URL))
+	rows.add_child(privacy)
 	rows.add_child(UiKit.label("AUDIO & ACCESSIBILITY", 16, UiKit.COLOR_TEXT_DIM))
 
 	var music_row := _make_slider_row("MUSIC", "music", "music",

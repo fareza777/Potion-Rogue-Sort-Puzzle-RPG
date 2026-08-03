@@ -64,6 +64,10 @@ func configure(compact := false) -> CampaignUnlockCard:
 	_buy_button = UiKit.cta_bar("UNLOCK ALL REALMS  •  US$4.99", Color("b96bde"),
 			54 if compact else 60)
 	_buy_button.name = "BuyFullCampaign"
+	_buy_button.add_theme_color_override("font_disabled_color", Color("d8ccef"))
+	var buy_ornament := _buy_button.get_node_or_null("CtaOrnament") as TextureRect
+	if buy_ornament != null:
+		buy_ornament.modulate = Color(1.0, 0.92, 0.70, 0.24)
 	_buy_button.tooltip_text = "Unlock the remaining realms permanently through Google Play."
 	_buy_button.pressed.connect(_buy_campaign)
 	box.add_child(_buy_button)
@@ -103,8 +107,9 @@ func _refresh() -> void:
 	if not is_instance_valid(_buy_button):
 		return
 	var unlocked := BillingService.is_entitled()
-	_buy_button.disabled = unlocked or not BillingService.is_available()
-	_restore_button.disabled = not BillingService.is_available()
+	var needs_play_connection := OS.get_name() == "Android" and not BillingService.is_available()
+	_buy_button.disabled = unlocked or needs_play_connection
+	_restore_button.disabled = needs_play_connection
 	if unlocked:
 		_title.text = "FULL CAMPAIGN UNLOCKED"
 		_price.text = "ALL FIVE REALMS ARE OPEN"

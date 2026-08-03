@@ -65,6 +65,9 @@ func _ready() -> void:
 	var settings_source := FileAccess.get_file_as_string("res://src/ui/settings_screen.gd")
 	check(settings_source.contains("CampaignUnlockSettingsOffer"),
 			"Settings keeps the campaign purchase easy to find")
+	check(settings_source.contains("AppLinks.PRIVACY_POLICY_URL")
+			and AppLinks.PRIVACY_POLICY_URL.begins_with("https://"),
+			"Settings exposes the public English privacy policy")
 	print("---\n%d checks, %d failures" % [checks, failures])
 	get_tree().quit(1 if failures else 0)
 

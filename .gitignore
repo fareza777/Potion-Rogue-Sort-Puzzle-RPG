@@ -23,3 +23,8 @@ Thumbs.db
 .superpowers/
 .worktrees/
 .codex-remote-attachments/
+
+# Separate hosted privacy-policy site and local task scratch
+privacy-site/
+privacy-site-release.tar.gz
+tmp/

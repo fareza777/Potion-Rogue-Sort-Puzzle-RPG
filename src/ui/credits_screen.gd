@@ -36,6 +36,12 @@ func _ready() -> void:
 	box.add_child(UiKit.title_label("CREDITS", 34))
 	box.add_child(UiKit.label("GAME & DESIGN\nFAREZA GAMES", 22, UiKit.COLOR_TEXT))
 	box.add_child(UiKit.label("Built with Godot Engine\nCinzel typeface by Natanael Gama (OFL)", 18, UiKit.COLOR_TEXT_DIM))
+	var privacy := UiKit.button("PRIVACY POLICY", Vector2(260, 48), Color("9bb9ff"))
+	privacy.name = "PrivacyPolicyButton"
+	privacy.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	privacy.add_theme_font_size_override("font_size", 14)
+	privacy.pressed.connect(func() -> void: OS.shell_open(AppLinks.PRIVACY_POLICY_URL))
+	box.add_child(privacy)
 	var back := UiKit.ornate_button("RETURN TO HALL", Vector2(340, 66))
 	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	back.pressed.connect(func() -> void:

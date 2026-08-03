@@ -1,0 +1,22 @@
+{
+  "name": "potion-rogue-promo-video",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio src/index.tsx",
+    "render": "remotion render src/index.tsx PotionRoguePromo out/potion-rogue-promo.mp4",
+    "render:still": "remotion still src/index.tsx PotionRoguePromo out/potion-rogue-promo.png"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.504",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "remotion": "4.0.504"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "typescript": "5.9.3"
+  }
+}
