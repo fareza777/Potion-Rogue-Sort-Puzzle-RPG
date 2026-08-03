@@ -8,7 +8,7 @@ const SAVE_PATH := "user://save.json"
 const AREA_GRAMMAR := preload("res://src/run/area_grammar.gd")
 const SAVE_TEMP_PATH := SAVE_PATH + ".tmp"
 const SAVE_BACKUP_PATH := SAVE_PATH + ".bak"
-const SAVE_VERSION := 11
+const SAVE_VERSION := 12
 
 const DEFAULT_DATA := {
 	"version": SAVE_VERSION,
@@ -37,6 +37,7 @@ const DEFAULT_DATA := {
 	"daily": {"last_claim": "", "last_played": "", "best_depth": 0,
 		"score": 0, "streak": 0},
 	"run_history": [],
+	"full_campaign_unlocked": false,
 	"max_ascension": 0,
 	"selected_ascension": 0,
 	"discovered_formulas": [],
@@ -174,6 +175,9 @@ func migrate(source: Dictionary) -> Dictionary:
 				or int(migrated.get("stats", {}).get("runs_started", 0)) > 0
 	if int(migrated.get("version", 1)) < 11:
 		migrated["discovered_formulas"] = migrated.get("discovered_formulas", [])
+	if int(migrated.get("version", 1)) < 12:
+		migrated["full_campaign_unlocked"] = bool(
+				migrated.get("full_campaign_unlocked", false))
 	var history: Array = migrated.get("run_history", [])
 	if history.size() > 20: history.resize(20)
 	migrated["run_history"] = history
@@ -376,7 +380,21 @@ func record_early_defeat(early: bool) -> int:
 
 # --- Campaign progression ---------------------------------------------------
 
+func full_campaign_unlocked() -> bool:
+	return bool(data.get("full_campaign_unlocked", false))
+
+
+func set_full_campaign_unlocked(value: bool) -> void:
+	if full_campaign_unlocked() == value:
+		return
+	data["full_campaign_unlocked"] = value
+	request_save()
+
 func is_area_unlocked(area_id: String) -> bool:
+	if area_id not in GameState.area_ids():
+		return false
+	if full_campaign_unlocked():
+		return true
 	return area_id in (data.get("unlocked_areas", ["shadow_crypt"]) as Array)
 
 
