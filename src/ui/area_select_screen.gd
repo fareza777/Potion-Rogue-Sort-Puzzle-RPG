@@ -81,6 +81,9 @@ func _ready() -> void:
 	mode_help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	mode_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(mode_help)
+	var campaign_offer := CampaignUnlockCard.new().configure(narrow)
+	campaign_offer.name = "CampaignUnlockOffer"
+	root.add_child(campaign_offer)
 	if MetaProgression.new().ascension_unlocked():
 		root.add_child(_make_ascension_selector())
 	_area_scroll = ScrollContainer.new(); _area_scroll.name = "ExpeditionScroll"

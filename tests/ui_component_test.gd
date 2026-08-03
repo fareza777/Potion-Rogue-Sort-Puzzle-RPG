@@ -53,6 +53,18 @@ func _ready() -> void:
 	var area_source := FileAccess.get_file_as_string("res://src/ui/area_select_screen.gd")
 	check(area_source.contains("AscensionSelector") and area_source.contains("set_selected_ascension"),
 			"expedition selector exposes persistent Ascension controls")
+	var campaign_offer := CampaignUnlockCard.new().configure(true)
+	add_child(campaign_offer)
+	check(campaign_offer.find_child("BuyFullCampaign", true, false) is Button,
+			"campaign offer exposes a one-time purchase action")
+	check(campaign_offer.find_child("RestoreCampaignPurchase", true, false) is Button,
+			"campaign offer exposes Google Play restore")
+	check(campaign_offer.find_child("CampaignUnlockPrice", true, false) != null
+			and BillingService.PRODUCT_ID == "potion_rogue_full_campaign",
+			"campaign offer shows the approved product and price contract")
+	var settings_source := FileAccess.get_file_as_string("res://src/ui/settings_screen.gd")
+	check(settings_source.contains("CampaignUnlockSettingsOffer"),
+			"Settings keeps the campaign purchase easy to find")
 	print("---\n%d checks, %d failures" % [checks, failures])
 	get_tree().quit(1 if failures else 0)
 

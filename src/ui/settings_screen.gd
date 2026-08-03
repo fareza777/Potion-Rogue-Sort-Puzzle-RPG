@@ -26,6 +26,10 @@ func _ready() -> void:
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL; panel.add_child(scroll)
 	rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL; scroll.add_child(rows)
 	rows.add_child(UiKit.title_label("SETTINGS", 46))
+	rows.add_child(UiKit.label("STORE & CAMPAIGN", 16, UiKit.COLOR_TEXT_DIM))
+	var campaign_offer := CampaignUnlockCard.new().configure(true)
+	campaign_offer.name = "CampaignUnlockSettingsOffer"
+	rows.add_child(campaign_offer)
 	rows.add_child(UiKit.label("AUDIO & ACCESSIBILITY", 16, UiKit.COLOR_TEXT_DIM))
 
 	var music_row := _make_slider_row("MUSIC", "music", "music",
