@@ -36,6 +36,10 @@ func can_cast(skill_id: String) -> bool:
 			and mana >= int(kit.get("cost", 0)) \
 			and int(_cooldowns.get(skill_id, 0)) == 0
 
+
+func cooldown_remaining(skill_id: String) -> int:
+	return maxi(int(_cooldowns.get(skill_id, 0)), 0)
+
 func cast(skill_id: String, target: Dictionary) -> Dictionary:
 	if not can_cast(skill_id): return {"ok": false, "reason": "unavailable"}
 	if skill_id == "transmute":

@@ -6,8 +6,33 @@ var failures := 0
 
 func _ready() -> void:
 	check(UiThemeTokens.TOUCH_TARGET >= 56, "semantic touch target is at least 56 px")
+	check(UiThemeTokens.space("xs") < UiThemeTokens.space("md")
+			and UiThemeTokens.space("md") < UiThemeTokens.space("xxl"),
+			"semantic spacing helper exposes one ordered six-step scale")
+	check(UiThemeTokens.motion("standard") > UiThemeTokens.motion("quick"),
+			"semantic motion helper separates quick and standard feedback")
+	check(UiThemeTokens.ornament_level("supporting")
+			< UiThemeTokens.ornament_level("hero"),
+			"ornament hierarchy reserves decoration for hero surfaces")
 	check(UiThemeTokens.type_size("display") > UiThemeTokens.type_size("title"),
 			"semantic type scale has clear hierarchy")
+	check(UiThemeTokens.contrast_ratio(UiKit.COLOR_TEXT, UiThemeTokens.SURFACE) >= 4.5
+			and UiThemeTokens.contrast_ratio(UiKit.COLOR_TEXT_DIM,
+					UiThemeTokens.SURFACE) >= 3.0,
+			"body and caption colors remain readable on quiet surfaces")
+	var quiet_path := "res://src/ui/components/quiet_surface.gd"
+	check(ResourceLoader.exists(quiet_path), "quiet supporting surface component exists")
+	if ResourceLoader.exists(quiet_path):
+		var quiet = load(quiet_path).new()
+		add_child(quiet)
+		check(quiet is PanelContainer and quiet.name == "QuietSurface",
+				"quiet surface avoids another oversized ornamental frame")
+	var body := UiKit.body_label("Readable body copy")
+	var caption := UiKit.caption_label("Readable caption")
+	check(body.get_theme_font_size("font_size") >= UiThemeTokens.type_size("body"),
+			"body label uses the semantic readable size")
+	check(caption.get_theme_font_size("font_size") >= UiThemeTokens.type_size("caption"),
+			"caption label uses the semantic caption size")
 	var action := ActionIconButton.new()
 	action.configure("undo", "Undo", "Undo last pour")
 	check(action.custom_minimum_size.x >= 72 and action.icon != null,

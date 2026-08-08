@@ -7,6 +7,10 @@ var failures := 0
 func _ready() -> void:
 	check(UiThemeTokens.SPACE.has("xxl") and UiThemeTokens.TYPE.has("hero"),
 			"authoritative spacing and type token maps exist")
+	check(UiThemeTokens.SPACE.size() == 6,
+			"spacing scale has exactly six authoritative steps")
+	check(UiThemeTokens.TYPE_SCALE.size() == 6,
+			"screen copy uses six semantic type roles")
 	check(UiThemeTokens.REALM_ACCENTS.size() == 5,
 			"all realms own a semantic accent token")
 	check(UiThemeTokens.TOUCH_MIN >= 56, "touch target token is mobile safe")

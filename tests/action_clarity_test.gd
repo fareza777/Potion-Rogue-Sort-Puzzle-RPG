@@ -31,6 +31,21 @@ func _ready() -> void:
 	check(map_source.contains("MORE FLAMES MEAN MORE RISK"),
 			"map legend explains route risk before selection")
 
+	var power_path := "res://src/ui/battle/battle_power_strip.gd"
+	check(ResourceLoader.exists(power_path), "battle owns one reusable power strip")
+	if ResourceLoader.exists(power_path):
+		var strip = load(power_path).new()
+		add_child(strip)
+		strip.update_model({"mana":18, "history":["red", "purple"],
+				"skill_name":"Flash Boil", "skill_cost":35, "skill_ready":false,
+				"skill_disabled_reason":"Need 17 more Mana",
+				"ultimate_charge":40, "ultimate_ready":false,
+				"ultimate_disabled_reason":"Build 60% more charge"})
+		check(strip.find_child("SkillDisabledReason", true, false).text.contains("17"),
+				"active skill states its exact disabled reason")
+		check(strip.find_child("UltimateDisabledReason", true, false).text.contains("60"),
+				"ultimate states its exact disabled reason")
+
 	print("---\n%d checks, %d failures" % [checks, failures])
 	get_tree().quit(1 if failures else 0)
 

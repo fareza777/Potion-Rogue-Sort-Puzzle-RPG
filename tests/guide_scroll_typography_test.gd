@@ -16,8 +16,16 @@ func _ready() -> void:
 			"Guide tabs hide the horizontal scrollbar")
 	check(content_scroll != null and content_scroll.vertical_scroll_mode == ScrollContainer.SCROLL_MODE_SHOW_NEVER,
 			"Guide content hides the vertical scrollbar")
+	check(guide.find_child("GuideTabEdgeLeft", true, false) != null
+			and guide.find_child("GuideTabEdgeRight", true, false) != null,
+			"Guide tabs expose subtle overflow edge fades")
 	check(guide.has_method("_input"), "Guide provides whole-area drag scrolling")
 	if guide.has_method("open_section"):
+		await guide.call("open_section", "expedition")
+		await get_tree().process_frame
+		var selected := guide.find_child("GuideTab_expedition", true, false) as Control
+		check(selected != null and tab_scroll.scroll_horizontal > 0,
+				"opening a section centers its selected tab when possible")
 		await guide.call("open_section", "reactions")
 		await get_tree().process_frame
 	if guide.has_method("_input") and tab_scroll != null and content_scroll != null:
@@ -38,7 +46,7 @@ func _ready() -> void:
 	check(codex_source.contains("SCROLL_MODE_SHOW_NEVER")
 			and codex_source.contains("InputEventScreenDrag"),
 			"Formula Codex also hides its bar and accepts whole-area drag")
-	check(codex_source.contains("description, 17"),
+	check(codex_source.contains("FormulaCard.new()"),
 			"Formula descriptions use the larger Guide narrative size")
 	var nav := BottomNav.new(); add_child(nav)
 	var nav_button := nav.add_item("home", "Home", Callable(), true)

@@ -18,7 +18,25 @@ func _ready() -> void:
 	check(scene != null, "Formula Codex scene loads")
 	var source := FileAccess.get_file_as_string("res://src/ui/reaction_codex_screen.gd")
 	check(source.contains("ScrollContainer"), "Formula Codex is scrollable")
-	check(source.contains("LOCKED FORMULA"), "undiscovered formulas hide their details")
+	var card_source := FileAccess.get_file_as_string(
+			"res://src/ui/components/formula_card.gd")
+	check(card_source.contains("UNDISCOVERED FORMULA"),
+			"undiscovered formulas hide their details")
+	check(ResourceLoader.exists("res://src/ui/components/formula_socket.gd"),
+			"Formula Codex owns a reusable jewel socket component")
+	check(ResourceLoader.exists("res://src/ui/components/formula_card.gd"),
+			"Formula Codex owns a reusable formula card component")
+	check(not source.contains("ColorRect.new()") and source.contains("FormulaCard.new()"),
+			"Formula Codex no longer renders essences as raw black rectangles")
+	if scene != null:
+		var codex: Control = scene.instantiate()
+		add_child(codex)
+		await get_tree().process_frame
+		check(codex.find_child("FormulaCard_*", true, false) != null,
+				"Formula cards expose stable semantic node names")
+		check(codex.find_child("FormulaSocket_*", true, false) != null,
+				"formula recipes render illustrated jewel sockets")
+		codex.queue_free()
 	SaveSystem.data = original
 	print("---\n%d checks, %d failures" % [checks, failures])
 	get_tree().quit(1 if failures else 0)

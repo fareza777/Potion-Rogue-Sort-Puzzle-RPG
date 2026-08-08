@@ -392,6 +392,26 @@ static func label(text: String, size: int, color := COLOR_TEXT) -> Label:
 	return l
 
 
+static func body_label(text: String, color := COLOR_TEXT) -> Label:
+	var body := label(text, UiThemeTokens.type_size("body"), color)
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	return body
+
+
+static func caption_label(text: String, color := COLOR_TEXT_DIM) -> Label:
+	var caption := label(text, UiThemeTokens.type_size("caption"), color)
+	caption.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	return caption
+
+
+static func tactical_label(text: String, color := COLOR_TEXT) -> Label:
+	var tactical := label(text, UiThemeTokens.type_size("action"), color)
+	tactical.add_theme_constant_override("outline_size", 3)
+	tactical.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.75))
+	return tactical
+
+
 static func bar(fill_color: Color, height := 34.0) -> ProgressBar:
 	var bar_widget := ProgressBar.new()
 	bar_widget.show_percentage = false

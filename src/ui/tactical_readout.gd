@@ -9,7 +9,7 @@ var trick_label: Label
 
 func _init() -> void:
 	name = "TacticalReadout"
-	custom_minimum_size = Vector2(0, 64)
+	custom_minimum_size = Vector2(0, 76)
 
 
 func _ready() -> void:
@@ -29,7 +29,7 @@ func _ready() -> void:
 	var stack := VBoxContainer.new()
 	stack.add_theme_constant_override("separation", 1)
 	add_child(stack)
-	objective_label = UiKit.label("OBJECTIVE", 12, UiKit.COLOR_GOLD)
+	objective_label = UiKit.caption_label("OBJECTIVE", UiKit.COLOR_GOLD)
 	objective_label.name = "ObjectiveText"
 	objective_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	objective_label.tooltip_text = objective_label.text
@@ -38,13 +38,13 @@ func _ready() -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	stack.add_child(row)
-	intent_label = UiKit.label("NEXT", 12, UiKit.COLOR_FIRE)
+	intent_label = UiKit.caption_label("NEXT", UiKit.COLOR_FIRE)
 	intent_label.name = "EnemyIntent"
 	intent_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	intent_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	intent_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	row.add_child(intent_label)
-	trick_label = UiKit.label("TRICK", 11, Color("d9a4ff"))
+	trick_label = UiKit.caption_label("TRICK", Color("d9a4ff"))
 	trick_label.name = "EnemyTrick"
 	trick_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	trick_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT

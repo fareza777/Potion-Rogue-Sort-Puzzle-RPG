@@ -36,7 +36,11 @@ func _ready() -> void:
 	_tab_scroll.custom_minimum_size.y = 58
 	_tab_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_tab_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
-	_tab_scroll.scroll_deadzone = 6; root.add_child(_tab_scroll)
+	_tab_scroll.scroll_deadzone = 6
+	var tab_stage := Control.new(); tab_stage.name = "GuideTabStage"
+	tab_stage.custom_minimum_size.y = 58; root.add_child(tab_stage)
+	_tab_scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	tab_stage.add_child(_tab_scroll)
 	_tabs = HBoxContainer.new(); _tabs.name = "GuideTabs"; _tabs.add_theme_constant_override("separation", 7)
 	_tab_scroll.add_child(_tabs)
 	for item in GuideContent.sections():
@@ -44,6 +48,8 @@ func _ready() -> void:
 		var tab := UiKit.button(str(item.title), Vector2(126, 50), Color("9f73cf"))
 		tab.name = "GuideTab_" + id; tab.pressed.connect(func() -> void: open_section(id))
 		_tabs.add_child(tab)
+	_add_tab_edge_fade(tab_stage, "GuideTabEdgeLeft", true)
+	_add_tab_edge_fade(tab_stage, "GuideTabEdgeRight", false)
 	_scroll = ScrollContainer.new(); _scroll.name = "GuideScroll"
 	_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -82,6 +88,40 @@ func open_section(id: String) -> void:
 	await get_tree().process_frame
 	_scroll.scroll_vertical = 0
 	for tab in _tabs.get_children(): tab.disabled = tab.name == "GuideTab_" + _selected
+	_center_selected_tab()
+
+
+func _add_tab_edge_fade(stage: Control, node_name: String, left: bool) -> void:
+	var fade := TextureRect.new()
+	fade.name = node_name
+	fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fade.offset_left = 0 if left else -26
+	fade.offset_right = 26 if left else 0
+	fade.anchor_left = 0.0 if left else 1.0
+	fade.anchor_right = 0.0 if left else 1.0
+	fade.anchor_bottom = 1.0
+	var gradient := Gradient.new()
+	gradient.colors = PackedColorArray([
+		Color(0.02, 0.01, 0.05, 0.92), Color(0.02, 0.01, 0.05, 0.0)]) if left \
+			else PackedColorArray([Color(0.02, 0.01, 0.05, 0.0), Color(0.02, 0.01, 0.05, 0.92)])
+	var texture := GradientTexture2D.new()
+	texture.gradient = gradient
+	texture.width = 26
+	texture.height = 1
+	fade.texture = texture
+	fade.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	fade.stretch_mode = TextureRect.STRETCH_SCALE
+	stage.add_child(fade)
+
+
+func _center_selected_tab() -> void:
+	var selected := _tabs.get_node_or_null("GuideTab_" + _selected) as Control
+	if selected == null:
+		return
+	var bar := _tab_scroll.get_h_scroll_bar()
+	var limit := maxi(roundi(bar.max_value - bar.page), 0)
+	var target := selected.position.x + selected.size.x * 0.5 - _tab_scroll.size.x * 0.5
+	_tab_scroll.scroll_horizontal = clampi(roundi(target), 0, limit)
 
 
 func _guide_card(data: Dictionary) -> PanelContainer:

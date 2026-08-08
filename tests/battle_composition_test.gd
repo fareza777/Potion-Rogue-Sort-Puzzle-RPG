@@ -5,6 +5,7 @@ const FILES := [
 	"res://src/ui/battle/battle_hud_presenter.gd",
 	"res://src/ui/battle/battle_overlay_controller.gd",
 	"res://src/ui/battle/battle_navigation.gd",
+	"res://src/ui/battle/battle_power_strip.gd",
 ]
 var checks := 0
 var failures := 0
@@ -25,7 +26,7 @@ func _ready() -> void:
 	check(navigation.has_method("go_to_map") and navigation.has_method("go_to_menu") \
 			and navigation.has_method("go_to_area_select"), "navigation owns battle destinations")
 	var source := FileAccess.get_file_as_string("res://src/ui/battle_screen.gd")
-	for collaborator in ["EncounterCoordinator", "BattleHudPresenter", "BattleOverlayController", "BattleNavigation"]:
+	for collaborator in ["EncounterCoordinator", "BattleHudPresenter", "BattleOverlayController", "BattleNavigation", "BattlePowerStrip"]:
 		check(source.contains(collaborator), "battle screen composes " + collaborator)
 	check(source.contains("battle.on_move()") and source.contains("1 move spent"),
 			"New Mix still consumes one combat move")

@@ -40,6 +40,7 @@ var skill_controller: SkillController
 var objective_label: Label
 var intent_label: Label
 var tactical_readout: TacticalReadout
+var power_strip: BattlePowerStrip
 var mana_bar: ProgressBar
 var mana_label: Label
 var reaction_chamber: ReactionChamber
@@ -461,25 +462,36 @@ func _refresh_tactical_hud() -> void:
 	var trick := signature_controller.preview() if signature_controller != null else {}
 	if tactical_readout != null:
 		tactical_readout.update_payload(objective_label.text, preview, trick)
-	mana_bar.value = skill_controller.mana
-	mana_label.text = "MANA  %d/100" % skill_controller.mana
-	if reaction_chamber != null:
-		reaction_chamber.set_history(combo_resolver.history())
 	var kit: Dictionary = GameState.kits.get(RunState.kit_id, {})
 	var active_id := str(kit.get("active", "skill"))
 	var mana_cost := int(kit.get("cost", 0))
-	skill_button.text = active_id.replace("_", " ").to_upper()
-	skill_button.disabled = not skill_controller.can_cast(active_id)
-	mana_bar.tooltip_text = "MANA\nCompleted potion: +25 (+18 Wild). Active skill cost: %d." % mana_cost
-	mana_label.tooltip_text = mana_bar.tooltip_text
-	skill_button.tooltip_text = "%s\n%s\nCost: %d Mana • Cooldown: %d completed potion(s)." % [
+	var cooldown := skill_controller.cooldown_remaining(active_id)
+	var skill_disabled_reason := "READY"
+	if skill_controller.mana < mana_cost:
+		skill_disabled_reason = "Need %d more Mana" % (mana_cost - skill_controller.mana)
+	elif cooldown > 0:
+		skill_disabled_reason = "Cooldown: %d potion%s" % [cooldown,
+				"" if cooldown == 1 else "s"]
+	var skill_tooltip := "%s\n%s\nCost: %d Mana • Cooldown: %d completed potion(s)." % [
 			active_id.replace("_", " ").to_upper(), GuideContent.skill_effect(active_id),
 			mana_cost, int(kit.get("cooldown", 0))]
-	ultimate_button.text = "ULT %d%%" % skill_controller.ultimate_charge()
-	ultimate_button.disabled = not skill_controller.ultimate_ready()
-	ultimate_button.tooltip_text = "%s\n%s\nAlchemy Reactions charge this meter; Mana does not." % [
+	var ultimate_tooltip := "%s\n%s\nAlchemy Reactions charge this meter; Mana does not." % [
 			str(kit.get("ultimate_name", kit.get("ultimate", "Ultimate"))).to_upper(),
 			GuideContent.ultimate_effect(RunState.kit_id)]
+	if power_strip != null:
+		power_strip.update_model({"mana":skill_controller.mana,
+				"history":combo_resolver.history(),
+				"skill_name":active_id.replace("_", " "),
+				"skill_ready":skill_controller.can_cast(active_id),
+				"skill_disabled_reason":skill_disabled_reason,
+				"skill_tooltip":skill_tooltip,
+				"ultimate_charge":skill_controller.ultimate_charge(),
+				"ultimate_ready":skill_controller.ultimate_ready(),
+				"ultimate_disabled_reason":"READY" if skill_controller.ultimate_ready()
+						else "Build %d%% more charge" % (100 - skill_controller.ultimate_charge()),
+				"ultimate_tooltip":ultimate_tooltip})
+		mana_bar.tooltip_text = "MANA\nCompleted potion: +25 (+18 Wild). Active skill cost: %d." % mana_cost
+		mana_label.tooltip_text = mana_bar.tooltip_text
 
 
 func _refresh_reaction_counterplay() -> void:
@@ -728,25 +740,16 @@ func _build_tactical_hud() -> PanelContainer:
 
 
 func _build_power_strip() -> PanelContainer:
-	var panel := PanelContainer.new(); panel.custom_minimum_size = Vector2(0, 66)
-	var style := StyleBoxFlat.new(); style.bg_color = Color(0.025, 0.012, 0.045, 0.94)
-	style.border_color = Color("795c31"); style.set_border_width_all(1); style.set_corner_radius_all(12)
-	style.content_margin_left = 10; style.content_margin_right = 10
-	panel.add_theme_stylebox_override("panel", style)
-	var row := HBoxContainer.new(); row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 8); panel.add_child(row)
-	var mana_stack := VBoxContainer.new(); mana_stack.custom_minimum_size = Vector2(145, 54)
-	mana_label = UiKit.label("MANA 0/100", 13, Color("73d9ff")); mana_stack.add_child(mana_label)
-	mana_bar = UiKit.bar(Color("368ed8"), 18); mana_bar.name = "ManaMeter"; mana_bar.max_value = 100
-	mana_stack.add_child(mana_bar); row.add_child(mana_stack)
-	reaction_chamber = ReactionChamber.new(); reaction_chamber.name = "ComboSlots"
-	reaction_chamber.codex_requested.connect(_on_reaction_codex_requested)
-	row.add_child(reaction_chamber)
-	skill_button = UiKit.button("SKILL", Vector2(112, 50), Color("70d9ff")); skill_button.name = "SkillButton"
-	skill_button.add_theme_font_size_override("font_size", 14); skill_button.pressed.connect(_on_skill_pressed); row.add_child(skill_button)
-	ultimate_button = UiKit.button("ULT", Vector2(88, 50), Color("ffb84d")); ultimate_button.name = "UltimateButton"
-	ultimate_button.add_theme_font_size_override("font_size", 14); ultimate_button.pressed.connect(_on_ultimate_pressed); row.add_child(ultimate_button)
-	return panel
+	power_strip = BattlePowerStrip.new()
+	power_strip.skill_requested.connect(_on_skill_pressed)
+	power_strip.ultimate_requested.connect(_on_ultimate_pressed)
+	power_strip.codex_requested.connect(_on_reaction_codex_requested)
+	mana_bar = power_strip.mana_bar
+	mana_label = power_strip.mana_label
+	reaction_chamber = power_strip.reaction_chamber
+	skill_button = power_strip.skill_button
+	ultimate_button = power_strip.ultimate_button
+	return power_strip
 
 
 func _on_reaction_codex_requested() -> void:
