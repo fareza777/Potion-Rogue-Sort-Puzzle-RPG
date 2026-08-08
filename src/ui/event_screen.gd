@@ -13,7 +13,8 @@ func _ready() -> void:
 	var shade := ColorRect.new(); shade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	shade.color = Color(0.01, 0.005, 0.03, 0.7); add_child(shade)
 	var node := RunState.current_node(); var kind := str(node.get("kind", "event"))
-	event_id = str(node.get("event_id", _event_for_kind(kind)))
+	event_id = resolver.resolve_event_id(
+			str(node.get("event_id", _event_for_kind(kind))), RunState)
 	var event: Dictionary = resolver.events.get(event_id, {})
 	var margin := UiKit.safe_margin(self, 28, 90, 32)
 	var root := VBoxContainer.new(); root.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -25,7 +26,8 @@ func _ready() -> void:
 	var text := UiKit.label(str(event.get("text", "The dungeon waits.")), 22, UiKit.COLOR_TEXT)
 	text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	art.add_child(text)
-	status = UiKit.label("Choose one. The result is permanent for this run.", 15, UiKit.COLOR_TEXT_DIM)
+	status = UiKit.body_label("Choose one. The result is permanent for this run.",
+			UiKit.COLOR_TEXT_DIM)
 	root.add_child(status)
 	choice_box = VBoxContainer.new(); choice_box.add_theme_constant_override("separation", 12); root.add_child(choice_box)
 	for choice_id in event.get("choices", {}):

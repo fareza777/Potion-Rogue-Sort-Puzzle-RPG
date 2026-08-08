@@ -69,7 +69,9 @@ func _make_row(id: String) -> PanelContainer:
 	var max_level := int(up.get("max_level", 1))
 	var maxed := level >= max_level
 
-	var panel := UiKit.textured_panel("res://assets/art/ui/battle_panel.png", 18)
+	var horizontal := str(up.get("category", "")) == "horizontal"
+	var panel: PanelContainer = QuietSurface.new().set_accent(Color("82d7ff"), 0.72) \
+			if horizontal else UiKit.textured_panel("res://assets/art/ui/battle_panel.png", 18)
 	panel.custom_minimum_size = Vector2(0, 138)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var row := HBoxContainer.new()
@@ -81,6 +83,11 @@ func _make_row(id: String) -> PanelContainer:
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	info.add_theme_constant_override("separation", 2)
 	row.add_child(info)
+	if horizontal:
+		var category := UiKit.caption_label("TACTICAL MASTERY  •  ONE-TIME UNLOCK",
+				Color("82d7ff"))
+		category.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		info.add_child(category)
 
 	var name_label := UiKit.label("%s   (Lv %d/%d)"
 			% [str(up.get("name", id)), level, max_level], 21, UiKit.COLOR_GOLD)

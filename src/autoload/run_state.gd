@@ -37,6 +37,8 @@ var run_graph: Dictionary = {}
 var current_node_id := ""
 var run_seed := 0
 var resolved_event_ids: Array = []
+var story_flags: Dictionary = {}
+var pending_followup_event := ""
 var active_curses := 0
 var area_id := "shadow_crypt"
 var pending_area_id := "shadow_crypt"
@@ -89,6 +91,8 @@ func start_new_run(selected_kit := "ember_adept", selected_area_id := "",
 	mutation_ids = []
 	catalyst_ids = []
 	resolved_event_ids = []
+	story_flags = {}
+	pending_followup_event = ""
 	active_curses = 0
 	phase = PHASE_MAP
 	phase_payload = {}
@@ -123,6 +127,8 @@ func start_new_run(selected_kit := "ember_adept", selected_area_id := "",
 	run_graph = RunGenerator.new().generate(run_seed, area_id, run_ascension,
 			daily_twist)
 	current_node_id = str(run_graph.get("start", "f0_l1"))
+	if horizontal_perk("wayfinder_seal"):
+		_apply_wayfinder_seal()
 	if run_mode == "rematch":
 		for node in run_graph.get("nodes", []):
 			if str(node.get("kind", "")) == "boss":
@@ -132,6 +138,10 @@ func start_new_run(selected_kit := "ember_adept", selected_area_id := "",
 	if run_mode in ["normal", "rematch"]:
 		run_crystals += int(MetaProgression.new().mastery_perks(area_id).get(
 				"start_crystals", 0))
+		if horizontal_perk("field_satchel"):
+			var starter_relics := roll_relic_choices(1)
+			if not starter_relics.is_empty():
+				add_relic(str(starter_relics[0]))
 	active = true
 	SaveSystem.bump_stat("runs_started")
 	SaveSystem.record_area_depth(area_id, 0)
@@ -270,7 +280,7 @@ func resume_scene() -> String:
 
 
 func serialize_boundary() -> Dictionary:
-	return {"version": 7, "active": active, "seed": run_seed, "area_id": area_id,
+	return {"version": 8, "active": active, "seed": run_seed, "area_id": area_id,
 		"graph": run_graph.duplicate(true), "current_node_id": current_node_id,
 		"phase": phase, "phase_payload": phase_payload.duplicate(true),
 		"run_mode": run_mode, "ascension": run_ascension,
@@ -278,13 +288,15 @@ func serialize_boundary() -> Dictionary:
 		"mutations": mutation_ids.duplicate(), "relics": relic_ids.duplicate(),
 		"catalysts": catalyst_ids.duplicate(), "upgrades": upgrade_ids.duplicate(),
 		"resolved_events": resolved_event_ids.duplicate(), "active_curses": active_curses,
+		"story_flags": story_flags.duplicate(true),
+		"pending_followup_event": pending_followup_event,
 		"rng_state": int(_run_rng.snapshot().state),
 		"replay":_replay_journal.snapshot()}
 
 
 func resume_from_save(saved: Dictionary) -> bool:
 	var boundary_version := int(saved.get("version", 0))
-	if boundary_version not in [2, 3, 4, 5, 6, 7] or not bool(saved.get("active", false)): return false
+	if boundary_version not in [2, 3, 4, 5, 6, 7, 8] or not bool(saved.get("active", false)): return false
 	if typeof(saved.get("graph", null)) != TYPE_DICTIONARY: return false
 	var loaded_area := str(saved.get("area_id", "shadow_crypt"))
 	area_id = loaded_area if not GameState.area(loaded_area).is_empty() else "shadow_crypt"
@@ -308,6 +320,10 @@ func resume_from_save(saved: Dictionary) -> bool:
 	catalyst_ids = _valid_ids(saved.get("catalysts", []), catalyst_pool)
 	upgrade_ids = _valid_ids(saved.get("upgrades", []), upgrade_pool)
 	resolved_event_ids = saved.get("resolved_events", []).duplicate()
+	story_flags = (saved.get("story_flags", {}) as Dictionary).duplicate(true)
+	pending_followup_event = str(saved.get("pending_followup_event", ""))
+	if not GameState.load_data_file("events.json", {}).has(pending_followup_event):
+		pending_followup_event = ""
 	active_curses = maxi(int(saved.get("active_curses", 0)), 0); active = true
 	_replay_journal.clear()
 	if boundary_version >= 7:
@@ -486,6 +502,26 @@ func perma_bonus(stat_name: String) -> float:
 		if str(up.get("stat", "")) == stat_name:
 			bonus += float(up.get("add_per_level", 0)) * SaveSystem.perma_level(id)
 	return bonus
+
+
+func horizontal_perk(id: String) -> bool:
+	var config: Dictionary = perma_pool.get(id, {})
+	return run_mode in ["normal", "rematch"] \
+			and str(config.get("category", "")) == "horizontal" \
+			and SaveSystem.perma_level(id) > 0
+
+
+func _apply_wayfinder_seal() -> void:
+	var start := current_node()
+	if start.is_empty():
+		return
+	var links: Array = start.get("links", [])
+	for node in run_graph.get("nodes", []):
+		if int(node.get("floor", -1)) == 1 and str(node.get("id", "")) not in links:
+			links.append(str(node.get("id", "")))
+			start["links"] = links
+			record_replay("wayfinder_route_added", {"node_id":str(node.get("id", ""))})
+			return
 
 
 ## Cost of the next level of a permanent upgrade (scales with level).

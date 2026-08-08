@@ -182,6 +182,12 @@ func _populate_graph_card(button: Button, node: Dictionary) -> void:
 		detail_text = str(GameState.enemies.get(str(node.enemy), {}).get("name", "Unknown"))
 	elif revealed and node.has("event_id"):
 		detail_text = str(node.event_id).replace("_", " ")
+	elif disclosure == "mystery" and kind in ["battle", "elite"] \
+			and RunState.horizontal_perk("scout_lens"):
+		var modifiers: Array = node.get("contract", {}).get("modifier_ids", [])
+		if not modifiers.is_empty():
+			detail_text = "HAZARD: " + str(GameState.modifiers.get(str(modifiers[0]), {}).get(
+					"name", str(modifiers[0]).replace("_", " ")))
 	var detail := UiKit.label(detail_text.to_upper(), 12, UiKit.COLOR_TEXT_DIM)
 	detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	detail.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS

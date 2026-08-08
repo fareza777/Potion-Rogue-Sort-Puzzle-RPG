@@ -21,10 +21,10 @@ func _ready() -> void:
 		check(RunState.call("resume_scene") == "res://scenes/battle.tscn",
 				"battle checkpoint resumes the battle scene")
 		var saved := RunState.serialize_boundary()
-		check(int(saved.get("version", 0)) == 7 and saved.get("phase", "") == "BATTLE"
+		check(int(saved.get("version", 0)) == 8 and saved.get("phase", "") == "BATTLE"
 				and int(saved.get("ascension", -1)) == RunState.run_ascension
 				and typeof(saved.get("replay")) == TYPE_DICTIONARY,
-				"version seven boundary persists phase, Ascension, and replay")
+				"version eight boundary persists phase, story, Ascension, and replay")
 		check((saved.get("phase_payload", {}) as Dictionary).get("encounter", "") == "snapshot",
 				"phase payload survives serialization")
 		RunState.phase = "MAP"

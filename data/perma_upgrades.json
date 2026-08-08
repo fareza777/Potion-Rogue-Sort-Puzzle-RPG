@@ -38,5 +38,30 @@
 		"name": "Treasure Hunter",
 		"description": "+2 crystals per battle won, per level.",
 		"stat": "crystal_bonus", "add_per_level": 2, "base_cost": 25, "max_level": 3
+	},
+	"field_satchel": {
+		"name": "Field Satchel", "category": "horizontal",
+		"description": "Begin normal expeditions with one deterministic starter relic.",
+		"perk": "field_satchel", "base_cost": 55, "max_level": 1
+	},
+	"scout_lens": {
+		"name": "Scout Lens", "category": "horizontal",
+		"description": "Reachable battle routes reveal their alchemical hazard family, never the enemy.",
+		"perk": "scout_lens", "base_cost": 45, "max_level": 1
+	},
+	"formula_primer": {
+		"name": "Formula Primer", "category": "horizontal",
+		"description": "Each battle begins with one Wild essence recorded in the Reaction Chamber.",
+		"perk": "formula_primer", "base_cost": 60, "max_level": 1
+	},
+	"emergency_cork": {
+		"name": "Emergency Cork", "category": "horizontal",
+		"description": "The first two normal New Mix uses each run cost no Mana; both still spend a move.",
+		"perk": "emergency_cork", "base_cost": 50, "max_level": 1
+	},
+	"wayfinder_seal": {
+		"name": "Wayfinder Seal", "category": "horizontal",
+		"description": "Adds one extra legal route from the starting chamber when the map permits.",
+		"perk": "wayfinder_seal", "base_cost": 65, "max_level": 1
 	}
 }

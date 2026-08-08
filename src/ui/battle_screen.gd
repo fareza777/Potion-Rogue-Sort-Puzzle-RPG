@@ -82,9 +82,11 @@ func _process(_delta: float) -> void:
 	var applied := false
 	if not payload.has("error"):
 		var integrity: Dictionary = payload.get("integrity", {})
+		var priced_mix_count := maxi(remix_economy.mix_count - (1 if
+				RunState.horizontal_perk("emergency_cork") else 0), 0)
 		_pending_remix_quote = remix_economy.quote(
 				str(integrity.get("status", "invalid")),
-				remix_economy.mix_count, skill_controller.mana)
+				priced_mix_count, skill_controller.mana)
 		if not bool(_pending_remix_quote.get("allowed", false)):
 			board.restore_snapshot(_pending_remix_snapshot)
 			board.enabled = true
@@ -315,6 +317,8 @@ func _setup_tactical_controllers(enemy_id: String) -> void:
 		_set_message(reason.to_upper()))
 	combo_resolver = ComboResolver.new()
 	combo_resolver.combo_resolved.connect(_on_depth_combo)
+	if RunState.horizontal_perk("formula_primer"):
+		combo_resolver.push_essence("wild")
 	reaction_pipeline = ReactionModifierPipeline.new()
 	reaction_pipeline.configure(RunState.kit_id, RunState.relic_ids,
 			RunState.catalyst_ids, RunState.mutation_ids)

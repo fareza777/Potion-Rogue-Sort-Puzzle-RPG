@@ -4,6 +4,14 @@ extends RefCounted
 var events := GameState.load_data_file("events.json", {})
 
 
+func resolve_event_id(base_id: String, run: Node) -> String:
+	var queued := str(run.get("pending_followup_event")) \
+			if run != null and "pending_followup_event" in run else ""
+	if not queued.is_empty() and events.has(queued):
+		return queued
+	return base_id if events.has(base_id) else "whispering_well"
+
+
 func preview(event_id: String, choice_id: String) -> Dictionary:
 	var choice := _choice(event_id, choice_id)
 	if choice.is_empty(): return {"ok": false, "reason": "invalid_choice"}
@@ -32,6 +40,8 @@ func choice_summary(event_id: String, choice_id: String) -> String:
 			"add_mutation": gains.append("Gain: 1 random mutation")
 			"add_relic": gains.append("Gain: 1 random relic")
 			"add_catalyst": gains.append("Gain: 1 random catalyst")
+			"set_story_flag": gains.append("Story: this decision will be remembered")
+			"queue_followup": gains.append("Unlock: a future story encounter")
 	var parts: Array[String] = []
 	parts.append_array(costs)
 	parts.append_array(gains)
@@ -47,6 +57,8 @@ func apply(event_id: String, choice_id: String, run: Node) -> Dictionary:
 	if int(result.cost) > run.run_crystals:
 		return {"ok": false, "reason": "unaffordable"}
 	run.run_crystals -= int(result.cost)
+	if str(run.get("pending_followup_event")) == event_id:
+		run.set("pending_followup_event", "")
 	# "Withered Rest" and similar Ascension rules scale event healing down.
 	var recovery_mult := AscensionRules.new().multiplier(int(run.run_ascension), "recovery_mult")
 	for effect in result.effects:
@@ -60,6 +72,14 @@ func apply(event_id: String, choice_id: String, run: Node) -> Dictionary:
 			"add_mutation": run.add_mutation(_draft("mutation", run))
 			"add_relic": run.add_relic(_draft("relic", run))
 			"add_catalyst": run.add_catalyst(_draft("catalyst", run))
+			"set_story_flag":
+				var flags: Dictionary = run.get("story_flags").duplicate(true)
+				flags[str(effect.get("key", "event_choice"))] = effect.get("value", true)
+				run.set("story_flags", flags)
+			"queue_followup":
+				var followup := str(effect.get("value", ""))
+				if events.has(followup):
+					run.set("pending_followup_event", followup)
 	run.resolved_event_ids.append(resolution_key)
 	result["result_summary"] = choice_summary(event_id, choice_id)
 	return result

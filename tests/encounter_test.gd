@@ -10,6 +10,7 @@ func _ready() -> void:
 	_test_objectives()
 	_test_enemy_intents()
 	_test_expanded_roster()
+	_test_event_continuity()
 	print("---")
 	print("%d checks, %d failures" % [_checks, _failures])
 	get_tree().quit(1 if _failures > 0 else 0)
@@ -168,6 +169,21 @@ func _test_expanded_roster() -> void:
 	check(effect_battle.heal_enemy(8) == 8 and effect_battle.enemy_hp == 38,
 			"drain and heal intents restore enemy vitality")
 	effect_battle.free()
+
+
+func _test_event_continuity() -> void:
+	RunState.start_new_run("ember_adept", "shadow_crypt", "normal", 4242)
+	var resolver := EventResolver.new()
+	var result := resolver.apply("whispering_well", "drink", RunState)
+	check(bool(result.get("ok", false)), "story event choice resolves mechanically")
+	check(bool(RunState.story_flags.get("heard_the_well", false)),
+			"event choice persists an explicit story flag")
+	check(resolver.resolve_event_id("bone_oracle", RunState) == "well_echo",
+			"next event resolves to the queued deterministic follow-up")
+	var boundary := RunState.serialize_boundary()
+	check(boundary.get("story_flags", {}) == RunState.story_flags
+			and str(boundary.get("pending_followup_event", "")) == "well_echo",
+			"story continuity survives a run checkpoint")
 
 
 func check(condition: bool, what: String) -> void:

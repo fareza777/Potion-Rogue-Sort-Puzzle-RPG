@@ -29,6 +29,20 @@ func _ready() -> void:
 			"area mastery XP is recorded")
 	check(meta.area_mastery_rank("shadow_crypt") == 1,
 			"mastery XP unlocks a visible rank")
+	var horizontal_ids := ["field_satchel", "scout_lens", "formula_primer",
+			"emergency_cork", "wayfinder_seal"]
+	for id in horizontal_ids:
+		var perk: Dictionary = RunState.perma_pool.get(id, {})
+		check(str(perk.get("category", "")) == "horizontal"
+				and int(perk.get("max_level", 0)) == 1,
+				"horizontal mastery is one-level and non-stat: " + id)
+	SaveSystem.data.perma = {"field_satchel":1}
+	RunState.run_mode = "normal"
+	check(RunState.horizontal_perk("field_satchel"),
+			"horizontal mastery applies to normal expeditions")
+	RunState.run_mode = "daily"
+	check(not RunState.horizontal_perk("field_satchel"),
+			"horizontal mastery stays out of comparable challenge modes")
 	check(meta.complete_weekly("2026-W29", 1440) > 0,
 			"weekly clear records a one-time reward")
 	check(meta.complete_weekly("2026-W29", 9999) == 0,
