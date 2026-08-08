@@ -61,6 +61,7 @@ var _pending_remix_generation := -1
 var _pending_remix_snapshot: Dictionary = {}
 var _pending_remix_seed := 0
 var _pending_remix_quote: Dictionary = {}
+var _story_signature_seen := false
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -405,6 +406,14 @@ func _on_signature_move() -> void:
 	AudioManager.play("lock")
 	_checkpoint_encounter_deferred()
 	_refresh()
+	if not _story_signature_seen and not battle.battle_over:
+		_story_signature_seen = true
+		board.enabled = false
+		await StoryboardService.play("battle_escalation", {
+				"enemy_id":battle.enemy_id, "enemy_name":battle.enemy_name,
+				"kind":"signature", "floor":int(RunState.current_node().get("floor", 0)) + 1})
+		if not battle.battle_over:
+			board.enabled = true
 
 
 func _mark_signature_layer(tube_index: int, effect: String) -> void:
@@ -1027,9 +1036,12 @@ func _on_boss_phase_changed(index: int, config: Dictionary) -> void:
 	if not board_action.is_empty():
 		if not _apply_boss_board_action(board_action):
 			_set_message("%s FIZZLES  •  BOARD REMAINS SOLVABLE" % board_action.to_upper())
-	var delay := 0.35 if bool(SaveSystem.setting("reduced_effects")) else 1.2
-	get_tree().create_timer(delay).timeout.connect(func():
-		if not battle.battle_over: board.enabled = true)
+	await StoryboardService.play("battle_escalation", {
+			"enemy_id":battle.enemy_id, "enemy_name":battle.enemy_name,
+			"kind":"boss phase %d" % (index + 1),
+			"floor":int(RunState.current_node().get("floor", 0)) + 1})
+	if not battle.battle_over:
+		board.enabled = true
 
 
 func _apply_boss_board_action(action: String) -> bool:
@@ -1108,6 +1120,9 @@ func _on_battle_won() -> void:
 		battle.setup_next_wave(encounter_format.wave, next_enemy_id)
 		_configure_wave_enemy(next_enemy_id, encounter_format.wave)
 		_set_message("WAVE CLEARED  •  %s ENTERS" % battle.enemy_name.to_upper())
+		await StoryboardService.play("battle_escalation", {
+				"enemy_id":battle.enemy_id, "enemy_name":battle.enemy_name,
+				"kind":"reinforcement", "floor":int(RunState.current_node().get("floor", 0)) + 1})
 		enemy_display.configure_enemy(battle.enemy_id, battle.enemy_shape, battle.enemy_color)
 		enemy_display.play_intro()
 		board.enabled = true
@@ -1123,10 +1138,25 @@ func _on_battle_won() -> void:
 	AudioManager.stop_music()
 	var was_last := RunState.is_last_battle()
 	var was_elite := str(RunState.current_battle().get("kind", "battle")) == "elite"
+	var story_context := {"seed":RunState.run_seed, "node_id":RunState.current_node_id,
+			"area_id":RunState.area_id,
+			"area_name":str(RunState.current_area().get("name", "The Dungeon")),
+			"kit_id":RunState.kit_id, "enemy_id":battle.enemy_id,
+			"enemy_name":battle.enemy_name,
+			"kind":str(RunState.current_battle().get("kind", "battle")),
+			"floor":int(RunState.current_node().get("floor", 0)) + 1,
+			"story_flags":RunState.story_flags.duplicate(true)}
 	var campaign_result := RunState.complete_battle(battle.player_hp, battle.crystals_reward)
 	if not was_last:
 		RunState.checkpoint(RunState.PHASE_REWARD, {"encounter": _capture_encounter(),
 				"elite": was_elite})
+	await StoryboardService.play("battle_victory", story_context)
+	if was_last:
+		var epilogue_context := story_context.duplicate(true)
+		epilogue_context["first_clear"] = bool(campaign_result.get("first_clear", false))
+		epilogue_context["campaign_complete"] = bool(campaign_result.get("campaign_complete", false))
+		epilogue_context["unlocked_area"] = str(campaign_result.get("unlocked_area", ""))
+		await StoryboardService.play("run_epilogue", epilogue_context)
 	if was_last:
 		var area_name := str(RunState.current_area().get("name", "expedition"))
 		var first_reward := int(campaign_result.get("reward", 0))
@@ -1219,7 +1249,15 @@ func _on_battle_lost() -> void:
 	AudioManager.play("defeat")
 	AudioManager.stop_music()
 	AudioManager.vibrate(120)
+	var story_context := {"seed":RunState.run_seed, "node_id":RunState.current_node_id,
+			"area_id":RunState.area_id,
+			"area_name":str(RunState.current_area().get("name", "The Dungeon")),
+			"kit_id":RunState.kit_id, "enemy_id":battle.enemy_id,
+			"enemy_name":battle.enemy_name,
+			"kind":"defeat", "floor":int(RunState.current_node().get("floor", 0)) + 1,
+			"story_flags":RunState.story_flags.duplicate(true)}
 	var kept := RunState.fail_run()
+	await StoryboardService.play("battle_defeat", story_context)
 	var floor := int(RunState.current_node().get("floor", RunState.battle_index))
 	var streak := SaveSystem.record_early_defeat(floor <= 2)
 	var actions: Array = [["New Run", _start_new_run], ["Main Menu", _go_to_menu]]

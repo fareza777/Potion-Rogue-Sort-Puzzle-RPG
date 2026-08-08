@@ -85,11 +85,18 @@ func _kit_choice(kit_id: String) -> PanelContainer:
 	info.add_child(UiKit.label(str(copy[3]), 13, UiKit.COLOR_TEXT_DIM))
 	var choose := UiKit.ornate_button("SELECT", Vector2(150, 62), _kit_color(kit_id))
 	choose.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	choose.pressed.connect(func() -> void:
-		RunState.start_new_run(kit_id)
-		get_tree().change_scene_to_file(RunState.resume_scene()))
+	choose.pressed.connect(_begin_run.bind(kit_id))
 	row.add_child(choose)
 	return panel
+
+
+func _begin_run(kit_id: String) -> void:
+	RunState.start_new_run(kit_id)
+	await StoryboardService.play("run_intro", {"kit_id":kit_id})
+	await StoryboardService.play("realm_arrival", {"kit_id":kit_id, "floor":1})
+	RunState.story_flags["realm_arrival_seen"] = true
+	RunState.checkpoint(RunState.PHASE_MAP)
+	get_tree().change_scene_to_file(RunState.resume_scene())
 
 
 func _kit_color(kit_id: String) -> Color:

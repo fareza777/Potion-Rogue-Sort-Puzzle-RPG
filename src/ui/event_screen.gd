@@ -38,11 +38,24 @@ func _ready() -> void:
 		button.add_theme_font_size_override("font_size", 20)
 		button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		button.pressed.connect(_choose.bind(str(choice_id))); choice_box.add_child(button)
+	call_deferred("_play_event_reveal", event)
+
+
+func _play_event_reveal(event: Dictionary) -> void:
+	await StoryboardService.play("event_reveal", {"event_id":event_id,
+			"event_name":str(event.get("name", event_id.replace("_", " ").capitalize()))})
+
 
 func _choose(choice_id: String) -> void:
 	var result := resolver.apply(event_id, choice_id, RunState)
 	if not result.ok: status.text = "Cannot choose: " + str(result.reason); return
 	RunState.checkpoint(RunState.PHASE_MAP)
+	for child in choice_box.get_children():
+		if child is BaseButton:
+			(child as BaseButton).disabled = true
+	await StoryboardService.play("event_resolution", {"event_id":event_id,
+			"event_name":str(resolver.events.get(event_id, {}).get("name", event_id)),
+			"result_summary":str(result.get("result_summary", "Choice sealed."))})
 	for child in choice_box.get_children(): child.queue_free()
 	status.text = "APPLIED  •  " + str(result.get("result_summary", "Choice sealed."))
 	var continue_button := UiKit.ornate_button("RETURN TO MAP", Vector2(430, 68))

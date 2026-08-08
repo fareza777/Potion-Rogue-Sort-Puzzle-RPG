@@ -109,8 +109,16 @@ func _scroll_to_current_chamber() -> void:
 func _on_node_selected(node_id: String) -> void:
 	if not RunState.select_node(node_id): return
 	if tutorial_director != null: tutorial_director.accept_action("choose_path")
-	var kind := str(RunState.current_node().get("kind", "battle"))
+	var node := RunState.current_node()
+	var kind := str(node.get("kind", "battle"))
+	var story_context := {"node_id":node_id, "kind":kind,
+			"floor":int(node.get("floor", 0)) + 1,
+			"enemy_id":str(node.get("enemy", "")),
+			"enemy_name":str(GameState.enemies.get(str(node.get("enemy", "")), {}).get(
+					"name", "Unknown Guardian"))}
+	await StoryboardService.play("route_choice", story_context)
 	if kind in ["battle", "elite", "boss"]:
+		await StoryboardService.play("battle_intro", story_context)
 		get_tree().change_scene_to_file("res://scenes/battle.tscn")
 	else:
 		get_tree().change_scene_to_file("res://scenes/event.tscn")
