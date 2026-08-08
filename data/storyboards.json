@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "layouts": ["panorama", "subject_left", "subject_right", "hero_center", "split_omen"],
+  "areas": {
+    "shadow_crypt": {
+      "accent": "9f6bd2", "name": "Shadow Crypt",
+      "background": "res://assets/art/backgrounds/shadow_crypt_battle_v2.png",
+      "transitions": ["ink_wipe", "ember_bloom", "shadow_dissolve"],
+      "omens": ["The stones remember every oath.", "Something armored moves below the torchline.", "The dead have learned the sound of glass."]
+    },
+    "verdant_catacombs": {
+      "accent": "65c98b", "name": "Verdant Catacombs",
+      "background": "res://assets/art/backgrounds/verdant_catacombs_battle.png",
+      "transitions": ["verdant_spore", "root_wipe", "mist_dissolve"],
+      "omens": ["The buried garden breathes.", "Roots close quietly behind the living.", "Every bright cap is watching."]
+    },
+    "astral_foundry": {
+      "accent": "6bbff0", "name": "Astral Foundry",
+      "background": "res://assets/art/backgrounds/astral_foundry_battle.png",
+      "transitions": ["astral_prism", "spark_wipe", "star_dissolve"],
+      "omens": ["A dead star turns beneath the anvil.", "Runes measure the intruder's pulse.", "The forge has chosen a new alloy."]
+    },
+    "frostbound_reliquary": {
+      "accent": "77d9f5", "name": "Frostbound Reliquary",
+      "background": "res://assets/art/backgrounds/frostbound_reliquary_battle.png",
+      "transitions": ["frost_shard", "white_breath", "ice_dissolve"],
+      "omens": ["Frozen vows still hold.", "The cold preserves more than bone.", "A bell rings inside the ice."]
+    },
+    "abyssal_apothecary": {
+      "accent": "43d6c5", "name": "Abyssal Apothecary",
+      "background": "res://assets/art/backgrounds/abyssal_apothecary_battle.png",
+      "transitions": ["abyssal_tide", "ink_current", "deep_dissolve"],
+      "omens": ["Blackwater climbs the laboratory walls.", "The pressure has learned your name.", "Something vast disturbs the medicine below."]
+    }
+  },
+  "kits": {
+    "ember_adept": {"name": "Ember Adept", "voice": "Fire is not anger. It is a decision."},
+    "verdant_warden": {"name": "Verdant Warden", "voice": "What survives can still become stronger."},
+    "void_brewer": {"name": "Void Brewer", "voice": "Every empty flask is an invitation."},
+    "tide_oracle": {"name": "Tide Oracle", "voice": "The next current is already moving."},
+    "marrow_alchemist": {"name": "Marrow Alchemist", "voice": "Bone remembers the shape of victory."}
+  },
+  "triggers": {
+    "run_intro": {"count": 2, "templates": [
+      {"id":"vow_before_descent", "layouts":["hero_center", "panorama"], "eyebrow":"EXPEDITION VOW", "titles":["THE FLASK AND THE DARK", "A NEW FORMULA BEGINS"], "bodies":["{kit} crosses the threshold carrying no certainty—only craft.", "{kit_voice}"], "subject":"potion", "motion":"slow_push", "music_state":"story_explore", "duration":2.8},
+      {"id":"realm_gate_opens", "layouts":["panorama", "subject_right"], "eyebrow":"{area} · DEPTH I", "titles":["THE GATE REMEMBERS", "DESCEND, ALCHEMIST"], "bodies":["{omen}", "A route is drawn only after the first step is taken."], "subject":"none", "motion":"drift_up", "music_state":"story_explore", "duration":2.7},
+      {"id":"kit_ritual", "layouts":["subject_left", "split_omen"], "eyebrow":"CHOSEN DISCIPLINE", "titles":["{kit}", "THE CRUCIBLE ANSWERS"], "bodies":["{kit_voice}", "Four essences. One living strategy."], "subject":"potion", "motion":"ember_hover", "music_state":"story_explore", "duration":2.5}
+    ]},
+    "realm_arrival": {"count": 2, "templates": [
+      {"id":"arrival_establishing", "layouts":["panorama"], "eyebrow":"REALM DISCOVERED", "titles":["{area}", "BEYOND THE THRESHOLD"], "bodies":["{omen}", "The expedition enters floor {floor}."], "subject":"none", "motion":"slow_push", "music_state":"story_explore", "duration":2.8},
+      {"id":"arrival_warning", "layouts":["split_omen", "subject_right"], "eyebrow":"THE DUNGEON STIRS", "titles":["NO PATH STAYS STILL", "THE REALM TAKES NOTICE"], "bodies":["Rooms shift around the alchemist's next choice.", "{omen}"], "subject":"potion", "motion":"parallax_drift", "music_state":"story_danger", "duration":2.4},
+      {"id":"arrival_resolve", "layouts":["hero_center", "subject_left"], "eyebrow":"PREPARE THE TABLE", "titles":["BREW FORWARD", "GLASS AGAINST NIGHT"], "bodies":["{kit_voice}", "The first chamber waits beyond the map."], "subject":"potion", "motion":"rise_glow", "music_state":"story_explore", "duration":2.3}
+    ]},
+    "route_choice": {"count": 1, "templates": [
+      {"id":"path_omen", "layouts":["panorama", "split_omen"], "eyebrow":"ROUTE SEALED · FLOOR {floor}", "titles":["FATE BEHIND STONE", "THE NEXT CHAMBER BREATHES"], "bodies":["{omen}", "The chosen path closes behind the expedition."], "subject":"none", "motion":"lateral_drift", "music_state":"story_explore", "duration":1.8},
+      {"id":"path_footfall", "layouts":["subject_left", "subject_right"], "eyebrow":"UNCHARTED PATH", "titles":["ONE STEP DEEPER", "A SOUND AHEAD"], "bodies":["Glass chimes once in the dark.", "The route offers risk, not answers."], "subject":"potion", "motion":"quick_push", "music_state":"story_danger", "duration":1.7}
+    ]},
+    "event_reveal": {"count": 2, "templates": [
+      {"id":"event_chamber", "layouts":["panorama", "split_omen"], "eyebrow":"A STRANGE CHAMBER", "titles":["{event}", "THE DUNGEON MAKES AN OFFER"], "bodies":["Not every danger carries a weapon.", "A choice waits where the path should be."], "subject":"none", "motion":"slow_push", "music_state":"story_explore", "duration":2.2},
+      {"id":"event_terms", "layouts":["subject_left", "subject_right"], "eyebrow":"CONSEQUENCE AWAITS", "titles":["READ THE PRICE", "NOTHING HERE IS FREE"], "bodies":["The immediate cost will be known. The outcome may echo later.", "{omen}"], "subject":"potion", "motion":"hover", "music_state":"story_danger", "duration":2.1},
+      {"id":"event_memory", "layouts":["hero_center", "split_omen"], "eyebrow":"A STORY CONTINUES", "titles":["THE CHAMBER REMEMBERS", "AN OLD CHOICE RETURNS"], "bodies":["The run carries its decisions forward.", "What was chosen before has found you again."], "subject":"potion", "motion":"memory_pulse", "music_state":"story_danger", "duration":2.0}
+    ]},
+    "event_resolution": {"count": 1, "templates": [
+      {"id":"choice_sealed", "layouts":["hero_center", "split_omen"], "eyebrow":"CHOICE SEALED", "titles":["THE RUN HAS CHANGED", "CONSEQUENCE ACCEPTED"], "bodies":["{result}", "The dungeon records the bargain."], "subject":"potion", "motion":"seal_glow", "music_state":"story_explore", "duration":2.0},
+      {"id":"choice_echo", "layouts":["subject_left", "subject_right"], "eyebrow":"THE PATH RESPONDS", "titles":["AN ECHO REMAINS", "CARRY IT FORWARD"], "bodies":["{result}", "Some choices return wearing another face."], "subject":"none", "motion":"drift_up", "music_state":"story_explore", "duration":1.9}
+    ]},
+    "battle_intro": {"count": 2, "templates": [
+      {"id":"enemy_silhouette", "layouts":["subject_right", "subject_left"], "eyebrow":"{battle_kind} · FLOOR {floor}", "titles":["{enemy}", "A GUARDIAN EMERGES"], "bodies":["Steel your formula. Read the first intent.", "{enemy} bars the chosen path."], "subject":"enemy", "motion":"reveal_rise", "music_state":"story_danger", "duration":2.2},
+      {"id":"battle_terms", "layouts":["split_omen", "panorama"], "eyebrow":"THE TABLE IS SET", "titles":["SORT. BREW. SURVIVE.", "EVERY POUR SPENDS TIME"], "bodies":["The enemy acts when its countdown reaches zero.", "Build Mana with potions and charge power through reactions."], "subject":"potion", "motion":"quick_push", "music_state":"battle", "duration":2.0},
+      {"id":"enemy_omen", "layouts":["subject_left", "hero_center"], "eyebrow":"HOSTILE SIGNATURE", "titles":["WATCH THE FLASKS", "THE PUZZLE WILL FIGHT BACK"], "bodies":["{omen}", "A signature trick may alter the board."], "subject":"enemy", "motion":"threat_pulse", "music_state":"battle", "duration":2.1}
+    ]},
+    "battle_escalation": {"count": 1, "templates": [
+      {"id":"reinforcement_enters", "layouts":["subject_right", "subject_left"], "eyebrow":"BATTLE ESCALATION", "titles":["{enemy} ENTERS", "THE FIGHT CHANGES SHAPE"], "bodies":["A new intent and signature take the field.", "Adapt the formula before the next attack."], "subject":"enemy", "motion":"impact_push", "music_state":"story_danger", "duration":1.35},
+      {"id":"wounded_resolve", "layouts":["hero_center", "split_omen"], "eyebrow":"VITALITY CRITICAL", "titles":["THE LAST FLASK", "HOLD THE LINE"], "bodies":["The next brew may decide the expedition.", "Defense now matters more than speed."], "subject":"potion", "motion":"danger_pulse", "music_state":"story_danger", "duration":1.30},
+      {"id":"boss_turns", "layouts":["panorama", "subject_right"], "eyebrow":"PHASE SHIFT", "titles":["THE GUARDIAN TRANSFORMS", "A DEEPER POWER WAKES"], "bodies":["Enemy rules and intent have changed.", "Read the warning before touching the board."], "subject":"enemy", "motion":"impact_push", "music_state":"story_danger", "duration":1.40}
+    ]},
+    "battle_victory": {"count": 2, "templates": [
+      {"id":"guardian_falls", "layouts":["subject_left", "subject_right"], "eyebrow":"ENCOUNTER WON", "titles":["VICTORY", "THE PATH OPENS"], "bodies":["{enemy} yields to the final formula.", "The dungeon releases its reward."], "subject":"enemy", "motion":"fall_fade", "music_state":"story_victory", "duration":1.8},
+      {"id":"brewer_rises", "layouts":["hero_center", "panorama"], "eyebrow":"FORMULA COMPLETE", "titles":["GROW STRONGER", "CARRY THE MOMENTUM"], "bodies":["Choose what this victory becomes.", "The next chamber will demand a sharper build."], "subject":"potion", "motion":"rise_glow", "music_state":"story_victory", "duration":2.0},
+      {"id":"elite_claim", "layouts":["split_omen", "hero_center"], "eyebrow":"ELITE TROPHY", "titles":["A RELIC ANSWERS", "POWER FROM THE FALLEN"], "bodies":["A rare prize waits among the remains.", "Build identity matters more than raw strength."], "subject":"potion", "motion":"relic_glow", "music_state":"story_victory", "duration":2.0}
+    ]},
+    "battle_defeat": {"count": 2, "templates": [
+      {"id":"formula_breaks", "layouts":["hero_center", "split_omen"], "eyebrow":"EXPEDITION BROKEN", "titles":["THE LAST FLASK SHATTERS", "THE DUNGEON ENDURES"], "bodies":["A failed run still leaves knowledge behind.", "The next alchemist begins wiser."], "subject":"potion", "motion":"compress_fade", "music_state":"story_defeat", "duration":2.2},
+      {"id":"darkness_closes", "layouts":["panorama", "subject_left"], "eyebrow":"RUN ENDED", "titles":["RETURN TO THE HALL", "THE GATE WILL OPEN AGAIN"], "bodies":["Review the final build and prepare another route.", "Mastery survives where the expedition did not."], "subject":"none", "motion":"slow_retreat", "music_state":"story_defeat", "duration":2.3},
+      {"id":"enemy_stands", "layouts":["subject_right", "subject_left"], "eyebrow":"GUARDIAN VICTORIOUS", "titles":["{enemy} REMAINS", "A LESSON IN THE DARK"], "bodies":["Its intent was fulfilled before the formula was ready.", "Remember the countdown."], "subject":"enemy", "motion":"threat_hold", "music_state":"story_defeat", "duration":2.1}
+    ]},
+    "run_epilogue": {"count": 3, "templates": [
+      {"id":"boss_gate_falls", "layouts":["subject_right", "subject_left"], "eyebrow":"REALM CONQUERED", "titles":["THE GUARDIAN IS SILENT", "THE CRUCIBLE GATE OPENS"], "bodies":["{enemy} can no longer bar the way.", "A realm yields its final secret."], "subject":"enemy", "motion":"fall_fade", "music_state":"story_victory", "duration":2.5},
+      {"id":"realm_afterglow", "layouts":["panorama", "split_omen"], "eyebrow":"{area} · COMPLETE", "titles":["A NEW PATH AWAKENS", "THE MAP GROWS WIDER"], "bodies":["The hall will remember this clear.", "Mastery and a deeper expedition now await."], "subject":"none", "motion":"slow_retreat", "music_state":"story_victory", "duration":2.6},
+      {"id":"alchemist_returns", "layouts":["hero_center", "subject_left"], "eyebrow":"EXPEDITION EPILOGUE", "titles":["THE BREWER RETURNS", "ONE STORY, MANY FORMULAS"], "bodies":["{kit_voice}", "The next run will not tell the same story."], "subject":"potion", "motion":"rise_glow", "music_state":"story_victory", "duration":2.7},
+      {"id":"ascension_calls", "layouts":["split_omen", "panorama"], "eyebrow":"A GREATER TRIAL", "titles":["ASCENSION STIRS", "THE DUNGEON LEARNS"], "bodies":["Future guardians will carry harsher rules.", "Mastery is an invitation, not an ending."], "subject":"none", "motion":"prism_bloom", "music_state":"story_victory", "duration":2.5}
+    ]}
+  }
+}
