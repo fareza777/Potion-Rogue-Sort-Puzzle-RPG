@@ -15,12 +15,15 @@ var _results := {}
 var _result_mutex := Mutex.new()
 
 
-func request(state: Array, seed: int, band: String, capacity: int) -> int:
+func request(snapshot: Dictionary, seed: int, band: String, capacity: int) -> int:
 	_generation_id += 1
 	var request_id := _generation_id
-	var immutable_state := state.duplicate(true)
+	var immutable_snapshot := snapshot.duplicate(true)
 	var task_id := WorkerThreadPool.add_task(func() -> void:
+		var integrity := BoardIntegrityGuard.new().inspect(immutable_snapshot)
+		var immutable_state: Array = immutable_snapshot.get("state", [])
 		var payload := {"generation_id":request_id,
+				"integrity":integrity,
 				"result":BoardFactory.remix(immutable_state, seed, band, capacity)}
 		_result_mutex.lock()
 		_results[request_id] = payload

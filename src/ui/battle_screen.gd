@@ -78,8 +78,22 @@ func _process(_delta: float) -> void:
 	if payload.is_empty() or int(payload.get("generation_id", -1)) != _pending_remix_generation:
 		return
 	_pending_remix_generation = -1
-	var applied := not payload.has("error") \
-			and board.apply_remix_result(payload.get("result", {}))
+	var applied := false
+	if not payload.has("error"):
+		var integrity: Dictionary = payload.get("integrity", {})
+		_pending_remix_quote = remix_economy.quote(
+				str(integrity.get("status", "invalid")),
+				remix_economy.mix_count, skill_controller.mana)
+		if not bool(_pending_remix_quote.get("allowed", false)):
+			board.restore_snapshot(_pending_remix_snapshot)
+			board.enabled = true
+			_set_message("NEW MIX NEEDS %d MANA" % int(
+					_pending_remix_quote.get("mana_cost", 20)))
+			_pending_remix_snapshot = {}
+			_pending_remix_quote = {}
+			_refresh()
+			return
+		applied = board.apply_remix_result(payload.get("result", {}))
 	if not applied:
 		board.restore_snapshot(_pending_remix_snapshot)
 		_set_message("MIX FAILED — TRY AGAIN")
@@ -1249,15 +1263,10 @@ func _on_undo_pressed() -> void:
 func _on_restart_pressed() -> void:
 	if battle.battle_over or remix_jobs.is_busy():
 		return
-	var integrity := board.integrity_report()
-	_pending_remix_quote = remix_economy.quote(str(integrity.get("status", "invalid")),
-			remix_economy.mix_count, skill_controller.mana)
-	if not bool(_pending_remix_quote.get("allowed", false)):
-		_set_message("NEW MIX NEEDS %d MANA" % int(_pending_remix_quote.get("mana_cost", 20)))
-		return
 	_pending_remix_snapshot = board.export_snapshot()
+	_pending_remix_quote = {}
 	_pending_remix_seed = int(randi())
-	_pending_remix_generation = remix_jobs.request(board.export_state(), _pending_remix_seed,
+	_pending_remix_generation = remix_jobs.request(_pending_remix_snapshot, _pending_remix_seed,
 			"standard", PotionTube.CAPACITY)
 	board.enabled = false
 	_set_message("BREWING...")
