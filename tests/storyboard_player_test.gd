@@ -33,6 +33,20 @@ func _ready() -> void:
 			"floor":1, "story_flags":{}})[0]
 	player.call("play", [beat])
 	await get_tree().process_frame
+	check(player.has_method("active_art_mode"),
+			"cinematic exposes its active art presentation mode")
+	if player.has_method("active_art_mode"):
+		check(str(player.call("active_art_mode")) == "full_scene",
+				"full narrative painting mode is active")
+	check(not (player.find_child("StorySubject", true, false) as TextureRect).visible,
+			"full-scene art hides the pasted subject layer")
+	check(not (player.find_child("SubjectHalo", true, false) as TextureRect).visible,
+			"full-scene art hides the subject halo")
+	check(player.find_child("FullSceneShade", true, false) != null,
+			"full-scene art owns a dedicated caption readability gradient")
+	var auto_advance := player.find_child("StoryboardAutoAdvance", true, false)
+	check(auto_advance is Timer and (auto_advance as Timer).is_stopped(),
+			"full-scene story waits for the player's tap before gameplay continues")
 	check(player.has_method("active_motion"),
 			"cinematic exposes its authored motion profile for verification")
 	if player.has_method("active_motion"):
@@ -44,13 +58,24 @@ func _ready() -> void:
 			"beat background is presented")
 	check(RunState.phase == phase_before,
 			"story playback never becomes the authoritative run phase")
-	var completion := {"called":false, "skipped":false}
+	var tapped_completion := {"called":false, "skipped":false}
 	player.finished.connect(func(skipped: bool) -> void:
-		completion.called = true
-		completion.skipped = skipped)
+		tapped_completion.called = true
+		tapped_completion.skipped = skipped)
+	await get_tree().create_timer(0.24).timeout
+	player.call("advance")
+	await get_tree().process_frame
+	check(bool(tapped_completion.called) and not bool(tapped_completion.skipped),
+			"tap closes the story normally so the awaited battle workflow can continue")
+	var skip_completion := {"called":false, "skipped":false}
+	player.finished.connect(func(skipped: bool) -> void:
+		skip_completion.called = true
+		skip_completion.skipped = skipped)
+	player.call("play", [beat])
+	await get_tree().process_frame
 	player.call("skip")
 	await get_tree().process_frame
-	check(bool(completion.called) and bool(completion.skipped),
+	check(bool(skip_completion.called) and bool(skip_completion.skipped),
 			"skip completes and cleans the active sequence")
 	var service_source := FileAccess.get_file_as_string(service_path)
 	check(service_source.contains("_pending") and service_source.contains("CRITICAL_TRIGGERS"),

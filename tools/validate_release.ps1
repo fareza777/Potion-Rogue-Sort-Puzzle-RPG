@@ -1,6 +1,7 @@
 param(
     [string]$ProjectRoot = (Split-Path -Parent $PSScriptRoot),
     [string]$ApkPath = "",
+    [string]$ReleaseArtifactPath = "",
     [int]$WarnApkMB = 60,
     [int]$MaxApkMB = 65,
     [int]$MaxAssetMB = 8,
@@ -22,7 +23,8 @@ if ([string]::IsNullOrWhiteSpace($ApkPath)) {
         Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
     $debugApk = if ($NewestDebug) { $NewestDebug.FullName } else { "" }
 } else {
-    $debugApk = Join-Path $root $ApkPath
+    $debugApk = if ([IO.Path]::IsPathRooted($ApkPath)) { $ApkPath }
+    else { Join-Path $root $ApkPath }
 }
 
 $assets = Get-ChildItem -LiteralPath (Join-Path $root "assets") -Recurse -File |
@@ -38,6 +40,21 @@ $audioBytes = ($assets | Where-Object FullName -Like "*\assets\audio\*" | Measur
 if ($artBytes -gt $MaxTotalArtMB * 1MB) { $failures.Add("Aggregate art over ${MaxTotalArtMB}MiB") }
 if ($audioBytes -gt $MaxTotalAudioMB * 1MB) { $failures.Add("Aggregate audio over ${MaxTotalAudioMB}MiB") }
 
+$storySceneRoot = Join-Path $root "assets\art\story_scenes"
+$storyWebps = @(Get-ChildItem -LiteralPath $storySceneRoot -Filter "*.webp" -File -ErrorAction SilentlyContinue)
+if ($storyWebps.Count -ne 40) { $failures.Add("Expected 40 story-scene WebP paintings, found $($storyWebps.Count)") }
+foreach ($webp in $storyWebps) {
+    $importPath = Join-Path $storySceneRoot ($webp.Name + ".import")
+    if (-not (Test-Path -LiteralPath $importPath)) {
+        $failures.Add("Missing WebP import policy: $importPath")
+        continue
+    }
+    $importText = Get-Content -LiteralPath $importPath -Raw
+    if ($importText -notmatch '(?m)^compress/mode=1\r?$') {
+        $failures.Add("Story WebP must use package-safe lossy import compress/mode=1: $importPath")
+    }
+}
+
 Add-Type -AssemblyName System.Drawing
 $assets | Where-Object { $_.Extension.ToLowerInvariant() -in @(".png", ".jpg", ".jpeg") } | ForEach-Object {
     try { $image = [System.Drawing.Image]::FromFile($_.FullName) }
@@ -52,11 +69,12 @@ $assets | Where-Object { $_.Extension.ToLowerInvariant() -in @(".png", ".jpg", "
 $projectText = Get-Content -LiteralPath (Join-Path $root "project.godot") -Raw
 $presetText = Get-Content -LiteralPath (Join-Path $root "export_presets.cfg") -Raw
 $configuredExport = [regex]::Match($presetText, 'export_path="([^"]+)"').Groups[1].Value
-$releaseArtifact = if ([string]::IsNullOrWhiteSpace($configuredExport)) {
-    ""
-} else {
+$releaseArtifact = if (-not [string]::IsNullOrWhiteSpace($ReleaseArtifactPath)) {
+    if ([IO.Path]::IsPathRooted($ReleaseArtifactPath)) { $ReleaseArtifactPath }
+    else { Join-Path $root $ReleaseArtifactPath }
+} elseif (-not [string]::IsNullOrWhiteSpace($configuredExport)) {
     Join-Path $root $configuredExport
-}
+} else { "" }
 $projectVersion = [regex]::Match($projectText, 'config/version="([^"]+)"').Groups[1].Value
 $exportVersion = [regex]::Match($presetText, 'version/name="([^"]+)"').Groups[1].Value
 if ($projectVersion -ne $exportVersion) { $failures.Add("Version mismatch: project=$projectVersion export=$exportVersion") }
@@ -92,6 +110,8 @@ if ($releaseArtifact -and (Test-Path -LiteralPath $releaseArtifact)) {
         $composition = Get-ArchiveComposition $releaseArtifact
         Write-Output "Native/assets composition: native $($composition.NativeMB)MiB, assets $($composition.AssetsMB)MiB, other $($composition.OtherMB)MiB"
     } catch { $failures.Add("Cannot inspect configured release artifact: $($_.Exception.Message)") }
+} elseif (-not [string]::IsNullOrWhiteSpace($ReleaseArtifactPath)) {
+    $failures.Add("Requested release artifact not found: $releaseArtifact")
 } else { Write-Output "Configured release artifact not present yet." }
 
 if ($debugApk -and (Test-Path -LiteralPath $debugApk)) {

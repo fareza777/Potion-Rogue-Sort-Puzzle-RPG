@@ -36,6 +36,24 @@ func _ready() -> void:
 	var first: Array = director.compose("battle_intro", context)
 	var second: Array = director.compose("battle_intro", context)
 	check(first == second, "identical context composes an identical sequence")
+	check(str(first[0].get("art_mode", "")) == "full_scene",
+			"battle introduction begins with a full narrative painting")
+	check(str(first[0].get("background", "")).begins_with(
+			"res://assets/art/story_scenes/"),
+			"battle introduction does not reuse the plain battle background")
+	check((first[0].get("subjects", []) as Array).is_empty(),
+			"full-scene encounter does not paste an isolated enemy sprite")
+	check(not str(first[0].get("scene_key", "")).is_empty(),
+			"full-scene encounter records stable art identity")
+	check(str(first[0].get("title", "")) == "CRYPT KNIGHT",
+			"encounter painting names the monster instead of showing generic copy")
+	var event_sequence: Array = director.compose("event_reveal", context)
+	check(str(event_sequence[0].get("art_mode", "")) == "full_scene",
+			"event reveal begins with a full narrative painting")
+	check((event_sequence[0].get("subjects", []) as Array).is_empty(),
+			"event reveal never falls back to a pasted potion subject")
+	check(str(event_sequence[0].get("title", "")) == "MIRROR CAULDRON",
+			"event painting clearly names the authored event")
 	var changed := context.duplicate(true)
 	changed.node_id = "f4_l0"
 	var variant: Array = director.compose("battle_intro", changed)
@@ -51,15 +69,11 @@ func _ready() -> void:
 		for subject in beat.get("subjects", []):
 			check(not str(subject.get("texture", "")).contains("missing_enemy"),
 					"invalid subject references are omitted")
-	var potion_sequence: Array = director.compose("battle_victory", context)
-	var potion_subjects: Array[String] = []
-	for beat in potion_sequence:
-		for subject in beat.get("subjects", []):
-			potion_subjects.append(str(subject.get("texture", "")))
-	check("res://assets/art/storyboard/hero_potion_v1.png" in potion_subjects,
-			"potion beats use a transparent storyboard-specific hero asset")
-	check(not "res://assets/art/app_icon_v2.png" in potion_subjects,
-			"storyboard never presents the square application icon as a subject")
+	var victory_sequence: Array = director.compose("battle_victory", context)
+	check(str(victory_sequence[0].get("art_mode", "")) == "full_scene",
+			"victory is presented as a narrative outcome painting")
+	check((victory_sequence[0].get("subjects", []) as Array).is_empty(),
+			"victory no longer alternates back to an isolated potion cutout")
 	finish()
 
 

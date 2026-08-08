@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "scenes": {
+    "arrival_shadow": {"path":"res://assets/art/story_scenes/arrival_shadow.webp", "focal_point":[0.50, 0.43]},
+    "arrival_verdant": {"path":"res://assets/art/story_scenes/arrival_verdant.webp", "focal_point":[0.50, 0.43]},
+    "arrival_astral": {"path":"res://assets/art/story_scenes/arrival_astral.webp", "focal_point":[0.50, 0.43]},
+    "arrival_frost": {"path":"res://assets/art/story_scenes/arrival_frost.webp", "focal_point":[0.50, 0.43]},
+    "arrival_abyss": {"path":"res://assets/art/story_scenes/arrival_abyss.webp", "focal_point":[0.50, 0.43]},
+
+    "enc_shadow_slime": {"path":"res://assets/art/story_scenes/enc_shadow_slime.webp", "focal_point":[0.50, 0.40]},
+    "enc_shadow_skeleton": {"path":"res://assets/art/story_scenes/enc_shadow_skeleton.webp", "focal_point":[0.50, 0.40]},
+    "enc_shadow_crypt_knight": {"path":"res://assets/art/story_scenes/enc_shadow_crypt_knight.webp", "focal_point":[0.50, 0.40]},
+    "enc_shadow_fire_golem": {"path":"res://assets/art/story_scenes/enc_shadow_fire_golem.webp", "focal_point":[0.50, 0.40]},
+    "enc_verdant_sporeling": {"path":"res://assets/art/story_scenes/enc_verdant_sporeling.webp", "focal_point":[0.50, 0.40]},
+    "enc_verdant_poison_beast": {"path":"res://assets/art/story_scenes/enc_verdant_poison_beast.webp", "focal_point":[0.50, 0.40]},
+    "enc_verdant_rotcap_shaman": {"path":"res://assets/art/story_scenes/enc_verdant_rotcap_shaman.webp", "focal_point":[0.50, 0.40]},
+    "enc_verdant_bloom_horror": {"path":"res://assets/art/story_scenes/enc_verdant_bloom_horror.webp", "focal_point":[0.50, 0.40]},
+    "enc_astral_rune_wisp": {"path":"res://assets/art/story_scenes/enc_astral_rune_wisp.webp", "focal_point":[0.50, 0.40]},
+    "enc_astral_clockwork_imp": {"path":"res://assets/art/story_scenes/enc_astral_clockwork_imp.webp", "focal_point":[0.50, 0.40]},
+    "enc_astral_prism_sentinel": {"path":"res://assets/art/story_scenes/enc_astral_prism_sentinel.webp", "focal_point":[0.50, 0.40]},
+    "enc_astral_furnace_titan": {"path":"res://assets/art/story_scenes/enc_astral_furnace_titan.webp", "focal_point":[0.50, 0.40]},
+    "enc_frost_frost_mite": {"path":"res://assets/art/story_scenes/enc_frost_frost_mite.webp", "focal_point":[0.50, 0.40]},
+    "enc_frost_rime_squire": {"path":"res://assets/art/story_scenes/enc_frost_rime_squire.webp", "focal_point":[0.50, 0.40]},
+    "enc_frost_crystal_yeti": {"path":"res://assets/art/story_scenes/enc_frost_crystal_yeti.webp", "focal_point":[0.50, 0.40]},
+    "enc_frost_winter_lich": {"path":"res://assets/art/story_scenes/enc_frost_winter_lich.webp", "focal_point":[0.50, 0.40]},
+    "enc_abyss_ink_slime": {"path":"res://assets/art/story_scenes/enc_abyss_ink_slime.webp", "focal_point":[0.50, 0.40]},
+    "enc_abyss_drowned_acolyte": {"path":"res://assets/art/story_scenes/enc_abyss_drowned_acolyte.webp", "focal_point":[0.50, 0.40]},
+    "enc_abyss_lantern_horror": {"path":"res://assets/art/story_scenes/enc_abyss_lantern_horror.webp", "focal_point":[0.50, 0.40]},
+    "enc_abyss_leviathan": {"path":"res://assets/art/story_scenes/enc_abyss_leviathan.webp", "focal_point":[0.50, 0.40]},
+
+    "event_whispering_well": {"path":"res://assets/art/story_scenes/event_whispering_well.webp", "focal_point":[0.50, 0.42]},
+    "event_bound_alchemist": {"path":"res://assets/art/story_scenes/event_bound_alchemist.webp", "focal_point":[0.50, 0.42]},
+    "event_mirror_cauldron": {"path":"res://assets/art/story_scenes/event_mirror_cauldron.webp", "focal_point":[0.50, 0.42]},
+    "event_bone_oracle": {"path":"res://assets/art/story_scenes/event_bone_oracle.webp", "focal_point":[0.50, 0.42]},
+    "event_cursed_chest": {"path":"res://assets/art/story_scenes/event_cursed_chest.webp", "focal_point":[0.50, 0.42]},
+    "event_ember_camp": {"path":"res://assets/art/story_scenes/event_ember_camp.webp", "focal_point":[0.50, 0.42]},
+    "event_spore_garden": {"path":"res://assets/art/story_scenes/event_spore_garden.webp", "focal_point":[0.50, 0.42]},
+    "event_prism_archive": {"path":"res://assets/art/story_scenes/event_prism_archive.webp", "focal_point":[0.50, 0.42]},
+    "event_frost_shrine": {"path":"res://assets/art/story_scenes/event_frost_shrine.webp", "focal_point":[0.50, 0.42]},
+    "event_drowned_altar": {"path":"res://assets/art/story_scenes/event_drowned_altar.webp", "focal_point":[0.50, 0.42]},
+
+    "aftermath_shadow": {"path":"res://assets/art/story_scenes/aftermath_shadow.webp", "focal_point":[0.50, 0.43]},
+    "aftermath_verdant": {"path":"res://assets/art/story_scenes/aftermath_verdant.webp", "focal_point":[0.50, 0.43]},
+    "aftermath_astral": {"path":"res://assets/art/story_scenes/aftermath_astral.webp", "focal_point":[0.50, 0.43]},
+    "aftermath_frost": {"path":"res://assets/art/story_scenes/aftermath_frost.webp", "focal_point":[0.50, 0.43]},
+    "aftermath_abyss": {"path":"res://assets/art/story_scenes/aftermath_abyss.webp", "focal_point":[0.50, 0.43]}
+  },
+  "areas": {
+    "shadow_crypt": {"arrival":"arrival_shadow", "aftermath":"aftermath_shadow", "tiers":{"1":"enc_shadow_slime", "2":"enc_shadow_skeleton", "3":"enc_shadow_crypt_knight", "4":"enc_shadow_fire_golem"}},
+    "verdant_catacombs": {"arrival":"arrival_verdant", "aftermath":"aftermath_verdant", "tiers":{"1":"enc_verdant_sporeling", "2":"enc_verdant_poison_beast", "3":"enc_verdant_rotcap_shaman", "4":"enc_verdant_bloom_horror"}},
+    "astral_foundry": {"arrival":"arrival_astral", "aftermath":"aftermath_astral", "tiers":{"1":"enc_astral_rune_wisp", "2":"enc_astral_clockwork_imp", "3":"enc_astral_prism_sentinel", "4":"enc_astral_furnace_titan"}},
+    "frostbound_reliquary": {"arrival":"arrival_frost", "aftermath":"aftermath_frost", "tiers":{"1":"enc_frost_frost_mite", "2":"enc_frost_rime_squire", "3":"enc_frost_crystal_yeti", "4":"enc_frost_winter_lich"}},
+    "abyssal_apothecary": {"arrival":"arrival_abyss", "aftermath":"aftermath_abyss", "tiers":{"1":"enc_abyss_ink_slime", "2":"enc_abyss_drowned_acolyte", "3":"enc_abyss_lantern_horror", "4":"enc_abyss_leviathan"}}
+  },
+  "enemies": {
+    "slime":"enc_shadow_slime", "skeleton":"enc_shadow_skeleton", "bone_rat":"enc_shadow_skeleton", "grave_archer":"enc_shadow_skeleton", "wailing_spirit":"enc_shadow_crypt_knight", "crypt_knight":"enc_shadow_crypt_knight", "ossuary_priest":"enc_shadow_crypt_knight", "fire_golem":"enc_shadow_fire_golem",
+    "sporeling":"enc_verdant_sporeling", "mossback_toad":"enc_verdant_sporeling", "poison_beast":"enc_verdant_poison_beast", "myconid_brute":"enc_verdant_poison_beast", "rotcap_shaman":"enc_verdant_rotcap_shaman", "bloom_horror":"enc_verdant_bloom_horror",
+    "rune_wisp":"enc_astral_rune_wisp", "mimic_flask":"enc_astral_rune_wisp", "clockwork_imp":"enc_astral_clockwork_imp", "cinder_hound":"enc_astral_clockwork_imp", "ash_harpy":"enc_astral_clockwork_imp", "magma_beetle":"enc_astral_clockwork_imp", "dark_mage":"enc_astral_prism_sentinel", "void_acolyte":"enc_astral_prism_sentinel", "prism_sentinel":"enc_astral_prism_sentinel", "flame_wraith":"enc_astral_prism_sentinel", "furnace_titan":"enc_astral_furnace_titan",
+    "frost_mite":"enc_frost_frost_mite", "rime_squire":"enc_frost_rime_squire", "icefang_wolf":"enc_frost_rime_squire", "hoarfrost_witch":"enc_frost_rime_squire", "crystal_yeti":"enc_frost_crystal_yeti", "reliquary_seraph":"enc_frost_crystal_yeti", "winter_lich":"enc_frost_winter_lich",
+    "ink_slime":"enc_abyss_ink_slime", "drowned_acolyte":"enc_abyss_drowned_acolyte", "brine_stalker":"enc_abyss_drowned_acolyte", "abyssal_crab":"enc_abyss_drowned_acolyte", "lantern_horror":"enc_abyss_lantern_horror", "plague_alchemist":"enc_abyss_lantern_horror", "deep_oracle":"enc_abyss_lantern_horror", "leviathan_apothecary":"enc_abyss_leviathan"
+  },
+  "events": {
+    "whispering_well":"event_whispering_well", "well_echo":"event_whispering_well",
+    "bound_alchemist":"event_bound_alchemist",
+    "mirror_cauldron":"event_mirror_cauldron", "mirror_debt":"event_mirror_cauldron", "echo_chamber":"event_mirror_cauldron",
+    "bone_oracle":"event_bone_oracle", "oracle_return":"event_bone_oracle", "ossuary_vault":"event_bone_oracle",
+    "cursed_chest":"event_cursed_chest", "moonlit_merchant":"event_cursed_chest",
+    "ember_camp":"event_ember_camp",
+    "spore_garden":"event_spore_garden", "spore_bloom":"event_spore_garden",
+    "prism_archive":"event_prism_archive", "astral_forge":"event_prism_archive",
+    "frost_shrine":"event_frost_shrine",
+    "drowned_altar":"event_drowned_altar", "drowned_toll":"event_drowned_altar", "abyssal_bargain":"event_drowned_altar"
+  }
+}

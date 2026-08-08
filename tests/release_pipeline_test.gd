@@ -13,15 +13,21 @@ func _ready() -> void:
 			"release validator reports native and packaged asset composition")
 	check(validator.contains("MaxTotalArtMB") and validator.contains("MaxTotalAudioMB"),
 			"release validator enforces aggregate art and audio budgets")
+	check(validator.contains("ReleaseArtifactPath")
+			and validator.contains("compress/mode=1")
+			and validator.contains("story_scenes"),
+			"release validator inspects the actual bundle and optimized WebP imports")
+	check(validator.contains("Requested release artifact not found"),
+			"an explicitly requested missing AAB fails closed")
 	check(validator.contains("config/version") and validator.contains("version/name"),
 			"release validator checks project/export version agreement")
 	var preset := FileAccess.get_file_as_string("res://export_presets.cfg")
-	check(preset.contains('version/name="1.6.3"') and preset.contains("version/code=28"),
+	check(preset.contains('version/name="1.6.4"') and preset.contains("version/code=29"),
 			"Android package version is bumped")
 	check(preset.contains('name="Android Release"')
-			and preset.contains('export_path="builds/PotionRogue-v1.6.3.aab"')
+			and preset.contains('export_path="builds/PotionRogue-v1.6.4.aab"')
 			and preset.contains('name="Android Debug"')
-			and preset.contains('export_path="builds/PotionRogue-v1.6.3-debug.apk"'),
+			and preset.contains('export_path="builds/PotionRogue-v1.6.4-debug.apk"'),
 			"AAB release and installable debug APK own separate export presets")
 	check(preset.contains("tests/**") and preset.contains("atlas_*.png")
 			and preset.contains("review_shots/**"),
@@ -29,9 +35,13 @@ func _ready() -> void:
 	check(FileAccess.file_exists("res://.github/workflows/android-ci.yml"),
 			"CI imports, tests, exports, validates, and uploads Android artifact")
 	var ci := FileAccess.get_file_as_string("res://.github/workflows/android-ci.yml")
-	check(ci.contains("PotionRogue-v1.6.3-debug.apk")
+	check(ci.contains("PotionRogue-v1.6.4-debug.apk")
 			and ci.contains('--export-debug "Android Debug"'),
 			"CI exports the current installable debug APK preset")
+	check(ci.contains("PotionRogue-v1.6.4-sizecheck.aab")
+			and ci.contains('--export-debug "Android Release"')
+			and ci.contains("-ReleaseArtifactPath"),
+			"CI builds and validates an AAB carrying the real release payload")
 	for atlas in ["atlas_crypt.png", "atlas_fungal.png", "atlas_arcane.png", "atlas_infernal.png"]:
 		check(not FileAccess.file_exists("res://assets/art/enemies/" + atlas),
 				"unused legacy atlas removed: " + atlas)

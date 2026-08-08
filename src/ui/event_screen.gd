@@ -4,6 +4,7 @@ var event_id := "whispering_well"
 var resolver := EventResolver.new()
 var choice_box: VBoxContainer
 var status: Label
+var _reveal_complete := false
 
 func _ready() -> void:
 	AudioManager.set_area(str(RunState.current_area().get("music", "dungeon")))
@@ -37,6 +38,7 @@ func _ready() -> void:
 				Vector2(560, 108))
 		button.add_theme_font_size_override("font_size", 20)
 		button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		button.disabled = true
 		button.pressed.connect(_choose.bind(str(choice_id))); choice_box.add_child(button)
 	call_deferred("_play_event_reveal", event)
 
@@ -44,9 +46,16 @@ func _ready() -> void:
 func _play_event_reveal(event: Dictionary) -> void:
 	await StoryboardService.play("event_reveal", {"event_id":event_id,
 			"event_name":str(event.get("name", event_id.replace("_", " ").capitalize()))})
+	_reveal_complete = true
+	for child in choice_box.get_children():
+		if child is BaseButton:
+			(child as BaseButton).disabled = false
 
 
 func _choose(choice_id: String) -> void:
+	if not _reveal_complete:
+		status.text = "Finish the story reveal before choosing."
+		return
 	var result := resolver.apply(event_id, choice_id, RunState)
 	if not result.ok: status.text = "Cannot choose: " + str(result.reason); return
 	RunState.checkpoint(RunState.PHASE_MAP)

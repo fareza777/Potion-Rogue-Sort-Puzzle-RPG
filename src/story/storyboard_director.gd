@@ -4,6 +4,7 @@ extends RefCounted
 ## It never mutates RunState and contains no runtime network dependency.
 
 var catalog := StoryboardCatalog.new()
+var art_catalog := StoryArtCatalog.new()
 
 
 func compose(trigger: String, context: Dictionary) -> Array[Dictionary]:
@@ -19,14 +20,19 @@ func compose(trigger: String, context: Dictionary) -> Array[Dictionary]:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = absi(seed_material.hash()) + 1
 	var count := clampi(int(grammar.get("count", 1)), 1, templates.size())
+	var story_art := art_catalog.resolve(trigger, context)
+	# A full painting is a complete authored shot. Keep each presentation concise
+	# so one illustration is not repeated under several consecutive captions.
+	if not story_art.is_empty():
+		count = 1
 	var start := rng.randi_range(0, templates.size() - 1)
 	var sequence: Array[Dictionary] = []
 	var previous_layout := ""
 	var previous_transition := ""
 	for offset in count:
 		var template: Dictionary = templates[(start + offset) % templates.size()]
-		var beat := _compose_beat(template, trigger, context, realm, kit, rng,
-				previous_layout, previous_transition)
+		var beat := _compose_beat(template, trigger, context, realm, kit, story_art,
+				rng, previous_layout, previous_transition)
 		sequence.append(beat)
 		previous_layout = str(beat.layout)
 		previous_transition = str(beat.transition)
@@ -34,7 +40,8 @@ func compose(trigger: String, context: Dictionary) -> Array[Dictionary]:
 
 
 func _compose_beat(template: Dictionary, trigger: String, context: Dictionary,
-		realm: Dictionary, kit: Dictionary, rng: RandomNumberGenerator,
+		realm: Dictionary, kit: Dictionary, story_art: Dictionary,
+		rng: RandomNumberGenerator,
 		previous_layout: String, previous_transition: String) -> Dictionary:
 	var layouts: Array = template.get("layouts", catalog.layouts())
 	var layout := _pick_distinct(layouts, previous_layout, rng,
@@ -47,6 +54,20 @@ func _compose_beat(template: Dictionary, trigger: String, context: Dictionary,
 			substitutions)
 	var body := _render(_pick_text(template.get("bodies", [""]), rng), substitutions)
 	var background := str(realm.get("background", ""))
+	var art_mode := "composite"
+	var scene_key := ""
+	var focal_point: Variant = [0.5, 0.5]
+	var subjects: Array = _subjects(str(template.get("subject", "none")), context)
+	if not story_art.is_empty():
+		background = str(story_art.get("path", background))
+		art_mode = "full_scene"
+		scene_key = str(story_art.get("scene_key", ""))
+		focal_point = story_art.get("focal_point", [0.5, 0.42])
+		subjects.clear()
+		if trigger in ["battle_intro", "battle_escalation"]:
+			title = str(substitutions.get("enemy", title))
+		elif trigger == "event_reveal":
+			title = str(substitutions.get("event", title))
 	if not ResourceLoader.exists(background):
 		background = str(GameState.area("shadow_crypt").get("background", ""))
 	var node_token := str(context.get("node_id", "preview")).validate_node_name()
@@ -54,7 +75,10 @@ func _compose_beat(template: Dictionary, trigger: String, context: Dictionary,
 		"id":"%s:%s:%s" % [trigger, str(template.get("id", "beat")), node_token],
 		"layout":layout,
 		"background":background,
-		"subjects":_subjects(str(template.get("subject", "none")), context),
+		"subjects":subjects,
+		"art_mode":art_mode,
+		"scene_key":scene_key,
+		"focal_point":focal_point,
 		"eyebrow":_render(str(template.get("eyebrow", "POTION ROGUE")), substitutions),
 		"title":title,
 		"body":body,
