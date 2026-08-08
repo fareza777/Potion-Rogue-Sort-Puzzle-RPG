@@ -113,7 +113,13 @@ func _show_beat(beat: Dictionary) -> void:
 	_eyebrow.text = str(beat.get("eyebrow", "POTION ROGUE"))
 	_title.text = str(beat.get("title", "THE STORY CONTINUES"))
 	_body.text = str(beat.get("body", ""))
-	_prompt.text = "TAP TO CONTINUE  •  HOLD TO SKIP"
+	var has_multiple_beats := _sequence.size() > 1
+	_prompt.text = "TAP TO CONTINUE  •  HOLD TO SKIP" if has_multiple_beats \
+			else "TAP TO CONTINUE"
+	_skip_button.visible = has_multiple_beats
+	_skip_button.text = "HOLD TO SKIP"
+	if not has_multiple_beats:
+		_holding_skip = false
 	_configure_subject(beat, accent)
 	_configure_layout(str(beat.get("layout", "hero_center")))
 	_rebuild_pips(accent)

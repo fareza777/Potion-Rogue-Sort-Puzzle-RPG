@@ -33,6 +33,12 @@ func _ready() -> void:
 			"floor":1, "story_flags":{}})[0]
 	player.call("play", [beat])
 	await get_tree().process_frame
+	var skip_button := player.find_child("StoryboardSkip", true, false) as Button
+	var story_prompt := player.find_child("StoryPrompt", true, false) as Label
+	check(not skip_button.visible,
+			"one-panel generated story hides the redundant hold-to-skip action")
+	check(story_prompt.text == "TAP TO CONTINUE",
+			"one-panel generated story presents one unambiguous action")
 	check(player.has_method("active_art_mode"),
 			"cinematic exposes its active art presentation mode")
 	if player.has_method("active_art_mode"):
@@ -71,8 +77,10 @@ func _ready() -> void:
 	player.finished.connect(func(skipped: bool) -> void:
 		skip_completion.called = true
 		skip_completion.skipped = skipped)
-	player.call("play", [beat])
+	player.call("play", [beat, beat.duplicate(true)])
 	await get_tree().process_frame
+	check(skip_button.visible and story_prompt.text.contains("HOLD TO SKIP"),
+			"multi-panel cinematic keeps the hold-to-skip shortcut")
 	player.call("skip")
 	await get_tree().process_frame
 	check(bool(skip_completion.called) and bool(skip_completion.skipped),
