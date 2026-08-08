@@ -30,6 +30,13 @@ func _ready() -> void:
 	var campaign_offer := CampaignUnlockCard.new().configure(true)
 	campaign_offer.name = "CampaignUnlockSettingsOffer"
 	rows.add_child(campaign_offer)
+	var rate := UiKit.button("RATE ON GOOGLE PLAY", Vector2(300, 52), Color("f0bd4f"))
+	rate.name = "RateOnPlayStoreButton"
+	rate.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	rate.add_theme_font_size_override("font_size", 15)
+	rate.tooltip_text = "Open Potion Rogue on Google Play."
+	rate.pressed.connect(func() -> void: OS.shell_open(AppLinks.PLAY_STORE_URL))
+	rows.add_child(rate)
 	var privacy := UiKit.button("PRIVACY POLICY", Vector2(260, 48), Color("9bb9ff"))
 	privacy.name = "PrivacyPolicyButton"
 	privacy.size_flags_horizontal = Control.SIZE_SHRINK_CENTER

@@ -34,8 +34,15 @@ func _ready() -> void:
 	portrait.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	box.add_child(portrait)
 	box.add_child(UiKit.title_label("CREDITS", 34))
-	box.add_child(UiKit.label("GAME & DESIGN\nFAREZA GAMES", 22, UiKit.COLOR_TEXT))
-	box.add_child(UiKit.label("Built with Godot Engine\nCinzel typeface by Natanael Gama (OFL)", 18, UiKit.COLOR_TEXT_DIM))
+	var creator := UiKit.label("Created by F7 Developer", 22, UiKit.COLOR_TEXT)
+	creator.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(creator)
+	var rate := UiKit.button("RATE ON GOOGLE PLAY", Vector2(300, 52), Color("f0bd4f"))
+	rate.name = "RateOnPlayStoreButton"
+	rate.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	rate.add_theme_font_size_override("font_size", 15)
+	rate.pressed.connect(func() -> void: OS.shell_open(AppLinks.PLAY_STORE_URL))
+	box.add_child(rate)
 	var privacy := UiKit.button("PRIVACY POLICY", Vector2(260, 48), Color("9bb9ff"))
 	privacy.name = "PrivacyPolicyButton"
 	privacy.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
