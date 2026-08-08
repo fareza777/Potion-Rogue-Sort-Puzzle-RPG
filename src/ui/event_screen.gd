@@ -62,9 +62,6 @@ func _choose(choice_id: String) -> void:
 	for child in choice_box.get_children():
 		if child is BaseButton:
 			(child as BaseButton).disabled = true
-	await StoryboardService.play("event_resolution", {"event_id":event_id,
-			"event_name":str(resolver.events.get(event_id, {}).get("name", event_id)),
-			"result_summary":str(result.get("result_summary", "Choice sealed."))})
 	for child in choice_box.get_children(): child.queue_free()
 	status.text = "APPLIED  •  " + str(result.get("result_summary", "Choice sealed."))
 	var continue_button := UiKit.ornate_button("RETURN TO MAP", Vector2(430, 68))

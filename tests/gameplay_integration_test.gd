@@ -26,15 +26,22 @@ func _ready() -> void:
 			and kit_source.contains('StoryboardService.play("realm_arrival"'),
 			"new expedition plays its vow and realm arrival")
 	var map_source := FileAccess.get_file_as_string("res://src/ui/map_screen.gd")
-	assert_check(map_source.contains('StoryboardService.play("route_choice"')
-			and map_source.contains('StoryboardService.play("battle_intro"'),
-			"route and battle transitions are cinematic")
+	assert_check(map_source.count('StoryboardService.play("battle_intro"') == 1,
+			"battle entry owns one generated painting")
+	assert_check(not map_source.contains('StoryboardService.play("route_choice"'),
+			"map does not prepend a duplicate route painting")
 	var event_source := FileAccess.get_file_as_string("res://src/ui/event_screen.gd")
-	assert_check(event_source.contains('StoryboardService.play("event_reveal"')
-			and event_source.contains('StoryboardService.play("event_resolution"'),
-			"event reveal and consequence are cinematic")
+	assert_check(event_source.count('StoryboardService.play("event_reveal"') == 1,
+			"event entry owns one generated painting")
+	assert_check(not event_source.contains('StoryboardService.play("event_resolution"'),
+			"event consequence resolves inline without repeated art")
 	var battle_source := FileAccess.get_file_as_string("res://src/ui/battle_screen.gd")
-	for trigger in ["battle_escalation", "battle_victory", "battle_defeat", "run_epilogue"]:
+	assert_check(not battle_source.contains('StoryboardService.play("battle_escalation"'),
+			"battle phases stay inside the battle presentation")
+	assert_check(battle_source.contains("play_phase_transition")
+			and battle_source.contains("enemy_display.play_intro()"),
+			"boss phases and waves retain inline visual feedback")
+	for trigger in ["battle_victory", "battle_defeat", "run_epilogue"]:
 		assert_check(battle_source.contains('StoryboardService.play("' + trigger + '"'),
 				"battle flow integrates " + trigger)
 	print("---\n%d checks, %d failures" % [checks, failures])

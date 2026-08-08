@@ -61,7 +61,6 @@ var _pending_remix_generation := -1
 var _pending_remix_snapshot: Dictionary = {}
 var _pending_remix_seed := 0
 var _pending_remix_quote: Dictionary = {}
-var _story_signature_seen := false
 var runtime_budget_probe := RuntimeBudgetProbe.new()
 var _runtime_sample_frame := 0
 
@@ -422,14 +421,6 @@ func _on_signature_move() -> void:
 	AudioManager.play("lock")
 	_checkpoint_encounter_deferred()
 	_refresh()
-	if not _story_signature_seen and not battle.battle_over:
-		_story_signature_seen = true
-		board.enabled = false
-		await StoryboardService.play("battle_escalation", {
-				"enemy_id":battle.enemy_id, "enemy_name":battle.enemy_name,
-				"kind":"signature", "floor":int(RunState.current_node().get("floor", 0)) + 1})
-		if not battle.battle_over:
-			board.enabled = true
 
 
 func _mark_signature_layer(tube_index: int, effect: String) -> void:
@@ -1054,10 +1045,6 @@ func _on_boss_phase_changed(index: int, config: Dictionary) -> void:
 	if not board_action.is_empty():
 		if not _apply_boss_board_action(board_action):
 			_set_message("%s FIZZLES  •  BOARD REMAINS SOLVABLE" % board_action.to_upper())
-	await StoryboardService.play("battle_escalation", {
-			"enemy_id":battle.enemy_id, "enemy_name":battle.enemy_name,
-			"kind":"boss phase %d" % (index + 1),
-			"floor":int(RunState.current_node().get("floor", 0)) + 1})
 	if not battle.battle_over:
 		board.enabled = true
 
@@ -1141,9 +1128,6 @@ func _on_battle_won() -> void:
 		battle.setup_next_wave(encounter_format.wave, next_enemy_id)
 		_configure_wave_enemy(next_enemy_id, encounter_format.wave)
 		_set_message("WAVE CLEARED  •  %s ENTERS" % battle.enemy_name.to_upper())
-		await StoryboardService.play("battle_escalation", {
-				"enemy_id":battle.enemy_id, "enemy_name":battle.enemy_name,
-				"kind":"reinforcement", "floor":int(RunState.current_node().get("floor", 0)) + 1})
 		enemy_display.configure_enemy(battle.enemy_id, battle.enemy_shape, battle.enemy_color)
 		enemy_display.play_intro()
 		board.enabled = true

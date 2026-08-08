@@ -116,7 +116,6 @@ func _on_node_selected(node_id: String) -> void:
 			"enemy_id":str(node.get("enemy", "")),
 			"enemy_name":str(GameState.enemies.get(str(node.get("enemy", "")), {}).get(
 					"name", "Unknown Guardian"))}
-	await StoryboardService.play("route_choice", story_context)
 	if kind in ["battle", "elite", "boss"]:
 		await StoryboardService.play("battle_intro", story_context)
 		get_tree().change_scene_to_file("res://scenes/battle.tscn")
