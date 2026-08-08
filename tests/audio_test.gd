@@ -14,12 +14,34 @@ func _ready() -> void:
 		check(is_equal_approx(float(AudioManager.call("duck_music", 0.01, 99.0)), 18.0),
 				"music duck depth is clamped to safe maximum")
 	check(AudioManager.get("_stem_players").size() == 2, "music has melodic and percussion stems")
+	var stem_cache: Dictionary = AudioManager.get("_stem_cache")
+	check(not stem_cache.is_empty(), "combat stem cache contains generated streams")
+	for cache_key in stem_cache:
+		var streams: Array = stem_cache[cache_key]
+		for stream in streams:
+			var wav := stream as AudioStreamWAV
+			var channels := 2 if wav.stereo else 1
+			var frame_count := wav.data.size() / (2 * channels)
+			check(wav.loop_end == frame_count - 1,
+					"generated stem loop end stays inside PCM buffer (%s)" % cache_key)
 	check(AudioManager.has_method("stem_cache_size"), "generated music stems expose bounded cache telemetry")
 	check(AudioManager.has_method("set_combat_intensity"), "music supports adaptive danger intensity")
 	if AudioManager.has_method("set_combat_intensity"):
 		check(AudioManager.call("set_combat_intensity", 0.1, 1) == "danger",
 				"low HP and imminent attack select danger layer")
 	check(AudioManager.has_method("haptic"), "named haptic language is available")
+	var audio_source := FileAccess.get_file_as_string("res://src/autoload/audio_manager.gd")
+	check(audio_source.contains("func _exit_tree()") and audio_source.contains("_stem_cache.clear()"),
+			"audio playback and generated caches release explicitly on shutdown")
+	for story_state in ["story_explore", "story_danger", "story_victory", "story_defeat"]:
+		check(story_state in AudioManager.accepted_scene_states(),
+				"cinematic music state is accepted: " + story_state)
+	check(AudioManager.set_scene_state("story_danger")
+			and AudioManager.current_combat_layer() == "danger",
+			"danger storyboard raises tension without replacing the realm score")
+	check(AudioManager.set_scene_state("story_victory")
+			and AudioManager.current_combat_layer() == "explore",
+			"victory storyboard resolves back into the realm ambience")
 	AudioManager.set_combat_layer("battle")
 	check(AudioManager.current_combat_layer() == "battle", "same layer does not change identity")
 	check(AudioManager.has_method("set_area"), "soundtrack exposes area identity")

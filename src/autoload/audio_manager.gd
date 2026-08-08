@@ -131,13 +131,14 @@ func preview_music() -> String:
 
 func set_scene_state(state: String) -> bool:
 	match state:
-		"hall", "explore", "event": set_combat_layer("explore")
+		"hall", "explore", "event", "story_explore": set_combat_layer("explore")
 		"battle": set_combat_layer("battle")
 		"elite": set_combat_layer("elite")
 		"boss": set_combat_layer("boss_phase_1")
-		"victory":
+		"story_danger": set_combat_layer("danger")
+		"victory", "story_victory":
 			play("victory"); set_combat_layer("explore")
-		"defeat":
+		"defeat", "story_defeat":
 			play("defeat"); set_combat_layer("explore")
 		_: return false
 	return true
@@ -157,7 +158,8 @@ func haptic(event_name: String) -> void:
 
 
 func accepted_scene_states() -> Array:
-	return ["hall", "explore", "event", "battle", "elite", "boss", "victory", "defeat"]
+	return ["hall", "explore", "event", "battle", "elite", "boss", "victory", "defeat",
+			"story_explore", "story_danger", "story_victory", "story_defeat"]
 
 
 func crossfade_music(track: String, duration := 0.8) -> void:
@@ -181,11 +183,27 @@ func crossfade_music(track: String, duration := 0.8) -> void:
 
 
 func stop_music() -> void:
+	if _music_tween != null and _music_tween.is_valid():
+		_music_tween.kill()
+	_music_tween = null
 	_current_music = ""
 	for player in _music_players:
 		player.stop()
 		player.volume_db = -80.0
-	for stem in _stem_players: stem.stop()
+		player.stream = null
+	for stem in _stem_players:
+		stem.stop()
+		stem.stream = null
+
+
+func _exit_tree() -> void:
+	stop_music()
+	for player in _sfx_players:
+		player.stop()
+		player.stream = null
+	_stem_cache.clear()
+	_music_streams.clear()
+	_sfx.clear()
 
 
 func vibrate(ms := 30) -> void:
@@ -289,7 +307,8 @@ func _load_ambient(path: String, fallback_factory: Callable) -> AudioStream:
 	if stream is AudioStreamWAV:
 		stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
 		stream.loop_begin = 0
-		stream.loop_end = int(stream.mix_rate * stream.get_length())
+		# loop_end is the last valid frame index, not the frame count.
+		stream.loop_end = maxi(int(stream.mix_rate * stream.get_length()) - 1, 0)
 	elif stream is AudioStreamOggVorbis:
 		stream.loop = true
 	return stream
@@ -340,7 +359,8 @@ func _make_drone(freqs: Array, duration: float, volume: float) -> AudioStreamWAV
 	stream.mix_rate = SAMPLE_RATE
 	stream.data = bytes
 	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
-	stream.loop_end = frames
+	# loop_end is the last valid frame index, not the frame count.
+	stream.loop_end = frames - 1
 	return stream
 
 
@@ -381,7 +401,7 @@ func _make_melodic_stem(layer: String) -> AudioStreamWAV:
 				* envelope * float(profile.energy)
 		bytes.encode_s16(i * 2, int(clampf(value, -0.8, 0.8) * 32000.0))
 	var stream := AudioStreamWAV.new(); stream.format = AudioStreamWAV.FORMAT_16_BITS
-	stream.mix_rate = SAMPLE_RATE; stream.data = bytes; stream.loop_mode = AudioStreamWAV.LOOP_FORWARD; stream.loop_end = frames
+	stream.mix_rate = SAMPLE_RATE; stream.data = bytes; stream.loop_mode = AudioStreamWAV.LOOP_FORWARD; stream.loop_end = frames - 1
 	return stream
 
 
@@ -397,5 +417,5 @@ func _make_percussion_stem(layer: String) -> AudioStreamWAV:
 		var value := (kick * 0.55 + tick * 0.08) * float(profile.energy)
 		bytes.encode_s16(i * 2, int(clampf(value, -0.8, 0.8) * 32000.0))
 	var stream := AudioStreamWAV.new(); stream.format = AudioStreamWAV.FORMAT_16_BITS
-	stream.mix_rate = SAMPLE_RATE; stream.data = bytes; stream.loop_mode = AudioStreamWAV.LOOP_FORWARD; stream.loop_end = frames
+	stream.mix_rate = SAMPLE_RATE; stream.data = bytes; stream.loop_mode = AudioStreamWAV.LOOP_FORWARD; stream.loop_end = frames - 1
 	return stream

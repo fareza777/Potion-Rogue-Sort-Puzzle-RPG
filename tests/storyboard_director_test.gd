@@ -51,6 +51,15 @@ func _ready() -> void:
 		for subject in beat.get("subjects", []):
 			check(not str(subject.get("texture", "")).contains("missing_enemy"),
 					"invalid subject references are omitted")
+	var potion_sequence: Array = director.compose("battle_victory", context)
+	var potion_subjects: Array[String] = []
+	for beat in potion_sequence:
+		for subject in beat.get("subjects", []):
+			potion_subjects.append(str(subject.get("texture", "")))
+	check("res://assets/art/storyboard/hero_potion_v1.png" in potion_subjects,
+			"potion beats use a transparent storyboard-specific hero asset")
+	check(not "res://assets/art/app_icon_v2.png" in potion_subjects,
+			"storyboard never presents the square application icon as a subject")
 	finish()
 
 

@@ -62,6 +62,8 @@ var _pending_remix_snapshot: Dictionary = {}
 var _pending_remix_seed := 0
 var _pending_remix_quote: Dictionary = {}
 var _story_signature_seen := false
+var runtime_budget_probe := RuntimeBudgetProbe.new()
+var _runtime_sample_frame := 0
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -74,11 +76,20 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 
 func _process(_delta: float) -> void:
+	if OS.is_debug_build():
+		_runtime_sample_frame += 1
+		if _runtime_sample_frame % 4 == 0:
+			runtime_budget_probe.record_frame(_delta * 1000.0,
+					get_tree().get_node_count() if _runtime_sample_frame % 60 == 0 else 0)
+		if _runtime_sample_frame % 60 == 0:
+			runtime_budget_probe.set_cache_count("audio_stems", AudioManager.stem_cache_size())
 	if _pending_remix_generation < 0:
 		return
 	var payload := remix_jobs.poll()
 	if payload.is_empty() or int(payload.get("generation_id", -1)) != _pending_remix_generation:
 		return
+	if OS.is_debug_build():
+		runtime_budget_probe.end_remix()
 	_pending_remix_generation = -1
 	var applied := false
 	if not payload.has("error"):
@@ -131,11 +142,15 @@ func _exit_tree() -> void:
 
 
 func _ready() -> void:
+	if OS.is_debug_build():
+		runtime_budget_probe.begin_scene()
 	# Allow running this scene directly (F6 / screenshot tool) without a run.
 	if not RunState.active:
 		RunState.start_new_run()
 
 	_build_ui()
+	if OS.is_debug_build():
+		call_deferred("_finish_scene_probe")
 	enemy_display.set_reduced_effects(bool(SaveSystem.setting("reduced_effects")))
 	battle_navigation.configure(get_tree())
 	hud_presenter.build(self, _layout_profile)
@@ -328,6 +343,7 @@ func _setup_tactical_controllers(enemy_id: String) -> void:
 	skill_controller.mana_changed.connect(_on_mana_changed)
 	board.move_made.connect(_on_tactical_move)
 	board.tube_selected.connect(func(): _tutorial_action("select_source"))
+	board.tube_selected.connect(_measure_input_ack)
 	board.move_made.connect(func(): _tutorial_action("select_target"))
 	board.tube_completed.connect(_on_depth_potion_completed)
 	battle.enemy_action_resolved.connect(_on_intent_resolved)
@@ -1010,6 +1026,8 @@ func _on_pour_presented(from: Vector2, to: Vector2, color: String, count: int) -
 func _on_enemy_damaged(amount: int) -> void:
 	enemy_display.play_hit()
 	battle_fx.hit(enemy_display, 1.0)
+	battle_fx.contact(_enemy_center(), Color("ff9a52"),
+			clampf(float(amount) / 18.0, 0.65, 1.5))
 	AudioManager.play("enemy_hit")
 	UiKit.float_text(self, _enemy_center() + Vector2(randf_range(-40, 40), -20),
 			"-%d" % amount, UiKit.COLOR_FIRE, 40)
@@ -1076,6 +1094,9 @@ func _on_enemy_attacked(damage: int, blocked: int, crit: bool) -> void:
 				UiKit.COLOR_ENEMY_HP, 36)
 	else:
 		AudioManager.play("shield")
+	get_tree().create_timer(0.34, true, false, true).timeout.connect(func() -> void:
+		if is_instance_valid(enemy_display) and not battle.battle_over:
+			enemy_display.play_recover())
 
 
 func _on_last_remedy(heal: int) -> void:
@@ -1134,7 +1155,7 @@ func _on_battle_won() -> void:
 	SaveSystem.record_early_defeat(false)
 	board.enabled = false
 	enemy_display.play_defeat()
-	AudioManager.play("victory")
+	battle_fx.victory(_enemy_center())
 	AudioManager.stop_music()
 	var was_last := RunState.is_last_battle()
 	var was_elite := str(RunState.current_battle().get("kind", "battle")) == "elite"
@@ -1246,7 +1267,6 @@ func _on_upgrade_picked(id: String) -> void:
 func _on_battle_lost() -> void:
 	AudioManager.set_scene_state("defeat")
 	board.enabled = false
-	AudioManager.play("defeat")
 	AudioManager.stop_music()
 	AudioManager.vibrate(120)
 	var story_context := {"seed":RunState.run_seed, "node_id":RunState.current_node_id,
@@ -1337,6 +1357,8 @@ func _on_undo_pressed() -> void:
 func _on_restart_pressed() -> void:
 	if battle.battle_over or remix_jobs.is_busy():
 		return
+	if OS.is_debug_build():
+		runtime_budget_probe.begin_remix()
 	_pending_remix_snapshot = board.export_snapshot()
 	_pending_remix_quote = {}
 	_pending_remix_seed = int(randi())
@@ -1344,6 +1366,21 @@ func _on_restart_pressed() -> void:
 			"standard", PotionTube.CAPACITY)
 	board.enabled = false
 	_set_message("BREWING...")
+
+
+func _measure_input_ack() -> void:
+	if not OS.is_debug_build():
+		return
+	runtime_budget_probe.begin_input()
+	call_deferred("_finish_input_probe")
+
+
+func _finish_input_probe() -> void:
+	runtime_budget_probe.end_input()
+
+
+func _finish_scene_probe() -> void:
+	runtime_budget_probe.end_scene()
 
 
 func _start_new_run() -> void:

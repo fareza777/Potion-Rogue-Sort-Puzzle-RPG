@@ -5,6 +5,8 @@ extends Control
 
 var reduced_effects := false
 var _motes: Array[Dictionary] = []
+var _primary := Color("9e4cff")
+var _secondary := Color("ff9429")
 
 
 func _ready() -> void:
@@ -28,6 +30,12 @@ func set_reduced_effects(value: bool) -> void:
 	queue_redraw()
 
 
+func set_palette(primary: Color, secondary := Color("ffd06a")) -> void:
+	_primary = primary
+	_secondary = secondary
+	queue_redraw()
+
+
 func _process(delta: float) -> void:
 	for i in _motes.size():
 		var mote: Dictionary = _motes[i]
@@ -42,8 +50,8 @@ func _draw() -> void:
 	for i in visible_count:
 		var mote: Dictionary = _motes[i]
 		var alpha := 0.20 + 0.22 * (0.5 + 0.5 * sin(float(mote.phase)))
-		var color := Color(0.62, 0.30, 1.0, alpha) if bool(mote.purple) \
-				else Color(1.0, 0.58, 0.16, alpha)
+		var color := Color(_primary, alpha) if bool(mote.purple) \
+				else Color(_secondary, alpha)
 		var point := Vector2(float(mote.x) * size.x, float(mote.y) * size.y)
 		draw_circle(point, float(mote.radius) * 2.4, Color(color, alpha * 0.15))
 		draw_circle(point, float(mote.radius), color)

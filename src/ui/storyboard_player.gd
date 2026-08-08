@@ -11,6 +11,8 @@ var _foreground_layer: Control
 var _caption_layer: Control
 var _background: TextureRect
 var _accent_veil: ColorRect
+var _subject_halo: TextureRect
+var _halo_gradient: Gradient
 var _subject: TextureRect
 var _eyebrow: Label
 var _title: Label
@@ -27,6 +29,8 @@ var _holding_skip := false
 var _skip_started_msec := 0
 var _motion_tween: Tween
 var _completed := false
+var _active_motion := "hover"
+var _motes: AmbientParticles
 
 
 func _ready() -> void:
@@ -40,10 +44,16 @@ func _ready() -> void:
 
 func set_reduced_effects(value: bool) -> void:
 	_reduced_effects = value
+	if _motes != null:
+		_motes.set_reduced_effects(value)
 
 
 func reduced_effects() -> bool:
 	return _reduced_effects
+
+
+func active_motion() -> String:
+	return _active_motion
 
 
 func play(sequence: Array) -> void:
@@ -54,6 +64,8 @@ func play(sequence: Array) -> void:
 	_index = -1
 	_completed = false
 	visible = true
+	if _motes != null:
+		_motes.set_process(not _reduced_effects)
 	if _sequence.is_empty():
 		_finish(false)
 		return
@@ -85,6 +97,7 @@ func _advance() -> void:
 func _show_beat(beat: Dictionary) -> void:
 	_beat_started_msec = Time.get_ticks_msec()
 	var accent := Color(str(beat.get("accent", "9f6bd2")))
+	_motes.set_palette(accent, Color("ffd06a").lerp(accent, 0.20))
 	_background.texture = VisualRegistry.texture_or_null(str(beat.get("background", "")))
 	_accent_veil.color = Color(accent, 0.12)
 	_eyebrow.text = str(beat.get("eyebrow", "POTION ROGUE"))
@@ -97,13 +110,15 @@ func _show_beat(beat: Dictionary) -> void:
 	var state := str(beat.get("music_state", "story_explore"))
 	if AudioManager != null:
 		AudioManager.set_scene_state(state)
-	_play_transition(accent, float(beat.get("duration", 2.0)))
+	_play_transition(accent, float(beat.get("duration", 2.0)),
+			str(beat.get("motion", "hover")), str(beat.get("transition", "crossfade")))
 	_auto_timer.start(maxf(float(beat.get("duration", 2.0)), 0.8))
 
 
 func _configure_subject(beat: Dictionary, accent: Color) -> void:
 	_subject.texture = null
 	_subject.visible = false
+	_subject_halo.visible = false
 	var subjects: Array = beat.get("subjects", [])
 	if subjects.is_empty():
 		return
@@ -113,6 +128,8 @@ func _configure_subject(beat: Dictionary, accent: Color) -> void:
 		return
 	_subject.texture = texture
 	_subject.visible = true
+	_subject_halo.visible = true
+	_halo_gradient.colors = PackedColorArray([Color(accent, 0.32), Color(accent, 0.0)])
 	_subject.modulate = Color(1.05, 1.02, 1.08, 1.0)
 	_subject.set_meta("story_scale", clampf(float(config.get("scale", 1.0)), 0.55, 1.25))
 	_subject.tooltip_text = str(config.get("enemy_id", "Cinematic subject")).replace("_", " ").capitalize()
@@ -139,29 +156,82 @@ func _configure_layout(layout: String) -> void:
 			_subject.anchor_top = 0.13; _subject.anchor_bottom = 0.72
 	_subject.offset_left = 0; _subject.offset_right = 0
 	_subject.offset_top = 0; _subject.offset_bottom = 0
+	_subject_halo.anchor_left = _subject.anchor_left - 0.08
+	_subject_halo.anchor_right = _subject.anchor_right + 0.08
+	_subject_halo.anchor_top = _subject.anchor_top - 0.05
+	_subject_halo.anchor_bottom = _subject.anchor_bottom + 0.05
+	_subject_halo.offset_left = 0; _subject_halo.offset_right = 0
+	_subject_halo.offset_top = 0; _subject_halo.offset_bottom = 0
 
 
-func _play_transition(accent: Color, duration: float) -> void:
+func _play_transition(accent: Color, duration: float, motion: String, transition: String) -> void:
+	_active_motion = motion
 	var transition_duration := 0.16 if _reduced_effects else UiThemeTokens.motion("cinematic")
+	var base_scale := Vector2.ONE * float(_subject.get_meta("story_scale", 1.0))
+	var start_scale := base_scale
+	var end_scale := base_scale
+	var start_offset := Vector2.ZERO
+	var end_offset := Vector2.ZERO
+	var start_rotation := 0.0
+	if not _reduced_effects:
+		match motion:
+			"slow_push":
+				start_scale = base_scale * 0.91; end_scale = base_scale * 1.02
+			"quick_push", "impact_push", "reveal_rise":
+				start_scale = base_scale * 0.82; start_offset.y = 26.0
+			"slow_retreat", "compress_fade", "fall_fade":
+				start_scale = base_scale * 1.08; end_scale = base_scale * 0.96
+				end_offset.y = 12.0
+			"lateral_drift", "parallax_drift":
+				start_offset.x = -30.0; end_offset.x = 10.0
+			"danger_pulse", "threat_pulse", "memory_pulse":
+				start_scale = base_scale * 0.94; end_scale = base_scale * 1.035
+				start_rotation = -0.012
+			"drift_up", "ember_hover", "hover", "prism_bloom", "relic_glow", \
+					"rise_glow", "seal_glow":
+				start_offset.y = 28.0; end_offset.y = -5.0
+				start_scale = base_scale * 0.96; end_scale = base_scale * 1.015
+			_:
+				start_offset.y = 18.0
 	modulate.a = 0.0
-	_accent_veil.color = Color(accent, 0.34 if not _reduced_effects else 0.10)
+	var veil_color := accent
+	var veil_peak := 0.34
+	if "frost" in transition or "white" in transition or "prism" in transition:
+		veil_color = accent.lightened(0.35); veil_peak = 0.46
+	elif "ink" in transition or "shadow" in transition or "deep" in transition:
+		veil_color = Color(0.015, 0.005, 0.035); veil_peak = 0.55
+	_accent_veil.color = Color(veil_color, 0.10 if _reduced_effects else veil_peak)
 	_background.pivot_offset = _background.size * 0.5
 	_subject.pivot_offset = _subject.size * 0.5
 	_background.scale = Vector2.ONE if _reduced_effects else Vector2(1.035, 1.035)
-	_subject.position.y += 0.0 if _reduced_effects else 24.0
+	_background.modulate = Color(0.76, 0.78, 0.88, 1.0) \
+			if (not _reduced_effects and ("ink" in transition or "shadow" in transition)) \
+			else Color.WHITE
+	var settled_position := _subject.position + end_offset
+	_subject.position += start_offset
+	_subject.scale = start_scale
+	_subject.rotation = start_rotation
 	_subject.modulate.a = 0.0
+	_subject_halo.modulate.a = 0.0
 	_caption_layer.position.y = 0.0 if _reduced_effects else 18.0
 	_caption_layer.modulate.a = 0.0
 	_motion_tween = create_tween().set_parallel(true)
 	_motion_tween.tween_property(self, "modulate:a", 1.0, transition_duration)
 	_motion_tween.tween_property(_accent_veil, "color:a", 0.10, transition_duration)
 	_motion_tween.tween_property(_subject, "modulate:a", 1.0, transition_duration)
+	_motion_tween.tween_property(_subject_halo, "modulate:a", 0.82, transition_duration)
 	_motion_tween.tween_property(_caption_layer, "modulate:a", 1.0, transition_duration)
 	_motion_tween.tween_property(_caption_layer, "position:y", 0.0, transition_duration) \
 			.set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
 	if not _reduced_effects:
-		_motion_tween.tween_property(_subject, "position:y", _subject.position.y - 24.0,
-				transition_duration).set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+		_motion_tween.tween_property(_subject, "position", settled_position,
+				maxf(duration, transition_duration)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		_motion_tween.tween_property(_subject, "scale", end_scale,
+				maxf(duration, transition_duration)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_motion_tween.tween_property(_subject, "rotation", 0.0,
+				transition_duration).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		_motion_tween.tween_property(_background, "modulate", Color.WHITE,
+				transition_duration)
 		_motion_tween.tween_property(_background, "scale", Vector2(1.085, 1.085),
 				maxf(duration, 1.0)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
@@ -200,6 +270,8 @@ func _finish(was_skipped: bool) -> void:
 		return
 	_completed = true
 	_stop_motion()
+	if _motes != null:
+		_motes.set_process(false)
 	visible = false
 	finished.emit(was_skipped)
 
@@ -237,8 +309,27 @@ func _build_layers() -> void:
 	_accent_veil.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_accent_veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_atmosphere_layer.add_child(_accent_veil)
+	_motes = AmbientParticles.new()
+	_motes.name = "StoryMotes"
+	_motes.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_atmosphere_layer.add_child(_motes)
 
 	_subject_layer = _full_layer("SubjectLayer")
+	_subject_halo = TextureRect.new()
+	_subject_halo.name = "SubjectHalo"
+	_halo_gradient = Gradient.new()
+	_halo_gradient.offsets = PackedFloat32Array([0.0, 1.0])
+	_halo_gradient.colors = PackedColorArray([Color(0.62, 0.42, 0.85, 0.30), Color.TRANSPARENT])
+	var halo_texture := GradientTexture2D.new()
+	halo_texture.width = 256; halo_texture.height = 256
+	halo_texture.fill = GradientTexture2D.FILL_RADIAL
+	halo_texture.fill_from = Vector2(0.5, 0.5); halo_texture.fill_to = Vector2(1.0, 0.5)
+	halo_texture.gradient = _halo_gradient
+	_subject_halo.texture = halo_texture
+	_subject_halo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_subject_halo.stretch_mode = TextureRect.STRETCH_SCALE
+	_subject_halo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_subject_layer.add_child(_subject_halo)
 	_subject = TextureRect.new()
 	_subject.name = "StorySubject"
 	_subject.expand_mode = TextureRect.EXPAND_IGNORE_SIZE

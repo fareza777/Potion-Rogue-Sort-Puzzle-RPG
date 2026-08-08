@@ -18,11 +18,11 @@ $root = (Resolve-Path -LiteralPath $ProjectRoot).Path
 $isReleaseCI = $env:CI -eq "true" -or $env:CI -eq "1"
 
 if ([string]::IsNullOrWhiteSpace($ApkPath)) {
-    $Newest = Get-ChildItem -LiteralPath (Join-Path $root "builds") -Filter "*.apk" -File -ErrorAction SilentlyContinue |
+    $NewestDebug = Get-ChildItem -LiteralPath (Join-Path $root "builds") -Filter "*.apk" -File -ErrorAction SilentlyContinue |
         Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
-    $apk = if ($Newest) { $Newest.FullName } else { "" }
+    $debugApk = if ($NewestDebug) { $NewestDebug.FullName } else { "" }
 } else {
-    $apk = Join-Path $root $ApkPath
+    $debugApk = Join-Path $root $ApkPath
 }
 
 $assets = Get-ChildItem -LiteralPath (Join-Path $root "assets") -Recurse -File |
@@ -51,16 +51,53 @@ $assets | Where-Object { $_.Extension.ToLowerInvariant() -in @(".png", ".jpg", "
 
 $projectText = Get-Content -LiteralPath (Join-Path $root "project.godot") -Raw
 $presetText = Get-Content -LiteralPath (Join-Path $root "export_presets.cfg") -Raw
+$configuredExport = [regex]::Match($presetText, 'export_path="([^"]+)"').Groups[1].Value
+$releaseArtifact = if ([string]::IsNullOrWhiteSpace($configuredExport)) {
+    ""
+} else {
+    Join-Path $root $configuredExport
+}
 $projectVersion = [regex]::Match($projectText, 'config/version="([^"]+)"').Groups[1].Value
 $exportVersion = [regex]::Match($presetText, 'version/name="([^"]+)"').Groups[1].Value
 if ($projectVersion -ne $exportVersion) { $failures.Add("Version mismatch: project=$projectVersion export=$exportVersion") }
 
-if ($apk -and (Test-Path -LiteralPath $apk)) {
-    $sizeMB = [math]::Round((Get-Item -LiteralPath $apk).Length / 1MB, 2)
-    if ($sizeMB -gt $MaxApkMB) { $failures.Add("APK over ${MaxApkMB}MiB: ${sizeMB}MiB") }
-    elseif ($sizeMB -gt $WarnApkMB) { Write-Warning "APK over ${WarnApkMB}MiB warning threshold: ${sizeMB}MiB" }
-    Write-Output "Newest APK: $apk (${sizeMB}MiB)"
-} else { Write-Output "APK not present yet." }
+function Get-ArchiveComposition([string]$Path) {
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $archive = [System.IO.Compression.ZipFile]::OpenRead($Path)
+    try {
+        [long]$nativeBytes = 0
+        [long]$assetBytes = 0
+        [long]$otherBytes = 0
+        foreach ($entry in $archive.Entries) {
+            $name = $entry.FullName.Replace('\', '/')
+            if ($name -match '(^|/)lib/') { $nativeBytes += $entry.CompressedLength }
+            elseif ($name -match '(^|/)assets/') { $assetBytes += $entry.CompressedLength }
+            else { $otherBytes += $entry.CompressedLength }
+        }
+        return @{
+            NativeMB = [math]::Round($nativeBytes / 1MB, 2)
+            AssetsMB = [math]::Round($assetBytes / 1MB, 2)
+            OtherMB = [math]::Round($otherBytes / 1MB, 2)
+        }
+    } finally { $archive.Dispose() }
+}
+
+if ($releaseArtifact -and (Test-Path -LiteralPath $releaseArtifact)) {
+    $sizeMB = [math]::Round((Get-Item -LiteralPath $releaseArtifact).Length / 1MB, 2)
+    if ($sizeMB -gt $MaxApkMB) { $failures.Add("Release artifact over ${MaxApkMB}MiB: ${sizeMB}MiB") }
+    elseif ($sizeMB -gt $WarnApkMB) { Write-Warning "Release artifact over ${WarnApkMB}MiB warning threshold: ${sizeMB}MiB" }
+    $releaseLabel = if ([IO.Path]::GetExtension($releaseArtifact) -eq ".aab") { "Release AAB" } else { "Release APK" }
+    Write-Output "Configured release artifact - ${releaseLabel}: $releaseArtifact (${sizeMB}MiB)"
+    try {
+        $composition = Get-ArchiveComposition $releaseArtifact
+        Write-Output "Native/assets composition: native $($composition.NativeMB)MiB, assets $($composition.AssetsMB)MiB, other $($composition.OtherMB)MiB"
+    } catch { $failures.Add("Cannot inspect configured release artifact: $($_.Exception.Message)") }
+} else { Write-Output "Configured release artifact not present yet." }
+
+if ($debugApk -and (Test-Path -LiteralPath $debugApk)) {
+    $debugSizeMB = [math]::Round((Get-Item -LiteralPath $debugApk).Length / 1MB, 2)
+    Write-Output "Debug APK: $debugApk (${debugSizeMB}MiB; informational, includes debug payload)"
+} else { Write-Output "Debug APK not present yet." }
 
 if ($RunBalance -or $isReleaseCI) {
     $godot = Join-Path $root ".tools\Godot_v4.7.1-stable_win64_console.exe"
@@ -76,4 +113,4 @@ if ($RunBalance -or $isReleaseCI) {
 }
 
 if ($failures.Count) { $failures | ForEach-Object { Write-Error $_ }; exit 1 }
-Write-Output "Release budgets passed: art $([math]::Round($artBytes/1MB,2))MiB, audio $([math]::Round($audioBytes/1MB,2))MiB, APK <= ${MaxApkMB}MiB."
+Write-Output "Release budgets passed: art $([math]::Round($artBytes/1MB,2))MiB, audio $([math]::Round($audioBytes/1MB,2))MiB, configured artifact <= ${MaxApkMB}MiB."

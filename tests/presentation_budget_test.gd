@@ -24,8 +24,23 @@ func _ready() -> void:
 	var has_states := AudioManager.has_method("set_scene_state")
 	check(has_states, "music has explicit scene-state transitions")
 	var supported: Array = AudioManager.accepted_scene_states() if AudioManager.has_method("accepted_scene_states") else []
-	for state in ["hall", "explore", "event", "battle", "elite", "boss", "victory", "defeat"]:
+	for state in ["hall", "explore", "event", "battle", "elite", "boss", "victory", "defeat",
+			"story_explore", "story_danger", "story_victory", "story_defeat"]:
 		check(state in supported, "music state accepted: " + state)
+	check(ResourceLoader.exists("res://src/testing/runtime_budget_probe.gd"),
+			"development runtime budget probe exists")
+	var battle_fx = load("res://src/ui/battle_fx.gd").new()
+	check(battle_fx.has_method("contact") and battle_fx.has_method("victory"),
+			"battle FX separates contact and victory presentation phases")
+	battle_fx.free()
+	var enemy_display = load("res://src/battle/enemy_display.gd").new()
+	check(enemy_display.has_method("play_recover"),
+			"enemy motion has an explicit recovery phase")
+	enemy_display.free()
+	var ambient = load("res://src/ui/ambient_particles.gd").new()
+	check(ambient.has_method("set_palette"),
+			"ambient motes accept realm-specific cinematic color direction")
+	ambient.free()
 	finish()
 
 

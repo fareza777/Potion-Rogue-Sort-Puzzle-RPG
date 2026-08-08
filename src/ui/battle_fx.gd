@@ -117,6 +117,22 @@ func projectile(from: Vector2, to: Vector2, color := Color("ff9b45")) -> void:
 		fade.tween_callback(trail.queue_free))
 
 
+## The short contact phase is separate from travel so hits read clearly on phones.
+func contact(at: Vector2, color: Color, strength := 1.0) -> void:
+	var clamped_strength := clampf(strength, 0.5, 1.8)
+	_ring(at, color.lightened(0.22), 34.0 * clamped_strength)
+	_burst(at, color, 5 if reduced_effects else int(9.0 * clamped_strength),
+			34.0 * clamped_strength)
+
+
+func victory(at: Vector2) -> void:
+	for radius in ([58.0] if reduced_effects else [52.0, 82.0, 116.0]):
+		_ring(at, Color("ffd66b"), radius)
+	_burst(at, Color("ffd66b"), 8 if reduced_effects else 22, 128.0, true)
+	if not reduced_effects:
+		_burst(at, Color("c674ff"), 14, 92.0, true)
+
+
 func enemy_strike(from: Vector2, to: Vector2) -> void:
 	var warning := Line2D.new()
 	warning.width = 5.0

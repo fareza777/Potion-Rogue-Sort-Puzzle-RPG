@@ -6,6 +6,14 @@ extends RefCounted
 static func inspect(root: Control, viewport_size: Vector2) -> Array[String]:
 	var issues: Array[String] = []
 	var viewport_rect := Rect2(Vector2.ZERO, viewport_size)
+	for raw_color_rect in root.find_children("*", "ColorRect", true, false):
+		var color_rect := raw_color_rect as ColorRect
+		if color_rect == null or not color_rect.is_visible_in_tree():
+			continue
+		var semantic_name := color_rect.name.to_lower()
+		if ("formula" in semantic_name or "socket" in semantic_name) \
+				and color_rect.color.a > 0.9 and color_rect.color.get_luminance() < 0.025:
+			issues.append("%s:raw_black" % color_rect.name)
 	for raw_control in root.find_children("*", "BaseButton", true, false):
 		var control := raw_control as Control
 		if control == null or not control.is_visible_in_tree():

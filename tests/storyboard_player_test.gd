@@ -33,6 +33,11 @@ func _ready() -> void:
 			"floor":1, "story_flags":{}})[0]
 	player.call("play", [beat])
 	await get_tree().process_frame
+	check(player.has_method("active_motion"),
+			"cinematic exposes its authored motion profile for verification")
+	if player.has_method("active_motion"):
+		check(str(player.call("active_motion")) == str(beat.motion),
+				"player applies the beat-specific handcrafted motion profile")
 	check(bool(player.call("reduced_effects")),
 			"Reduced Effects replaces camera motion with a crossfade")
 	check((player.find_child("StoryBackground", true, false) as TextureRect).texture != null,
@@ -53,6 +58,8 @@ func _ready() -> void:
 	check(service_source.contains("RunState.record_replay"),
 			"story service journals compact beat identities")
 	player.queue_free()
+	AudioManager.stop_music()
+	await get_tree().create_timer(0.08).timeout
 	finish()
 
 

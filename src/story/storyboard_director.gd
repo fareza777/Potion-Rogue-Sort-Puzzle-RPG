@@ -95,8 +95,8 @@ func _subjects(kind: String, context: Dictionary) -> Array[Dictionary]:
 		return [{"texture":path, "slot":"focus", "scale":float(config.get("scale", 1.0)),
 				"enemy_id":enemy_id}]
 	if kind == "potion":
-		var path := "res://assets/art/app_icon_v2.png"
-		return [{"texture":path, "slot":"focus", "scale":0.72}] \
+		var path := "res://assets/art/storyboard/hero_potion_v1.png"
+		return [{"texture":path, "slot":"focus", "scale":0.76}] \
 				if ResourceLoader.exists(path) else []
 	return []
 

@@ -12,8 +12,13 @@ func _ready() -> void:
 	var clipped := Button.new(); clipped.name = "ClippedAction"
 	clipped.position = Vector2(540, 100); clipped.size = Vector2(80, 40)
 	synthetic.add_child(clipped); add_child(synthetic)
+	var raw_formula := ColorRect.new(); raw_formula.name = "FormulaSocket"
+	raw_formula.color = Color(0.0, 0.0, 0.0, 1.0); raw_formula.size = Vector2(60, 60)
+	raw_formula.position = Vector2(20, 200); synthetic.add_child(raw_formula)
 	var issues := MobileLayoutAudit.inspect(synthetic, Vector2(576, 1280))
 	check(issues.size() >= 2, "audit detects clipped and undersized controls")
+	check("FormulaSocket:raw_black" in issues,
+			"audit rejects placeholder-black formula presentation")
 	synthetic.queue_free()
 	for viewport_size in SIZES:
 		var viewport := SubViewport.new()

@@ -198,6 +198,20 @@ func play_attack() -> void:
 	_action_tween.parallel().tween_property(_sprite_root, "rotation", 0.0, 0.18)
 
 
+func play_recover() -> void:
+	if not uses_sprite_art():
+		return
+	_kill_action_tween()
+	var recovery_time := 0.08 if reduced_effects else 0.22
+	_action_tween = create_tween().set_parallel(true)
+	_action_tween.tween_property(_sprite_root, "position", Vector2.ZERO, recovery_time) \
+			.set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
+	_action_tween.tween_property(_sprite_root, "scale", _base_scale, recovery_time) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_action_tween.tween_property(_sprite_root, "rotation", 0.0, recovery_time)
+	_action_tween.tween_property(_sprite_root, "modulate", Color.WHITE, recovery_time)
+
+
 func play_defeat() -> void:
 	if not uses_sprite_art():
 		return

@@ -202,9 +202,12 @@ func _ready() -> void:
 			"battle exposes framed enemy vital bar")
 	check(battle_source.contains('name = "PlayerVitalBar"'),
 			"battle exposes framed player vital bar")
+	var power_strip_source := FileAccess.get_file_as_string(
+			"res://src/ui/battle/battle_power_strip.gd")
 	for tactical_name in ["TacticalReadout", "ManaMeter", "ComboSlots",
 			"SkillButton", "UltimateButton"]:
-		check(battle_source.contains('name = "' + tactical_name + '"'),
+		check(battle_source.contains('name = "' + tactical_name + '"')
+				or power_strip_source.contains('name = "' + tactical_name + '"'),
 				"battle exposes tactical " + tactical_name)
 	var tactical_source := FileAccess.get_file_as_string("res://src/ui/tactical_readout.gd")
 	for tactical_name in ["ObjectiveText", "EnemyIntent", "EnemyTrick"]:
