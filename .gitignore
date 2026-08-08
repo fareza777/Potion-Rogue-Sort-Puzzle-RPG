@@ -1,6 +1,7 @@
 # Godot 4 cache and imported assets
 .godot/
 *.import
+!assets/art/story_scenes/*.webp.import
 
 # Android build artifacts
 android/

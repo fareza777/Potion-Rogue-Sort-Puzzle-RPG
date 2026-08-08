@@ -25,10 +25,14 @@ jobs:
           done
       - name: Export Android debug APK
         run: godot --headless --path . --export-debug "Android Debug" builds/PotionRogue-v1.6.4-debug.apk
+      - name: Build release-payload AAB for size validation
+        run: godot --headless --path . --export-debug "Android Release" builds/PotionRogue-v1.6.4-sizecheck.aab
       - name: Validate release budgets and balance
         shell: pwsh
-        run: ./tools/validate_release.ps1 -ProjectRoot . -ApkPath builds/PotionRogue-v1.6.4-debug.apk
+        run: ./tools/validate_release.ps1 -ProjectRoot . -ApkPath builds/PotionRogue-v1.6.4-debug.apk -ReleaseArtifactPath builds/PotionRogue-v1.6.4-sizecheck.aab
       - uses: actions/upload-artifact@v4
         with:
-          name: PotionRogue-v1.6.4-debug
-          path: builds/PotionRogue-v1.6.4-debug.apk
+          name: PotionRogue-v1.6.4-android
+          path: |
+            builds/PotionRogue-v1.6.4-debug.apk
+            builds/PotionRogue-v1.6.4-sizecheck.aab

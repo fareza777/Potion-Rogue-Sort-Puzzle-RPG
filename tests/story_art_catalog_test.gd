@@ -73,6 +73,25 @@ func _ready() -> void:
 	check(first == second, "identical story context resolves identical art")
 	check(str(first.get("scene_key", "")).contains("fire_golem"),
 			"exact enemy mapping wins before realm tier fallback")
+	var route_shots := {}
+	for shot_index in range(12):
+		var route_art: Dictionary = catalog.resolve("route_choice", {
+				"seed":8800 + shot_index, "node_id":"fork_%d" % shot_index,
+				"area_id":"shadow_crypt", "floor":2})
+		route_shots[str(route_art.get("scene_key", ""))] = true
+	check(route_shots.size() >= 2,
+			"seed and node identity create deterministic cinematic framing variants")
+	var malformed_manifest = JSON.parse_string(
+			FileAccess.get_file_as_string(manifest_path))
+	malformed_manifest["scenes"]["enc_shadow_skeleton"]["path"] = \
+			"res://assets/art/story_scenes/missing.webp"
+	var fallback_catalog = load(catalog_path).new(malformed_manifest)
+	var recovered: Dictionary = fallback_catalog.resolve("battle_intro", {
+			"seed":9910, "node_id":"broken_exact", "area_id":"shadow_crypt",
+			"enemy_id":"skeleton", "enemy_tier":1, "kind":"battle", "floor":1})
+	check_art(recovered, "broken exact mapping falls through to valid realm art")
+	check(str(recovered.get("base_scene_key", recovered.get("scene_key", ""))).contains("slime"),
+			"ordered fallback does not return an empty story panel")
 	check(catalog.resolve("battle_intro", {"area_id":"unknown_realm",
 			"enemy_id":"unknown_enemy", "enemy_tier":9}).is_empty(),
 			"invalid content returns an empty safe fallback")

@@ -13,6 +13,12 @@ func _ready() -> void:
 			"release validator reports native and packaged asset composition")
 	check(validator.contains("MaxTotalArtMB") and validator.contains("MaxTotalAudioMB"),
 			"release validator enforces aggregate art and audio budgets")
+	check(validator.contains("ReleaseArtifactPath")
+			and validator.contains("compress/mode=1")
+			and validator.contains("story_scenes"),
+			"release validator inspects the actual bundle and optimized WebP imports")
+	check(validator.contains("Requested release artifact not found"),
+			"an explicitly requested missing AAB fails closed")
 	check(validator.contains("config/version") and validator.contains("version/name"),
 			"release validator checks project/export version agreement")
 	var preset := FileAccess.get_file_as_string("res://export_presets.cfg")
@@ -32,6 +38,10 @@ func _ready() -> void:
 	check(ci.contains("PotionRogue-v1.6.4-debug.apk")
 			and ci.contains('--export-debug "Android Debug"'),
 			"CI exports the current installable debug APK preset")
+	check(ci.contains("PotionRogue-v1.6.4-sizecheck.aab")
+			and ci.contains('--export-debug "Android Release"')
+			and ci.contains("-ReleaseArtifactPath"),
+			"CI builds and validates an AAB carrying the real release payload")
 	for atlas in ["atlas_crypt.png", "atlas_fungal.png", "atlas_arcane.png", "atlas_infernal.png"]:
 		check(not FileAccess.file_exists("res://assets/art/enemies/" + atlas),
 				"unused legacy atlas removed: " + atlas)
