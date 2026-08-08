@@ -11,6 +11,7 @@ var _foreground_layer: Control
 var _caption_layer: Control
 var _background: TextureRect
 var _accent_veil: ColorRect
+var _full_scene_shade: TextureRect
 var _subject_halo: TextureRect
 var _halo_gradient: Gradient
 var _subject: TextureRect
@@ -30,6 +31,8 @@ var _skip_started_msec := 0
 var _motion_tween: Tween
 var _completed := false
 var _active_motion := "hover"
+var _active_art_mode := "composite"
+var _active_focal_point := Vector2(0.5, 0.42)
 var _motes: AmbientParticles
 
 
@@ -54,6 +57,10 @@ func reduced_effects() -> bool:
 
 func active_motion() -> String:
 	return _active_motion
+
+
+func active_art_mode() -> String:
+	return _active_art_mode
 
 
 func play(sequence: Array) -> void:
@@ -97,8 +104,11 @@ func _advance() -> void:
 func _show_beat(beat: Dictionary) -> void:
 	_beat_started_msec = Time.get_ticks_msec()
 	var accent := Color(str(beat.get("accent", "9f6bd2")))
+	_active_art_mode = str(beat.get("art_mode", "composite"))
+	_active_focal_point = _read_focal_point(beat.get("focal_point", [0.5, 0.42]))
 	_motes.set_palette(accent, Color("ffd06a").lerp(accent, 0.20))
 	_background.texture = VisualRegistry.texture_or_null(str(beat.get("background", "")))
+	_full_scene_shade.visible = _active_art_mode == "full_scene"
 	_accent_veil.color = Color(accent, 0.12)
 	_eyebrow.text = str(beat.get("eyebrow", "POTION ROGUE"))
 	_title.text = str(beat.get("title", "THE STORY CONTINUES"))
@@ -112,13 +122,18 @@ func _show_beat(beat: Dictionary) -> void:
 		AudioManager.set_scene_state(state)
 	_play_transition(accent, float(beat.get("duration", 2.0)),
 			str(beat.get("motion", "hover")), str(beat.get("transition", "crossfade")))
-	_auto_timer.start(maxf(float(beat.get("duration", 2.0)), 0.8))
+	if _active_art_mode == "full_scene":
+		_auto_timer.stop()
+	else:
+		_auto_timer.start(maxf(float(beat.get("duration", 2.0)), 0.8))
 
 
 func _configure_subject(beat: Dictionary, accent: Color) -> void:
 	_subject.texture = null
 	_subject.visible = false
 	_subject_halo.visible = false
+	if _active_art_mode == "full_scene":
+		return
 	var subjects: Array = beat.get("subjects", [])
 	if subjects.is_empty():
 		return
@@ -201,9 +216,16 @@ func _play_transition(accent: Color, duration: float, motion: String, transition
 	elif "ink" in transition or "shadow" in transition or "deep" in transition:
 		veil_color = Color(0.015, 0.005, 0.035); veil_peak = 0.55
 	_accent_veil.color = Color(veil_color, 0.10 if _reduced_effects else veil_peak)
-	_background.pivot_offset = _background.size * 0.5
+	_background.pivot_offset = Vector2(_background.size.x * _active_focal_point.x,
+			_background.size.y * _active_focal_point.y)
 	_subject.pivot_offset = _subject.size * 0.5
-	_background.scale = Vector2.ONE if _reduced_effects else Vector2(1.035, 1.035)
+	var background_start_scale := Vector2.ONE if _reduced_effects else \
+			(Vector2(1.025, 1.025) if _active_art_mode == "full_scene" \
+			else Vector2(1.035, 1.035))
+	var background_end_scale := Vector2.ONE if _reduced_effects else \
+			(Vector2(1.070, 1.070) if _active_art_mode == "full_scene" \
+			else Vector2(1.085, 1.085))
+	_background.scale = background_start_scale
 	_background.modulate = Color(0.76, 0.78, 0.88, 1.0) \
 			if (not _reduced_effects and ("ink" in transition or "shadow" in transition)) \
 			else Color.WHITE
@@ -211,34 +233,38 @@ func _play_transition(accent: Color, duration: float, motion: String, transition
 	_subject.position += start_offset
 	_subject.scale = start_scale
 	_subject.rotation = start_rotation
-	_subject.modulate.a = 0.0
-	_subject_halo.modulate.a = 0.0
+	if _subject.visible:
+		_subject.modulate.a = 0.0
+		_subject_halo.modulate.a = 0.0
 	_caption_layer.position.y = 0.0 if _reduced_effects else 18.0
 	_caption_layer.modulate.a = 0.0
 	_motion_tween = create_tween().set_parallel(true)
 	_motion_tween.tween_property(self, "modulate:a", 1.0, transition_duration)
 	_motion_tween.tween_property(_accent_veil, "color:a", 0.10, transition_duration)
-	_motion_tween.tween_property(_subject, "modulate:a", 1.0, transition_duration)
-	_motion_tween.tween_property(_subject_halo, "modulate:a", 0.82, transition_duration)
+	if _subject.visible:
+		_motion_tween.tween_property(_subject, "modulate:a", 1.0, transition_duration)
+		_motion_tween.tween_property(_subject_halo, "modulate:a", 0.82, transition_duration)
 	_motion_tween.tween_property(_caption_layer, "modulate:a", 1.0, transition_duration)
 	_motion_tween.tween_property(_caption_layer, "position:y", 0.0, transition_duration) \
 			.set_trans(Tween.TRANS_QUINT).set_ease(Tween.EASE_OUT)
 	if not _reduced_effects:
-		_motion_tween.tween_property(_subject, "position", settled_position,
-				maxf(duration, transition_duration)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-		_motion_tween.tween_property(_subject, "scale", end_scale,
-				maxf(duration, transition_duration)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-		_motion_tween.tween_property(_subject, "rotation", 0.0,
-				transition_duration).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		if _subject.visible:
+			_motion_tween.tween_property(_subject, "position", settled_position,
+					maxf(duration, transition_duration)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+			_motion_tween.tween_property(_subject, "scale", end_scale,
+					maxf(duration, transition_duration)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+			_motion_tween.tween_property(_subject, "rotation", 0.0,
+					transition_duration).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		_motion_tween.tween_property(_background, "modulate", Color.WHITE,
 				transition_duration)
-		_motion_tween.tween_property(_background, "scale", Vector2(1.085, 1.085),
+		_motion_tween.tween_property(_background, "scale", background_end_scale,
 				maxf(duration, 1.0)).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
 func _rebuild_pips(accent: Color) -> void:
 	for child in _pips.get_children():
 		child.queue_free()
+	_pips.visible = _sequence.size() > 1
 	for pip_index in _sequence.size():
 		var pip := PanelContainer.new()
 		pip.custom_minimum_size = Vector2(22 if pip_index == _index else 10, 6)
@@ -339,6 +365,27 @@ func _build_layers() -> void:
 	_subject_layer.add_child(_subject)
 
 	_foreground_layer = _full_layer("ForegroundLayer")
+	_full_scene_shade = TextureRect.new()
+	_full_scene_shade.name = "FullSceneShade"
+	_full_scene_shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var scene_gradient := Gradient.new()
+	scene_gradient.offsets = PackedFloat32Array([0.0, 0.50, 0.72, 1.0])
+	scene_gradient.colors = PackedColorArray([
+		Color(0.008, 0.003, 0.018, 0.04), Color(0.008, 0.003, 0.018, 0.08),
+		Color(0.008, 0.003, 0.018, 0.58), Color(0.008, 0.003, 0.018, 0.94),
+	])
+	var scene_shade_texture := GradientTexture2D.new()
+	scene_shade_texture.width = 16; scene_shade_texture.height = 512
+	scene_shade_texture.fill = GradientTexture2D.FILL_LINEAR
+	scene_shade_texture.fill_from = Vector2(0.5, 0.0)
+	scene_shade_texture.fill_to = Vector2(0.5, 1.0)
+	scene_shade_texture.gradient = scene_gradient
+	_full_scene_shade.texture = scene_shade_texture
+	_full_scene_shade.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_full_scene_shade.stretch_mode = TextureRect.STRETCH_SCALE
+	_full_scene_shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_full_scene_shade.visible = false
+	_foreground_layer.add_child(_full_scene_shade)
 	var top_bar := ColorRect.new()
 	top_bar.anchor_right = 1.0; top_bar.offset_bottom = 92
 	top_bar.color = Color(0.008, 0.003, 0.018, 0.70)
@@ -363,6 +410,7 @@ func _build_layers() -> void:
 	_caption_layer = _full_layer("CaptionLayer")
 	_build_caption()
 	_auto_timer = Timer.new()
+	_auto_timer.name = "StoryboardAutoAdvance"
 	_auto_timer.one_shot = true
 	_auto_timer.timeout.connect(_advance)
 	add_child(_auto_timer)
@@ -429,3 +477,12 @@ func _build_caption() -> void:
 		_holding_skip = false
 		_skip_button.text = "HOLD TO SKIP")
 	_caption_layer.add_child(_skip_button)
+
+
+func _read_focal_point(value: Variant) -> Vector2:
+	var point := Vector2(0.5, 0.42)
+	if value is Vector2:
+		point = value
+	elif value is Array and value.size() >= 2:
+		point = Vector2(float(value[0]), float(value[1]))
+	return Vector2(clampf(point.x, 0.1, 0.9), clampf(point.y, 0.1, 0.9))

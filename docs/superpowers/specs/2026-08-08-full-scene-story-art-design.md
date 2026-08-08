@@ -39,6 +39,7 @@ The first production set contains:
 - Five realm-arrival paintings.
 - Twenty encounter paintings: four representative threat tiers per realm, including each realm boss.
 - Ten event paintings covering the primary event families and their follow-ups.
+- Five realm aftermath paintings used for vows, victories, defeats, and non-repeating outcome flow.
 
 All final runtime assets are resized to 720 x 1280 and encoded as WebP. The total new source-art budget is capped at 14 MiB, preserving the existing 55 MiB project-art release gate.
 
@@ -92,7 +93,7 @@ Reduced Effects uses a short crossfade without camera movement.
 
 - All images ship locally and are imported before export; no runtime image generation or network access.
 - Story textures are loaded through the existing bounded resource cache.
-- Only the active painting is visible; no 35-image preload.
+- Only the active painting is visible; no 40-image preload.
 - Invalid manifest entry falls through to the existing safe storyboard presentation.
 - Interrupted playback never changes `RunState.phase` and never skips a battle checkpoint.
 
@@ -108,4 +109,3 @@ Reduced Effects uses a short crossfade without camera movement.
 8. New story art stays within the 14 MiB addition budget and the full art tree stays below 55 MiB.
 9. The complete storyboard, gameplay integration, save recovery, viewport, and release tests pass.
 10. A new Android debug APK is built and its package, version, signature, size, and SHA-256 are reported.
-
