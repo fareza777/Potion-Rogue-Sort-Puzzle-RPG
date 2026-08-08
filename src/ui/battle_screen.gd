@@ -165,12 +165,17 @@ func _ready() -> void:
 	board.board_refilled.connect(func() -> void: _set_message("New potions brewed!"))
 
 	var entry := RunState.current_battle()
-	battle.setup(str(entry.get("enemy", "slime")))
-	encounter_coordinator.configure(battle, board, entry)
-	_setup_tactical_controllers(str(entry.get("enemy", "slime")))
 	var encounter: Dictionary = RunState.phase_payload.get("encounter", {})
+	var starting_enemy := str(entry.get("enemy", "slime"))
+	var saved_battle: Dictionary = encounter.get("battle", {})
+	var saved_enemy := str(saved_battle.get("enemy_id", ""))
+	if not saved_enemy.is_empty() and GameState.enemies.has(saved_enemy):
+		starting_enemy = saved_enemy
+	battle.setup(starting_enemy)
+	encounter_coordinator.configure(battle, board, entry)
+	_setup_tactical_controllers(starting_enemy)
 	var resumed := not encounter.is_empty() and _restore_encounter(encounter)
-	enemy_display.configure_enemy(str(entry.get("enemy", "slime")),
+	enemy_display.configure_enemy(battle.enemy_id,
 			battle.enemy_shape, battle.enemy_color)
 	enemy_display.play_intro()
 	undo_left = int(encounter.get("undo_left", battle.undos_allowed())) if resumed else battle.undos_allowed()
@@ -339,6 +344,17 @@ func _on_format_potion_completed(_color: String) -> void:
 	if encounter_format.format == "protect_cauldron":
 		_set_message(encounter_format.title() + "  •  " + encounter_format.status_text())
 	if outcome == "victory": battle.complete_by_objective()
+
+
+func _configure_wave_enemy(enemy_id: String, wave_number: int) -> void:
+	var config: Dictionary = GameState.enemies.get(enemy_id, {})
+	intent_controller.configure(enemy_id, config,
+			RunState.run_seed + RunState.battle_index + wave_number * 101)
+	intent_controller.set_battle_values(battle.enemy_attack, 0.0, battle.attack_every)
+	battle.intent_controller = intent_controller
+	signature_controller.configure(enemy_id, config,
+			RunState.run_seed + RunState.battle_index * 37 + wave_number * 113)
+	_refresh_reaction_counterplay()
 
 
 func _on_objective_progress(current: int, target: int) -> void:
@@ -884,7 +900,14 @@ func _refresh() -> void:
 	match kind:
 		"elite": stage += "  [ELITE]"
 		"boss": stage += "  [BOSS]"
+	if encounter_format.format == "multi_wave" and encounter_format.wave < encounter_format.waves:
+		var roster: Array = RunState.ensure_current_encounter_profile().get(
+				"wave_enemy_ids", [])
+		if encounter_format.wave < roster.size():
+			var queued: Dictionary = GameState.enemies.get(str(roster[encounter_format.wave]), {})
+			stage += "  •  NEXT: " + str(queued.get("name", "Unknown"))
 	battle_kind_label.text = stage
+	battle_kind_label.tooltip_text = stage
 
 	enemy_name_label.text = battle.enemy_name \
 			+ ("  (Enraged!)" if battle.enraged else "")
@@ -1073,8 +1096,14 @@ func _on_tube_lock_requested(moves: int) -> void:
 func _on_battle_won() -> void:
 	if encounter_format.on_enemy_defeated() == "next_wave":
 		board.enabled = false
-		_set_message("WAVE CLEARED  •  " + encounter_format.status_text())
-		battle.setup_next_wave(encounter_format.wave)
+		var roster: Array = RunState.ensure_current_encounter_profile().get(
+				"wave_enemy_ids", [])
+		var roster_index := encounter_format.wave - 1
+		var next_enemy_id := str(roster[roster_index]) \
+				if roster_index >= 0 and roster_index < roster.size() else battle.enemy_id
+		battle.setup_next_wave(encounter_format.wave, next_enemy_id)
+		_configure_wave_enemy(next_enemy_id, encounter_format.wave)
+		_set_message("WAVE CLEARED  •  %s ENTERS" % battle.enemy_name.to_upper())
 		enemy_display.configure_enemy(battle.enemy_id, battle.enemy_shape, battle.enemy_color)
 		enemy_display.play_intro()
 		board.enabled = true

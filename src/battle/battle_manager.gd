@@ -126,12 +126,12 @@ func setup(new_enemy_id: String) -> void:
 	stats_changed.emit()
 
 
-func setup_next_wave(wave_number: int) -> void:
+func setup_next_wave(wave_number: int, next_enemy_id := "") -> void:
 	var carried_hp := player_hp
 	var carried_shield := shield
 	var carried_max_hp := player_max_hp
 	var carried_max_shield := max_shield
-	setup(enemy_id)
+	setup(next_enemy_id if not next_enemy_id.is_empty() else enemy_id)
 	player_max_hp = carried_max_hp
 	player_hp = clampi(carried_hp, 1, player_max_hp)
 	max_shield = carried_max_shield

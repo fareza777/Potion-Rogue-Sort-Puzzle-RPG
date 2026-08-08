@@ -186,6 +186,7 @@ func ensure_current_encounter_profile() -> Dictionary:
 	var ratio := float(current_hp()) / float(maxi(max_hp(), 1))
 	contract["profile"] = EncounterDirector.new().build_profile({
 		"floor": int(node.get("floor", 0)), "kind": str(node.get("kind", "battle")),
+		"area_id": area_id, "enemy_id": str(node.get("enemy", "slime")),
 		"hp_ratio": ratio, "ascension": run_ascension,
 		"early_defeat_streak": int(SaveSystem.data.get("early_defeat_streak", 0)),
 	}, run_seed ^ str(node.get("id", "")).hash())
