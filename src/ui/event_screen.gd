@@ -65,7 +65,7 @@ func _choose(choice_id: String) -> void:
 	for child in choice_box.get_children(): child.queue_free()
 	status.text = "APPLIED  •  " + str(result.get("result_summary", "Choice sealed."))
 	var continue_button := UiKit.ornate_button("RETURN TO MAP", Vector2(430, 68))
-	continue_button.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/map.tscn"))
+	continue_button.pressed.connect(func(): SceneRouter.go_to("res://scenes/map.tscn"))
 	choice_box.add_child(continue_button)
 
 func _event_for_kind(kind: String) -> String:

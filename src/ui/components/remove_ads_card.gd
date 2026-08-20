@@ -1,6 +1,6 @@
-class_name CampaignUnlockCard
+class_name RemoveAdsCard
 extends PanelContainer
-## Reusable purchase surface for the one-time campaign entitlement.
+## Reusable purchase surface for the one-time Remove Ads entitlement.
 ## The same copy and purchase/restore behavior appears in the expedition
 ## selector and Settings so players never have to hunt for the offer.
 
@@ -14,9 +14,9 @@ var _restore_button: Button
 var _billing_wired := false
 
 
-func configure(compact := false) -> CampaignUnlockCard:
+func configure(compact := false) -> RemoveAdsCard:
 	_compact = compact
-	name = "CampaignUnlockCard"
+	name = "RemoveAdsCard"
 	custom_minimum_size = Vector2(0, 188 if compact else 222)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("2a1d43")
@@ -32,60 +32,60 @@ func configure(compact := false) -> CampaignUnlockCard:
 	add_theme_stylebox_override("panel", style)
 
 	var box := VBoxContainer.new()
-	box.name = "CampaignUnlockContent"
+	box.name = "RemoveAdsContent"
 	box.add_theme_constant_override("separation", 5 if compact else 7)
 	add_child(box)
-	var eyebrow := UiKit.label("ONE-TIME PURCHASE  •  FULL CAMPAIGN", 11,
+	var eyebrow := UiKit.label("ONE-TIME PURCHASE  •  NO SUBSCRIPTION", 11,
 			Color("f4c96a"))
-	eyebrow.name = "CampaignUnlockEyebrow"
+	eyebrow.name = "RemoveAdsEyebrow"
 	eyebrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	box.add_child(eyebrow)
-	_title = UiKit.title_label("UNLOCK EVERY REALM", 22 if compact else 27,
+	_title = UiKit.title_label("REMOVE ADS", 22 if compact else 27,
 			Color("ffe2a0"))
-	_title.name = "CampaignUnlockTitle"
+	_title.name = "RemoveAdsTitle"
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	box.add_child(_title)
 	_description = UiKit.label(
-			"Open all five dark-fantasy realms and keep every boss, hazard, reward, and rematch available.",
+			"Play the whole campaign with no banners and no between-battle ads. Optional rewarded ads always stay your choice.",
 			13 if compact else 14, UiKit.COLOR_TEXT)
-	_description.name = "CampaignUnlockDescription"
+	_description.name = "RemoveAdsDescription"
 	_description.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(_description)
-	var features := UiKit.label("5 REALMS  •  35+ ENCOUNTERS  •  PERMANENT ACCESS", 11,
+	var features := UiKit.label("NO BANNERS  •  NO INTERSTITIALS  •  PERMANENT", 11,
 			Color("b9a7d8"))
-	features.name = "CampaignUnlockFeatures"
+	features.name = "RemoveAdsFeatures"
 	features.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	box.add_child(features)
 	_price = UiKit.label("US$4.99  •  ONE-TIME PURCHASE", 13, Color("77d8ff"))
-	_price.name = "CampaignUnlockPrice"
+	_price.name = "RemoveAdsPrice"
 	_price.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	box.add_child(_price)
-	_buy_button = UiKit.cta_bar("UNLOCK ALL REALMS  •  US$4.99", Color("b96bde"),
+	_buy_button = UiKit.cta_bar("REMOVE ADS  •  US$4.99", Color("b96bde"),
 			54 if compact else 60)
-	_buy_button.name = "BuyFullCampaign"
+	_buy_button.name = "BuyRemoveAds"
 	_buy_button.add_theme_color_override("font_disabled_color", Color("d8ccef"))
 	var buy_ornament := _buy_button.get_node_or_null("CtaOrnament") as TextureRect
 	if buy_ornament != null:
 		buy_ornament.modulate = Color(1.0, 0.92, 0.70, 0.24)
-	_buy_button.tooltip_text = "Unlock the remaining realms permanently through Google Play."
-	_buy_button.pressed.connect(_buy_campaign)
+	_buy_button.tooltip_text = "Switch off banners and between-battle ads permanently through Google Play."
+	_buy_button.pressed.connect(_buy_remove_ads)
 	box.add_child(_buy_button)
 	var actions := HBoxContainer.new()
-	actions.name = "CampaignUnlockActions"
+	actions.name = "RemoveAdsActions"
 	actions.alignment = BoxContainer.ALIGNMENT_BEGIN
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	actions.add_child(spacer)
 	_restore_button = UiKit.button("RESTORE PURCHASE", Vector2(0, 42), Color("9bb9ff"))
-	_restore_button.name = "RestoreCampaignPurchase"
+	_restore_button.name = "RestoreRemoveAdsPurchase"
 	_restore_button.custom_minimum_size.x = 190 if compact else 220
 	_restore_button.add_theme_font_size_override("font_size", 13)
-	_restore_button.pressed.connect(_restore_campaign)
+	_restore_button.pressed.connect(_restore_purchase)
 	actions.add_child(_restore_button)
 	box.add_child(actions)
 	_status = UiKit.label("Connect to Google Play to purchase.", 11, UiKit.COLOR_TEXT_DIM)
-	_status.name = "CampaignUnlockStatus"
+	_status.name = "RemoveAdsStatus"
 	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(_status)
@@ -106,32 +106,33 @@ func _wire_billing() -> void:
 func _refresh() -> void:
 	if not is_instance_valid(_buy_button):
 		return
-	var unlocked := BillingService.is_entitled()
+	var removed := BillingService.is_entitled()
 	var needs_play_connection := OS.get_name() == "Android" and not BillingService.is_available()
-	_buy_button.disabled = unlocked or needs_play_connection
+	_buy_button.disabled = removed or needs_play_connection
 	_restore_button.disabled = needs_play_connection
-	if unlocked:
-		_title.text = "FULL CAMPAIGN UNLOCKED"
-		_price.text = "ALL FIVE REALMS ARE OPEN"
-		_buy_button.text = "CAMPAIGN UNLOCKED"
-		_status.text = "Your permanent access is saved on this device and restored from Google Play."
+	if removed:
+		_title.text = "ADS REMOVED"
+		_price.text = "THIS DEVICE IS AD-FREE"
+		_buy_button.text = "ADS REMOVED"
+		_description.text = "Thank you for supporting Potion Rogue. Banners and between-battle ads stay off on this device."
+		_status.text = "Your purchase is saved on this device and restored from Google Play."
 		_status.add_theme_color_override("font_color", Color("78d89b"))
 	else:
-		_title.text = "UNLOCK EVERY REALM"
+		_title.text = "REMOVE ADS"
 		_price.text = "US$4.99  •  ONE-TIME PURCHASE"
-		_buy_button.text = "UNLOCK ALL REALMS  •  US$4.99"
+		_buy_button.text = "REMOVE ADS  •  US$4.99"
 		_status.add_theme_color_override("font_color", UiKit.COLOR_TEXT_DIM)
 
 
-func _buy_campaign() -> void:
-	BillingService.purchase_full_campaign()
+func _buy_remove_ads() -> void:
+	BillingService.purchase_remove_ads()
 
 
-func _restore_campaign() -> void:
+func _restore_purchase() -> void:
 	BillingService.restore_purchases()
 
 
-func _on_entitlement_changed(_unlocked: bool) -> void:
+func _on_entitlement_changed(_removed: bool) -> void:
 	_refresh()
 
 

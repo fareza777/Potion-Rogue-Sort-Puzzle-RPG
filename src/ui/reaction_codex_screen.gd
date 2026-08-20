@@ -66,5 +66,5 @@ func _formula_card(formula_id: String, formula: Dictionary, discovered: bool) ->
 
 
 func _return_from_codex() -> void:
-	get_tree().change_scene_to_file(RunState.resume_scene() if RunState.active \
+	SceneRouter.go_to(RunState.resume_scene() if RunState.active \
 			else "res://scenes/main_menu.tscn")

@@ -3,6 +3,10 @@ extends Control
 ## handles the run flow (victory -> upgrade choice -> map, boss win -> run
 ## victory, defeat -> game over). All UI built via UiKit (placeholder-art phase).
 
+## Battle-log colour for each completed potion colour.
+const POTION_LOG_KINDS := {"red": "damage", "green": "heal", "blue": "shield",
+	"purple": "damage"}
+
 var battle: BattleManager
 var board: PuzzleBoard
 var undo_left := 0
@@ -37,9 +41,8 @@ var reaction_effects := ReactionEffectExecutor.new()
 var reaction_pipeline: ReactionModifierPipeline
 var reaction_counterplay: ReactionCounterplayController
 var skill_controller: SkillController
-var objective_label: Label
-var intent_label: Label
-var tactical_readout: TacticalReadout
+var objective_text := ""
+var battle_log: BattleLog
 var power_strip: BattlePowerStrip
 var mana_bar: ProgressBar
 var mana_label: Label
@@ -179,7 +182,7 @@ func _ready() -> void:
 	board.tube_completed.connect(battle.on_potion_completed)
 	board.tube_completed.connect(func(_c: String) -> void: AudioManager.play("complete"))
 	board.tube_locked.connect(func() -> void: AudioManager.play("lock"))
-	board.board_refilled.connect(func() -> void: _set_message("New potions brewed!"))
+	board.board_refilled.connect(func() -> void: _set_message("New potions brewed!", "system"))
 
 	var entry := RunState.current_battle()
 	var encounter: Dictionary = RunState.phase_payload.get("encounter", {})
@@ -299,7 +302,7 @@ func _setup_tactical_controllers(enemy_id: String) -> void:
 	objective_controller.progress_changed.connect(_on_objective_progress)
 	_on_objective_progress(objective_controller.current, objective_controller.target)
 	objective_controller.completed.connect(func():
-		_set_message("OPTIONAL OBJECTIVE COMPLETE  +15 mana")
+		_set_message("OPTIONAL OBJECTIVE COMPLETE  +15 mana", "objective")
 		skill_controller.gain_mana(15))
 	intent_controller = EnemyIntentController.new()
 	intent_controller.configure(enemy_id, GameState.enemies.get(enemy_id, {}), RunState.run_seed + RunState.battle_index)
@@ -325,11 +328,11 @@ func _setup_tactical_controllers(enemy_id: String) -> void:
 		var pressure := modifier_controller.on_invalid_pour()
 		if pressure > 0:
 			battle.moves_until_attack = maxi(battle.moves_until_attack - pressure, 1)
-			_set_message("BRITTLE GLASS  •  ENEMY PRESSURE +1")
+			_set_message("BRITTLE GLASS  •  ENEMY PRESSURE +1", "enemy")
 			_refresh())
 	board.guidance_changed.connect(func(reason: String) -> void:
 		AudioManager.haptic("invalid")
-		_set_message(reason.to_upper()))
+		_set_message(reason.to_upper(), ""))
 	combo_resolver = ComboResolver.new()
 	combo_resolver.combo_resolved.connect(_on_depth_combo)
 	if RunState.horizontal_perk("formula_primer"):
@@ -378,20 +381,25 @@ func _configure_wave_enemy(enemy_id: String, wave_number: int) -> void:
 
 
 func _on_objective_progress(current: int, target: int) -> void:
-	if objective_label != null:
-		var payload := objective_controller.display_payload()
-		var order: Array = payload.get("sequence", [])
-		var order_text := ""
-		if not order.is_empty():
-			var steps: Array[String] = []
-			for index in order.size():
-				steps.append(("✓ " if index < current else "→ " if index == current else "· ")
-						+ str(order[index]).to_upper())
-			order_text = "  |  " + "  ".join(steps)
-		objective_label.text = "OBJECTIVE  %s  %d/%d%s" % [objective_controller.label,
-				current, target, order_text]
-		if tactical_readout != null:
-			tactical_readout.set_objective(objective_label.text)
+	if objective_controller == null:
+		return
+	var payload := objective_controller.display_payload()
+	var order: Array = payload.get("sequence", [])
+	var order_text := ""
+	if not order.is_empty():
+		var steps: Array[String] = []
+		for index in order.size():
+			steps.append(("✓ " if index < current else "→ " if index == current else "· ")
+					+ str(order[index]).to_upper())
+		order_text = "  |  " + "  ".join(steps)
+	var text := "%s  %d/%d%s" % [objective_controller.label, current, target, order_text]
+	var advanced := not objective_text.is_empty() and text != objective_text
+	objective_text = text
+	if battle_log != null:
+		battle_log.set_objective("◈  " + text)
+		if advanced:
+			battle_log.push_entry("Objective — %s  %d/%d" % [
+					objective_controller.label, current, target], "objective")
 
 
 func _on_tactical_move() -> void:
@@ -472,7 +480,7 @@ func _on_depth_combo(combo_id: String, payload: Dictionary) -> void:
 	if reaction_chamber != null:
 		reaction_chamber.set_history(combo_resolver.history())
 		reaction_chamber.play_activation(payload)
-	_set_message(str(GameState.combos.get(combo_id, {}).get("name", combo_id.capitalize())))
+	_set_message(str(GameState.combos.get(combo_id, {}).get("name", combo_id.capitalize())), "reaction")
 
 
 func _on_intent_resolved(_id: String) -> void:
@@ -486,7 +494,7 @@ func _on_mana_changed(_current: int, _maximum: int) -> void:
 
 
 func _refresh_tactical_hud() -> void:
-	if intent_controller == null or skill_controller == null or intent_label == null: return
+	if intent_controller == null or skill_controller == null or battle_log == null: return
 	intent_controller.set_battle_values(battle.enemy_attack, 0.0, battle.moves_until_attack)
 	var preview := intent_controller.preview()
 	preview.moves = battle.moves_until_attack
@@ -496,8 +504,7 @@ func _refresh_tactical_hud() -> void:
 		preview.label = "%s  [COUNTER: %s]" % [str(preview.label),
 				str(counter.counter_tag).to_upper()]
 	var trick := signature_controller.preview() if signature_controller != null else {}
-	if tactical_readout != null:
-		tactical_readout.update_payload(objective_label.text, preview, trick)
+	battle_log.update_payload(preview, trick)
 	var kit: Dictionary = GameState.kits.get(RunState.kit_id, {})
 	var active_id := str(kit.get("active", "skill"))
 	var mana_cost := int(kit.get("cost", 0))
@@ -556,7 +563,7 @@ func _on_skill_pressed() -> void:
 			# Sacrifice fuel: the alchemist trades HP for burst damage.
 			battle.player_hp = maxi(battle.player_hp - 4, 1)
 			battle.deal_skill_damage(15)
-	battle_fx.play_combo(2, Color("6edcff")); _set_message("ACTIVE SKILL — " + skill_id.replace("_", " ").to_upper())
+	battle_fx.play_combo(2, Color("6edcff")); _set_message("ACTIVE SKILL — " + skill_id.replace("_", " ").to_upper(), "player")
 	_checkpoint_encounter()
 	_refresh()
 
@@ -629,7 +636,7 @@ func _build_ui() -> void:
 	var player_panel := _build_player_panel()
 	player_panel.name = "StatusBand"
 	root.add_child(player_panel)
-	root.add_child(_build_tactical_hud())
+	root.add_child(_build_battle_log())
 	root.add_child(_build_turn_banner())
 
 	message_label = UiKit.label("", 20, UiKit.COLOR_GOLD)
@@ -701,7 +708,7 @@ func _on_battle_guide_pressed() -> void:
 	RunState.flush_checkpoint("battle_guide")
 	GuideScreen.return_scene = "res://scenes/battle.tscn"
 	GuideScreen.initial_section = "battle"
-	get_tree().change_scene_to_file("res://scenes/guide.tscn")
+	SceneRouter.go_to("res://scenes/guide.tscn")
 
 
 func _build_enemy_panel() -> VBoxContainer:
@@ -765,14 +772,12 @@ func _build_player_panel() -> PanelContainer:
 	return panel
 
 
-func _build_tactical_hud() -> PanelContainer:
-	tactical_readout = TacticalReadout.new()
-	tactical_readout.name = "TacticalReadout"
-	tactical_readout.set_meta("legacy_name", "ObjectivePanel")
-	tactical_readout._ready()
-	objective_label = tactical_readout.objective_label
-	intent_label = tactical_readout.intent_label
-	return tactical_readout
+func _build_battle_log() -> PanelContainer:
+	battle_log = BattleLog.new()
+	battle_log.name = "BattleLog"
+	battle_log.set_meta("legacy_name", "TacticalReadout")
+	battle_log._ready()
+	return battle_log
 
 
 func _build_power_strip() -> PanelContainer:
@@ -790,7 +795,7 @@ func _build_power_strip() -> PanelContainer:
 
 func _on_reaction_codex_requested() -> void:
 	_checkpoint_encounter()
-	get_tree().change_scene_to_file("res://scenes/reaction_codex.tscn")
+	SceneRouter.go_to("res://scenes/reaction_codex.tscn")
 
 
 func _build_turn_banner() -> Control:
@@ -965,8 +970,13 @@ func _refresh() -> void:
 		"undo_count": undo_left})
 
 
-func _set_message(text: String) -> void:
+## Every headline message is also the battle journal's next line. `kind` picks
+## the log colour; pass an empty kind for transient hints that should not be
+## recorded.
+func _set_message(text: String, kind := "system") -> void:
 	message_label.text = text
+	if battle_log != null and not kind.is_empty():
+		battle_log.push_entry(text, kind)
 	message_label.modulate.a = 0.45
 	message_label.scale = Vector2(0.975, 0.975)
 	message_label.pivot_offset = message_label.size * 0.5
@@ -987,7 +997,7 @@ func _player_bar_center() -> Vector2:
 # --- Game events ------------------------------------------------------------
 
 func _on_potion_activated(color: String, text: String) -> void:
-	_set_message(text)
+	_set_message(text, str(POTION_LOG_KINDS.get(color, "player")))
 	AudioManager.haptic("complete")
 	match color:
 		"red":
@@ -1032,7 +1042,7 @@ func _on_boss_phase_changed(index: int, config: Dictionary) -> void:
 	battle_fx.impact_freeze(85)
 	AudioManager.duck_music(0.65, 10.0)
 	AudioManager.set_combat_layer("boss_phase_%d" % (index + 1))
-	_set_message("PHASE %d — %s" % [index + 1, str(config.get("title", "INFERNO"))])
+	_set_message("PHASE %d — %s" % [index + 1, str(config.get("title", "INFERNO"))], "enemy")
 	if int(config.get("armor", 0)) > 0: battle.add_enemy_armor(int(config.armor))
 	if int(config.get("attack_interval_delta", 0)) != 0:
 		battle.attack_every = maxi(2, battle.attack_every + int(config.attack_interval_delta))
@@ -1044,7 +1054,7 @@ func _on_boss_phase_changed(index: int, config: Dictionary) -> void:
 	var board_action := boss_phase_controller.pending_board_action()
 	if not board_action.is_empty():
 		if not _apply_boss_board_action(board_action):
-			_set_message("%s FIZZLES  •  BOARD REMAINS SOLVABLE" % board_action.to_upper())
+			_set_message("%s FIZZLES  •  BOARD REMAINS SOLVABLE" % board_action.to_upper(), "system")
 	if not battle.battle_over:
 		board.enabled = true
 
@@ -1056,7 +1066,7 @@ func _apply_boss_board_action(action: String) -> bool:
 
 
 func _on_combo_triggered(text: String) -> void:
-	_set_message(text)
+	_set_message(text, "reaction")
 	UiKit.float_text(self, _enemy_center() + Vector2(-80, 60), text,
 			UiKit.COLOR_GOLD, 28)
 
@@ -1068,12 +1078,12 @@ func _on_enemy_attacked(damage: int, blocked: int, crit: bool) -> void:
 	battle_fx.enemy_strike(_enemy_center(), _player_bar_center())
 	var prefix := "CRITICAL! " if crit else ""
 	if blocked >= damage:
-		_set_message("%s%s attacks! Shield blocks everything." % [prefix, battle.enemy_name])
+		_set_message("%s%s attacks! Shield blocks everything." % [prefix, battle.enemy_name], "enemy")
 	elif blocked > 0:
 		_set_message("%s%s attacks! Shield blocks %d, you take %d."
-				% [prefix, battle.enemy_name, blocked, damage - blocked])
+				% [prefix, battle.enemy_name, blocked, damage - blocked], "enemy")
 	else:
-		_set_message("%s%s attacks for %d damage!" % [prefix, battle.enemy_name, damage])
+		_set_message("%s%s attacks for %d damage!" % [prefix, battle.enemy_name, damage], "enemy")
 	if damage > blocked:
 		AudioManager.play("player_hit")
 		AudioManager.haptic("critical" if crit else "hit")
@@ -1088,18 +1098,18 @@ func _on_enemy_attacked(damage: int, blocked: int, crit: bool) -> void:
 
 func _on_last_remedy(heal: int) -> void:
 	AudioManager.play("heal")
-	_set_message("Last Remedy saves you! +%d HP" % heal)
+	_set_message("Last Remedy saves you! +%d HP" % heal, "heal")
 	UiKit.float_text(self, _player_bar_center(), "+%d Last Remedy" % heal,
 			UiKit.COLOR_HP, 30)
 
 
 func _on_enemy_enraged() -> void:
-	_set_message("%s is ENRAGED!" % battle.enemy_name)
+	_set_message("%s is ENRAGED!" % battle.enemy_name, "enemy")
 	UiKit.float_text(self, _enemy_center(), "ENRAGED!", Color("ff3a2a"), 44)
 
 
 func _on_poison_ticked(damage: int) -> void:
-	_set_message("Poison deals %d damage!" % damage)
+	_set_message("Poison deals %d damage!" % damage, "damage")
 
 
 func _on_player_poison_ticked(damage: int) -> void:
@@ -1107,12 +1117,12 @@ func _on_player_poison_ticked(damage: int) -> void:
 		UiKit.float_text(self, _player_bar_center(), "-%d poison" % damage,
 				UiKit.COLOR_POISON, 30)
 	else:
-		_set_message("You are poisoned!")
+		_set_message("You are poisoned!", "enemy")
 
 
 func _on_tube_lock_requested(moves: int) -> void:
 	board.lock_random_tube(moves)
-	_set_message("%s seals a tube for %d moves!" % [battle.enemy_name, moves])
+	_set_message("%s seals a tube for %d moves!" % [battle.enemy_name, moves], "enemy")
 
 
 # --- Run flow ----------------------------------------------------------------
@@ -1152,6 +1162,7 @@ func _on_battle_won() -> void:
 			"floor":int(RunState.current_node().get("floor", 0)) + 1,
 			"story_flags":RunState.story_flags.duplicate(true)}
 	var campaign_result := RunState.complete_battle(battle.player_hp, battle.crystals_reward)
+	AdService.notify_battle_finished(was_last)
 	if not was_last:
 		RunState.checkpoint(RunState.PHASE_REWARD, {"encounter": _capture_encounter(),
 				"elite": was_elite})
@@ -1227,8 +1238,7 @@ func _reward_choice_button(title: String, description: String,
 
 func _on_relic_picked(id: String) -> void:
 	RunState.pick_relic(id)
-	RunState.checkpoint(RunState.PHASE_MAP)
-	get_tree().change_scene_to_file("res://scenes/map.tscn")
+	_leave_for_map()
 
 
 func _on_upgrade_picked(id: String) -> void:
@@ -1244,8 +1254,17 @@ func _on_upgrade_picked(id: String) -> void:
 	if heal_now > 0:
 		RunState.player_hp = mini(RunState.player_hp + heal_now,
 				int(RunState.stat("max_hp", float(GameState.player.get("max_hp", 50)))))
+	_leave_for_map()
+
+
+## Leaving the reward screen is the one quiet beat in a run, so that is where an
+## interstitial goes. The run is checkpointed first: the ad takes over the
+## activity, and the player may never come back to this scene.
+func _leave_for_map() -> void:
 	RunState.checkpoint(RunState.PHASE_MAP)
-	get_tree().change_scene_to_file("res://scenes/map.tscn")
+	if AdService.maybe_show_interstitial():
+		await AdService.interstitial_dismissed
+	SceneRouter.go_to("res://scenes/map.tscn")
 
 
 func _on_battle_lost() -> void:
@@ -1253,6 +1272,80 @@ func _on_battle_lost() -> void:
 	board.enabled = false
 	AudioManager.stop_music()
 	AudioManager.vibrate(120)
+	if _second_wind_available():
+		_offer_second_wind()
+		return
+	_resolve_defeat()
+
+
+## The rewarded revive is offered before the run is failed, because failing it
+## is irreversible. Declining drops straight through to the normal defeat flow.
+func _second_wind_available() -> bool:
+	return RunState.active \
+			and RunState.second_winds_used < AdService.second_wind_per_run() \
+			and AdService.rewarded_ready()
+
+
+func _offer_second_wind() -> void:
+	var restored := maxi(roundi(float(battle.player_max_hp)
+			* AdService.second_wind_hp_percent()), 1)
+	var body := "%s has you beaten.\nWatch a short ad to rise again with %d HP and keep this run alive.\nThe enemy keeps its remaining health." \
+			% [battle.enemy_name, restored]
+	_show_overlay("One Last Draught", body, [
+		["Watch Ad — Revive", _request_second_wind],
+		["Accept Defeat", _resolve_defeat],
+	])
+
+
+func _request_second_wind() -> void:
+	if not AdService.show_rewarded(AdService.PLACEMENT_SECOND_WIND):
+		_resolve_defeat()
+		return
+	AdService.rewarded_granted.connect(_on_second_wind_granted)
+	AdService.rewarded_dismissed.connect(_on_second_wind_dismissed)
+
+
+## Only a completed rewarded ad revives the run; a skipped or failed one drops
+## straight through to the honest defeat screen.
+func _on_second_wind_granted(placement: String) -> void:
+	if placement != AdService.PLACEMENT_SECOND_WIND:
+		return
+	_disconnect_second_wind()
+	_apply_second_wind()
+
+
+func _on_second_wind_dismissed(placement: String) -> void:
+	if placement != AdService.PLACEMENT_SECOND_WIND:
+		return
+	_disconnect_second_wind()
+	_resolve_defeat()
+
+
+func _apply_second_wind() -> void:
+	RunState.second_winds_used += 1
+	battle.player_hp = maxi(roundi(float(battle.player_max_hp)
+			* AdService.second_wind_hp_percent()), 1)
+	battle.battle_over = false
+	_hide_overlay()
+	AudioManager.set_scene_state("battle")
+	AudioManager.set_area(str(RunState.current_area().get("music", "dungeon")))
+	AudioManager.set_combat_layer("battle")
+	board.enabled = true
+	battle_fx.heal(_player_bar_center())
+	_set_message("SECOND WIND — you rise with %d HP" % battle.player_hp, "heal")
+	_checkpoint_encounter()
+	_refresh()
+
+
+func _disconnect_second_wind() -> void:
+	if AdService.rewarded_granted.is_connected(_on_second_wind_granted):
+		AdService.rewarded_granted.disconnect(_on_second_wind_granted)
+	if AdService.rewarded_dismissed.is_connected(_on_second_wind_dismissed):
+		AdService.rewarded_dismissed.disconnect(_on_second_wind_dismissed)
+
+
+func _resolve_defeat() -> void:
+	_disconnect_second_wind()
 	var story_context := {"seed":RunState.run_seed, "node_id":RunState.current_node_id,
 			"area_id":RunState.area_id,
 			"area_name":str(RunState.current_area().get("name", "The Dungeon")),
@@ -1332,7 +1425,7 @@ func _on_undo_pressed() -> void:
 		battle.on_undo()
 		RunState.record_replay("undo", {"remaining":undo_left,
 				"board":board.export_state()})
-		_set_message("Move undone.")
+		_set_message("Move undone.", "player")
 		_tutorial_action("undo")
 		_checkpoint_encounter()
 		_refresh()
@@ -1368,12 +1461,12 @@ func _finish_scene_probe() -> void:
 
 
 func _start_new_run() -> void:
-	get_tree().change_scene_to_file("res://scenes/area_select.tscn")
+	SceneRouter.go_to("res://scenes/area_select.tscn")
 
 
 func _replay_area() -> void:
 	RunState.pending_area_id = RunState.area_id
-	get_tree().change_scene_to_file("res://scenes/kit_select.tscn")
+	SceneRouter.go_to("res://scenes/kit_select.tscn")
 
 
 func _go_to_area_select() -> void:

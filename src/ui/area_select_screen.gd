@@ -10,10 +10,13 @@ var _area_scroll: ScrollContainer
 var _preview_background: TextureRect
 var _preview_label: Label
 var _background_tween: Tween
+var _ad_unlock_pending := ""
 
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
+	AdService.rewarded_granted.connect(_on_rewarded_granted)
+	AdService.rewarded_dismissed.connect(_on_rewarded_dismissed)
 	_preview_background = UiKit.battle_background(self, VisualRegistry.background("main_hall"))
 	var shade := ColorRect.new()
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -66,7 +69,7 @@ func _ready() -> void:
 	var history := UiKit.ornate_button("HISTORY", Vector2(mode_w, 58), Color("b67cff"))
 	history.name = "RunHistory"
 	history.add_theme_font_size_override("font_size", 14 if narrow else 17)
-	history.pressed.connect(func(): get_tree().change_scene_to_file("res://scenes/run_history.tscn")); modes.add_child(history)
+	history.pressed.connect(func(): SceneRouter.go_to("res://scenes/run_history.tscn")); modes.add_child(history)
 	# The authored identity of today's challenges, spelled out honestly.
 	var daily_area := str(GameState.area(str(daily_spec.area_id)).get("name",
 			daily_spec.area_id))
@@ -81,9 +84,10 @@ func _ready() -> void:
 	mode_help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	mode_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(mode_help)
-	var campaign_offer := CampaignUnlockCard.new().configure(narrow)
-	campaign_offer.name = "CampaignUnlockOffer"
-	root.add_child(campaign_offer)
+	if not BillingService.is_entitled():
+		var remove_ads_offer := RemoveAdsCard.new().configure(narrow)
+		remove_ads_offer.name = "RemoveAdsOffer"
+		root.add_child(remove_ads_offer)
 	if MetaProgression.new().ascension_unlocked():
 		root.add_child(_make_ascension_selector())
 	_area_scroll = ScrollContainer.new(); _area_scroll.name = "ExpeditionScroll"
@@ -104,7 +108,7 @@ func _ready() -> void:
 	var back := UiKit.ornate_button("BACK TO HALL", Vector2(360, 62))
 	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	back.pressed.connect(func() -> void:
-		get_tree().change_scene_to_file("res://scenes/main_menu.tscn"))
+		SceneRouter.go_to("res://scenes/main_menu.tscn"))
 	root.add_child(back)
 
 
@@ -200,8 +204,12 @@ func _area_card(area_id: String) -> PanelContainer:
 		rematch.add_theme_font_size_override("font_size", 16 if narrow else 18)
 		rematch.pressed.connect(func() -> void:
 			RunState.pending_area_id = area_id; RunState.pending_run_mode = "rematch"
-			get_tree().change_scene_to_file("res://scenes/kit_select.tscn"))
+			SceneRouter.go_to("res://scenes/kit_select.tscn"))
 		info.add_child(rematch)
+	if not unlocked:
+		var previous := _previous_area_name(area_id)
+		info.add_child(UiKit.label("CLEAR %s TO OPEN THIS REALM" % previous.to_upper(),
+				11 if narrow else 12, Color("b9a7d8")))
 	var action := UiKit.cta_bar("ENTER" if narrow and unlocked else (
 			"ENTER EXPEDITION" if unlocked else "LOCKED"),
 			_area_color(area_id) if unlocked else Color("5a5470"),
@@ -215,9 +223,57 @@ func _area_card(area_id: String) -> PanelContainer:
 		RunState.pending_run_mode = "normal"
 		RunState.pending_ascension = SaveSystem.selected_ascension()
 		SaveSystem.set_selected_area(area_id)
-		get_tree().change_scene_to_file("res://scenes/kit_select.tscn"))
+		SceneRouter.go_to("res://scenes/kit_select.tscn"))
 	stack.add_child(action)
+	if not unlocked and area_id == SaveSystem.next_locked_area() \
+			and AdService.rewarded_ready():
+		stack.add_child(_rewarded_unlock_button(area_id, narrow))
 	return card
+
+
+## Only ever offered for the very next sealed realm, so the shortcut can never
+## let a player skip past content they have not reached.
+func _rewarded_unlock_button(area_id: String, narrow: bool) -> Button:
+	var watch := UiKit.cta_bar("WATCH AD  •  OPEN THIS REALM", Color("62b9ff"),
+			54 if narrow else 58)
+	watch.name = "AreaAdUnlock"
+	watch.mouse_filter = Control.MOUSE_FILTER_PASS
+	watch.add_theme_font_size_override("font_size", 17 if narrow else 19)
+	watch.tooltip_text = "Watch one rewarded ad to open this expedition now."
+	watch.pressed.connect(func() -> void:
+		if not _ad_unlock_pending.is_empty():
+			return
+		if not AdService.show_rewarded(AdService.PLACEMENT_REALM_UNLOCK):
+			watch.text = "AD NOT READY  •  TRY AGAIN"
+			return
+		_ad_unlock_pending = area_id
+		watch.disabled = true
+		watch.text = "OPENING…")
+	return watch
+
+
+func _previous_area_name(area_id: String) -> String:
+	var ids := GameState.area_ids()
+	var index := ids.find(area_id)
+	if index <= 0:
+		return "the first realm"
+	return str(GameState.area(str(ids[index - 1])).get("name", ids[index - 1]))
+
+
+func _on_rewarded_granted(placement: String) -> void:
+	if placement != AdService.PLACEMENT_REALM_UNLOCK or _ad_unlock_pending.is_empty():
+		return
+	var area_id := _ad_unlock_pending
+	_ad_unlock_pending = ""
+	if SaveSystem.unlock_area_early(area_id):
+		SceneRouter.go_to("res://scenes/area_select.tscn")
+
+
+func _on_rewarded_dismissed(placement: String) -> void:
+	if placement != AdService.PLACEMENT_REALM_UNLOCK:
+		return
+	_ad_unlock_pending = ""
+	SceneRouter.go_to("res://scenes/area_select.tscn")
 
 
 func _preview_area(area_id: String) -> void:
@@ -245,7 +301,7 @@ func _start_daily() -> void:
 	RunState.pending_run_mode = "daily"
 	RunState.pending_ascension = 0
 	RunState.pending_run_seed = int(spec.seed)
-	get_tree().change_scene_to_file("res://scenes/kit_select.tscn")
+	SceneRouter.go_to("res://scenes/kit_select.tscn")
 
 
 func _start_weekly() -> void:
@@ -257,7 +313,7 @@ func _start_weekly() -> void:
 	RunState.pending_run_seed = int(spec.seed)
 	# The weekly kit is fixed by RunState.start_new_run; skip kit selection so
 	# the identity cannot be dodged.
-	get_tree().change_scene_to_file("res://scenes/kit_select.tscn")
+	SceneRouter.go_to("res://scenes/kit_select.tscn")
 
 
 func _make_ascension_selector() -> PanelContainer:

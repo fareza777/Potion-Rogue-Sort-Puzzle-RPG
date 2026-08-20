@@ -80,7 +80,7 @@ func open_section(id: String) -> void:
 	if _selected == "reactions":
 		var formulas := UiKit.ornate_button("OPEN FORMULA CODEX", Vector2(390, 62), Color("c989ff"))
 		formulas.name = "FormulaCodexButton"; formulas.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		formulas.pressed.connect(func() -> void: get_tree().change_scene_to_file("res://scenes/reaction_codex.tscn"))
+		formulas.pressed.connect(func() -> void: SceneRouter.go_to("res://scenes/reaction_codex.tscn"))
 		_cards.add_child(formulas)
 	else:
 		var anchor := Control.new(); anchor.name = "FormulaCodexButton"; anchor.visible = false
@@ -177,4 +177,4 @@ func _scroll_axis(container: ScrollContainer, distance: float, horizontal: bool)
 func _return() -> void:
 	var destination := return_scene; return_scene = ""
 	if destination.is_empty(): destination = RunState.resume_scene() if RunState.active else "res://scenes/main_menu.tscn"
-	get_tree().change_scene_to_file(destination)
+	SceneRouter.go_to(destination)

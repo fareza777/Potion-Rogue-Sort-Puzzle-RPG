@@ -40,6 +40,9 @@ var resolved_event_ids: Array = []
 var story_flags: Dictionary = {}
 var pending_followup_event := ""
 var active_curses := 0
+## How many rewarded "second wind" revives the player has already taken this
+## run. Persisted so quitting and resuming cannot farm extra ones.
+var second_winds_used := 0
 var area_id := "shadow_crypt"
 var pending_area_id := "shadow_crypt"
 var phase := PHASE_MAP
@@ -94,6 +97,7 @@ func start_new_run(selected_kit := "ember_adept", selected_area_id := "",
 	story_flags = {}
 	pending_followup_event = ""
 	active_curses = 0
+	second_winds_used = 0
 	phase = PHASE_MAP
 	phase_payload = {}
 	run_mode = selected_mode if not selected_mode.is_empty() else pending_run_mode
@@ -288,6 +292,7 @@ func serialize_boundary() -> Dictionary:
 		"mutations": mutation_ids.duplicate(), "relics": relic_ids.duplicate(),
 		"catalysts": catalyst_ids.duplicate(), "upgrades": upgrade_ids.duplicate(),
 		"resolved_events": resolved_event_ids.duplicate(), "active_curses": active_curses,
+		"second_winds_used": second_winds_used,
 		"story_flags": story_flags.duplicate(true),
 		"pending_followup_event": pending_followup_event,
 		"rng_state": int(_run_rng.snapshot().state),
@@ -325,6 +330,7 @@ func resume_from_save(saved: Dictionary) -> bool:
 	if not GameState.load_data_file("events.json", {}).has(pending_followup_event):
 		pending_followup_event = ""
 	active_curses = maxi(int(saved.get("active_curses", 0)), 0); active = true
+	second_winds_used = maxi(int(saved.get("second_winds_used", 0)), 0)
 	_replay_journal.clear()
 	if boundary_version >= 7:
 		_replay_journal.restore(saved.get("replay", {}))

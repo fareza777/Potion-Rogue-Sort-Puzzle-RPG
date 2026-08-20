@@ -22,4 +22,4 @@ func go_to_area_select() -> void:
 
 
 func _change(path: String) -> void:
-	if _tree != null: _tree.change_scene_to_file(path)
+	if _tree != null: SceneRouter.go_to(path)

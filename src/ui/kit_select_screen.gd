@@ -55,7 +55,7 @@ func _ready() -> void:
 	var back := UiKit.ornate_button("BACK TO HALL", Vector2(360, 64))
 	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	back.pressed.connect(func() -> void:
-		get_tree().change_scene_to_file("res://scenes/main_menu.tscn"))
+		SceneRouter.go_to("res://scenes/main_menu.tscn"))
 	root.add_child(back)
 
 
@@ -96,7 +96,7 @@ func _begin_run(kit_id: String) -> void:
 	await StoryboardService.play("realm_arrival", {"kit_id":kit_id, "floor":1})
 	RunState.story_flags["realm_arrival_seen"] = true
 	RunState.checkpoint(RunState.PHASE_MAP)
-	get_tree().change_scene_to_file(RunState.resume_scene())
+	SceneRouter.go_to(RunState.resume_scene())
 
 
 func _kit_color(kit_id: String) -> Color:

@@ -26,10 +26,24 @@ func _ready() -> void:
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL; panel.add_child(scroll)
 	rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL; scroll.add_child(rows)
 	rows.add_child(UiKit.title_label("SETTINGS", 46))
-	rows.add_child(UiKit.label("STORE & CAMPAIGN", 16, UiKit.COLOR_TEXT_DIM))
-	var campaign_offer := CampaignUnlockCard.new().configure(true)
-	campaign_offer.name = "CampaignUnlockSettingsOffer"
-	rows.add_child(campaign_offer)
+	rows.add_child(UiKit.label("STORE & ADS", 16, UiKit.COLOR_TEXT_DIM))
+	var remove_ads_offer := RemoveAdsCard.new().configure(true)
+	remove_ads_offer.name = "RemoveAdsSettingsOffer"
+	rows.add_child(remove_ads_offer)
+	var ad_privacy := UiKit.button("AD PRIVACY SETTINGS", Vector2(300, 48), Color("9bb9ff"))
+	ad_privacy.name = "AdPrivacyButton"
+	ad_privacy.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	ad_privacy.add_theme_font_size_override("font_size", 14)
+	ad_privacy.tooltip_text = "Change or withdraw your consent for personalised ads."
+	var ad_privacy_status := UiKit.label("", 12, UiKit.COLOR_TEXT_DIM)
+	ad_privacy_status.name = "AdPrivacyStatus"
+	ad_privacy_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ad_privacy_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	ad_privacy.pressed.connect(func() -> void:
+		if not AdService.open_privacy_options():
+			ad_privacy_status.text = "Ad privacy options are available on Android once ads have loaded.")
+	rows.add_child(ad_privacy)
+	rows.add_child(ad_privacy_status)
 	var rate := UiKit.button("RATE ON GOOGLE PLAY", Vector2(300, 52), Color("f0bd4f"))
 	rate.name = "RateOnPlayStoreButton"
 	rate.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -96,7 +110,7 @@ func _ready() -> void:
 	var back := UiKit.ornate_button("RETURN TO HALL", Vector2(360, 68))
 	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	back.pressed.connect(func() -> void:
-		get_tree().change_scene_to_file("res://scenes/main_menu.tscn"))
+		SceneRouter.go_to("res://scenes/main_menu.tscn"))
 	rows.add_child(back)
 
 
@@ -273,4 +287,4 @@ func _close_confirm() -> void:
 func _replay_tutorial() -> void:
 	SaveSystem.replay_tutorial()
 	RunState.start_new_run("ember_adept")
-	get_tree().change_scene_to_file("res://scenes/battle.tscn")
+	SceneRouter.go_to("res://scenes/battle.tscn")

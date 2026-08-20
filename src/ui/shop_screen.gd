@@ -49,7 +49,7 @@ func _ready() -> void:
 	var back := UiKit.ornate_button("RETURN TO HALL", Vector2(340, 66))
 	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	back.pressed.connect(func() -> void:
-		get_tree().change_scene_to_file("res://scenes/main_menu.tscn"))
+		SceneRouter.go_to("res://scenes/main_menu.tscn"))
 	root.add_child(back)
 
 	_rebuild()

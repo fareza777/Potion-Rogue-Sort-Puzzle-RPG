@@ -12,10 +12,10 @@ func _ready() -> void:
 	AudioManager.set_area(str(RunState.current_area().get("music", "dungeon")))
 	AudioManager.set_scene_state("explore")
 	if not RunState.active:
-		get_tree().change_scene_to_file("res://scenes/area_select.tscn")
+		SceneRouter.go_to("res://scenes/area_select.tscn")
 		return
 	if RunState.phase != RunState.PHASE_MAP:
-		get_tree().change_scene_to_file(RunState.resume_scene())
+		SceneRouter.go_to(RunState.resume_scene())
 		return
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	UiKit.battle_background(self, str(RunState.current_area().get("background",
@@ -118,13 +118,13 @@ func _on_node_selected(node_id: String) -> void:
 					"name", "Unknown Guardian"))}
 	if kind in ["battle", "elite", "boss"]:
 		await StoryboardService.play("battle_intro", story_context)
-		get_tree().change_scene_to_file("res://scenes/battle.tscn")
+		SceneRouter.go_to("res://scenes/battle.tscn")
 	else:
-		get_tree().change_scene_to_file("res://scenes/event.tscn")
+		SceneRouter.go_to("res://scenes/event.tscn")
 
 
 func _return_to_hall() -> void:
-	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+	SceneRouter.go_to("res://scenes/main_menu.tscn")
 
 
 func _make_header() -> PanelContainer:

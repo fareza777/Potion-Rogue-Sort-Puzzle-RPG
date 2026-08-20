@@ -8,7 +8,7 @@ const SAVE_PATH := "user://save.json"
 const AREA_GRAMMAR := preload("res://src/run/area_grammar.gd")
 const SAVE_TEMP_PATH := SAVE_PATH + ".tmp"
 const SAVE_BACKUP_PATH := SAVE_PATH + ".bak"
-const SAVE_VERSION := 12
+const SAVE_VERSION := 13
 
 const DEFAULT_DATA := {
 	"version": SAVE_VERSION,
@@ -37,7 +37,7 @@ const DEFAULT_DATA := {
 	"daily": {"last_claim": "", "last_played": "", "best_depth": 0,
 		"score": 0, "streak": 0},
 	"run_history": [],
-	"full_campaign_unlocked": false,
+	"ads_removed": false,
 	"max_ascension": 0,
 	"selected_ascension": 0,
 	"discovered_formulas": [],
@@ -178,6 +178,18 @@ func migrate(source: Dictionary) -> Dictionary:
 	if int(migrated.get("version", 1)) < 12:
 		migrated["full_campaign_unlocked"] = bool(
 				migrated.get("full_campaign_unlocked", false))
+	if int(migrated.get("version", 1)) < 13:
+		# The campaign unlock became a Remove Ads purchase. Everyone who bought
+		# it keeps an ad-free game and every realm they had already paid for.
+		var had_campaign := bool(migrated.get("full_campaign_unlocked", false))
+		migrated["ads_removed"] = bool(migrated.get("ads_removed", had_campaign))
+		if had_campaign:
+			var owned: Array = migrated.get("unlocked_areas", ["shadow_crypt"])
+			for area_id in GameState.area_ids():
+				if area_id not in owned:
+					owned.append(area_id)
+			migrated["unlocked_areas"] = owned
+		migrated.erase("full_campaign_unlocked")
 	var history: Array = migrated.get("run_history", [])
 	if history.size() > 20: history.resize(20)
 	migrated["run_history"] = history
@@ -380,22 +392,44 @@ func record_early_defeat(early: bool) -> int:
 
 # --- Campaign progression ---------------------------------------------------
 
-func full_campaign_unlocked() -> bool:
-	return bool(data.get("full_campaign_unlocked", false))
+func ads_removed() -> bool:
+	return bool(data.get("ads_removed", false))
 
 
-func set_full_campaign_unlocked(value: bool) -> void:
-	if full_campaign_unlocked() == value:
+func set_ads_removed(value: bool) -> void:
+	if ads_removed() == value:
 		return
-	data["full_campaign_unlocked"] = value
+	data["ads_removed"] = value
 	request_save()
+
 
 func is_area_unlocked(area_id: String) -> bool:
 	if area_id not in GameState.area_ids():
 		return false
-	if full_campaign_unlocked():
-		return true
 	return area_id in (data.get("unlocked_areas", ["shadow_crypt"]) as Array)
+
+
+## The next realm in campaign order that is still sealed. Empty when the player
+## already owns every expedition.
+func next_locked_area() -> String:
+	for area_id in GameState.area_ids():
+		if not is_area_unlocked(area_id):
+			return area_id
+	return ""
+
+
+## Opens one realm outside the normal boss-clear progression. Used by the
+## rewarded-ad shortcut, which is why it refuses to skip ahead: only the very
+## next sealed realm can ever be granted this way.
+func unlock_area_early(area_id: String) -> bool:
+	if area_id.is_empty() or area_id != next_locked_area():
+		return false
+	var unlocked: Array = data.get("unlocked_areas", ["shadow_crypt"])
+	unlocked.append(area_id)
+	data["unlocked_areas"] = unlocked
+	data["selected_area"] = area_id
+	save()
+	return true
 
 
 func selected_area() -> String:

@@ -165,7 +165,7 @@ func _ready() -> void:
 	var map_source := FileAccess.get_file_as_string("res://src/ui/map_screen.gd")
 	check(map_source.contains('name = "BackToHallButton"'), "map exposes Back to Hall action")
 	check(map_source.contains('func _return_to_hall()'), "map exposes Hall navigation handler")
-	check(map_source.contains('change_scene_to_file("res://scenes/main_menu.tscn")'),
+	check(map_source.contains('SceneRouter.go_to("res://scenes/main_menu.tscn")'),
 			"map Hall action returns to main menu")
 	check(not map_source.contains("RunState.active = false"), "map Hall action preserves active run")
 	check(map_source.contains("PATHS HIDE THEIR GUARDIAN")
@@ -175,7 +175,7 @@ func _ready() -> void:
 	check(not map_source.contains("if not RunState.active:\n\t\tRunState.start_new_run()"),
 			"map never silently starts a run")
 	var menu_source_campaign := FileAccess.get_file_as_string("res://src/ui/main_menu.gd")
-	check(menu_source_campaign.contains('change_scene_to_file("res://scenes/area_select.tscn")'),
+	check(menu_source_campaign.contains('SceneRouter.go_to("res://scenes/area_select.tscn")'),
 			"New Run routes through expedition selection")
 	var area_source := FileAccess.get_file_as_string("res://src/ui/area_select_screen.gd")
 	check(area_source.contains("SaveSystem.is_area_unlocked"), "expedition selection respects campaign locks")
@@ -204,15 +204,15 @@ func _ready() -> void:
 			"battle exposes framed player vital bar")
 	var power_strip_source := FileAccess.get_file_as_string(
 			"res://src/ui/battle/battle_power_strip.gd")
-	for tactical_name in ["TacticalReadout", "ManaMeter", "ComboSlots",
+	for tactical_name in ["BattleLog", "ManaMeter", "ComboSlots",
 			"SkillButton", "UltimateButton"]:
 		check(battle_source.contains('name = "' + tactical_name + '"')
 				or power_strip_source.contains('name = "' + tactical_name + '"'),
 				"battle exposes tactical " + tactical_name)
-	var tactical_source := FileAccess.get_file_as_string("res://src/ui/tactical_readout.gd")
-	for tactical_name in ["ObjectiveText", "EnemyIntent", "EnemyTrick"]:
-		check(tactical_source.contains('name = "' + tactical_name + '"'),
-				"tactical readout exposes " + tactical_name)
+	var log_source := FileAccess.get_file_as_string("res://src/ui/battle/battle_log.gd")
+	for log_name in ["BattleLogHeading", "ObjectiveText", "BattleLogEntry%d"]:
+		check(log_source.contains('name = "' + log_name + '"'),
+				"battle log exposes " + log_name)
 	for component_name in ["EncounterHeader", "WarningPlaque", "ActionPedestal"]:
 		check(battle_source.contains('name = "' + component_name + '"'),
 				"battle exposes premium " + component_name)

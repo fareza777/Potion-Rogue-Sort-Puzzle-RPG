@@ -55,17 +55,30 @@ func _ready() -> void:
 			"generated Hall and battle art resolves")
 	var hall := FileAccess.get_file_as_string("res://src/ui/main_menu.gd")
 	check(hall.contains("BottomNav.new()"), "Hall consumes reusable bottom navigation")
-	var tactical_path := "res://src/ui/tactical_readout.gd"
-	check(ResourceLoader.exists(tactical_path), "battle owns reusable tactical readout")
-	if ResourceLoader.exists(tactical_path):
-		var tactical_script := load(tactical_path)
-		var tactical = tactical_script.new()
-		add_child(tactical)
-		check(tactical.custom_minimum_size.y >= 56,
-				"tactical readout preserves readable mobile height")
-		for node_name in ["ObjectiveText", "EnemyIntent", "EnemyTrick"]:
-			check(tactical.find_child(node_name, true, false) != null,
-					"tactical readout exposes " + node_name)
+	var log_path := "res://src/ui/battle/battle_log.gd"
+	check(ResourceLoader.exists(log_path), "battle owns a reusable combat journal")
+	if ResourceLoader.exists(log_path):
+		var battle_log = load(log_path).new()
+		add_child(battle_log)
+		check(battle_log.custom_minimum_size.y >= 56,
+				"battle log preserves readable mobile height")
+		for node_name in ["BattleLogHeading", "ObjectiveText", "BattleLogEntry0",
+				"BattleLogEntry1", "BattleLogEntry2"]:
+			check(battle_log.find_child(node_name, true, false) != null,
+					"battle log exposes " + node_name)
+		# The 1px-minimum-height pair that used to collapse this panel to an
+		# empty black box must never come back.
+		for entry_index in BattleLog.VISIBLE_ENTRIES:
+			var entry := battle_log.find_child("BattleLogEntry%d" % entry_index,
+					true, false) as Label
+			check(entry != null and entry.autowrap_mode == TextServer.AUTOWRAP_OFF,
+					"battle log entry %d never combines autowrap with ellipsis"
+					% entry_index)
+		battle_log.push_entry("Fire Burst — 14 damage", "reaction")
+		var newest := battle_log.find_child("BattleLogEntry%d"
+				% (BattleLog.VISIBLE_ENTRIES - 1), true, false) as Label
+		check(newest != null and newest.text.contains("Fire Burst"),
+				"battle log renders the newest entry at the bottom")
 	var summary_path := "res://src/ui/build_summary.gd"
 	check(ResourceLoader.exists(summary_path), "map owns reusable build summary")
 	if ResourceLoader.exists(summary_path):
@@ -78,18 +91,20 @@ func _ready() -> void:
 	var area_source := FileAccess.get_file_as_string("res://src/ui/area_select_screen.gd")
 	check(area_source.contains("AscensionSelector") and area_source.contains("set_selected_ascension"),
 			"expedition selector exposes persistent Ascension controls")
-	var campaign_offer := CampaignUnlockCard.new().configure(true)
-	add_child(campaign_offer)
-	check(campaign_offer.find_child("BuyFullCampaign", true, false) is Button,
-			"campaign offer exposes a one-time purchase action")
-	check(campaign_offer.find_child("RestoreCampaignPurchase", true, false) is Button,
-			"campaign offer exposes Google Play restore")
-	check(campaign_offer.find_child("CampaignUnlockPrice", true, false) != null
-			and BillingService.PRODUCT_ID == "potion_rogue_full_campaign",
-			"campaign offer shows the approved product and price contract")
+	var remove_ads_offer := RemoveAdsCard.new().configure(true)
+	add_child(remove_ads_offer)
+	check(remove_ads_offer.find_child("BuyRemoveAds", true, false) is Button,
+			"remove ads offer exposes a one-time purchase action")
+	check(remove_ads_offer.find_child("RestoreRemoveAdsPurchase", true, false) is Button,
+			"remove ads offer exposes Google Play restore")
+	check(remove_ads_offer.find_child("RemoveAdsPrice", true, false) != null
+			and BillingService.PRODUCT_ID == "potion_rogue_remove_ads",
+			"remove ads offer shows the approved product and price contract")
 	var settings_source := FileAccess.get_file_as_string("res://src/ui/settings_screen.gd")
-	check(settings_source.contains("CampaignUnlockSettingsOffer"),
-			"Settings keeps the campaign purchase easy to find")
+	check(settings_source.contains("RemoveAdsSettingsOffer"),
+			"Settings keeps the Remove Ads purchase easy to find")
+	check(settings_source.contains("AdPrivacyButton"),
+			"Settings exposes the ad privacy controls consent laws require")
 	check(settings_source.contains("AppLinks.PRIVACY_POLICY_URL")
 			and AppLinks.PRIVACY_POLICY_URL.begins_with("https://"),
 			"Settings exposes the public English privacy policy")

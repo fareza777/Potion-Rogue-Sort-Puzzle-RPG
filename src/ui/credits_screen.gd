@@ -52,7 +52,7 @@ func _ready() -> void:
 	var back := UiKit.ornate_button("RETURN TO HALL", Vector2(340, 66))
 	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	back.pressed.connect(func() -> void:
-		get_tree().change_scene_to_file("res://scenes/main_menu.tscn"))
+		SceneRouter.go_to("res://scenes/main_menu.tscn"))
 	box.add_child(back)
 	var spacer_bottom := Control.new()
 	spacer_bottom.size_flags_vertical = Control.SIZE_EXPAND_FILL

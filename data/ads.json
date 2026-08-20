@@ -1,0 +1,25 @@
+{
+	"_comment": "AdMob configuration. Replace every ca-app-pub-3940256099942544 value with the real unit ids from your AdMob console, then set test_mode to false for the production build. The app id also has to be declared in the Android manifest via the AdMob plugin settings.",
+	"enabled": true,
+	"test_mode": true,
+	"android_app_id": "ca-app-pub-3940256099942544~3347511713",
+	"unit_ids": {
+		"banner": "ca-app-pub-3940256099942544/6300978111",
+		"interstitial": "ca-app-pub-3940256099942544/1033173712",
+		"rewarded": "ca-app-pub-3940256099942544/5224354917"
+	},
+	"interstitial": {
+		"min_battles_between": 3,
+		"min_seconds_between": 150,
+		"skip_first_battles": 3,
+		"skip_boss_victory": true
+	},
+	"rewarded": {
+		"second_wind_hp_percent": 0.5,
+		"second_wind_per_run": 1
+	},
+	"banner": {
+		"enabled": true,
+		"position": "bottom"
+	}
+}

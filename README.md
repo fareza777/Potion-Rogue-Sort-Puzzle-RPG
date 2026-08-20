@@ -2,7 +2,7 @@
 
 Sort potions, cast powerful spells, and conquer the dungeon.
 
-A lightweight, offline, portrait Android game combining **water-sort puzzle**
+A lightweight, portrait Android game combining **water-sort puzzle**
 mechanics with **turn-based battles** and **roguelike progression**. Every potion
 tube you complete instantly fires its effect in battle — the enemy doesn't wait
 for you to finish the puzzle.
@@ -20,7 +20,9 @@ mid-battle Save & Exit are implemented. Continue restores the same enemy, HP,
 turn countdown, potion layout, hazards, mana, objective, and boss phase. The Hall,
 battle actions, route map, settings, workshop, and replay screens share one
 responsive dark-fantasy UI and support standard/tall portrait Android devices.
-See [docs/TECHNICAL_DESIGN.md](docs/TECHNICAL_DESIGN.md) for architecture and roadmap.
+See [docs/TECHNICAL_DESIGN.md](docs/TECHNICAL_DESIGN.md) for architecture and roadmap,
+and [docs/monetization.md](docs/monetization.md) for the ad placements, the
+one-time Remove Ads product, and the AdMob/Play Console setup checklist.
 
 ## Running the game
 
@@ -40,7 +42,7 @@ godot --headless --path . res://tests/logic_test.tscn
 ## Project layout
 
 ```
-data/    JSON data definitions (potions, enemies, player) — no hardcoded stats in code
+data/    JSON data definitions (potions, enemies, player, ads) — no hardcoded stats in code
 scenes/  Scene entry points (main menu, battle)
 src/     GDScript source: autoload/, puzzle/, battle/, ui/
 docs/    Technical design & roadmap
@@ -51,6 +53,6 @@ store-assets/  Play Store feature graphic, real screenshots, reproducible builde
 
 - Godot 4.3+ / GDScript, GL Compatibility renderer
 - 720x1280 base, portrait, responsive to all Android aspect ratios
-- Fully offline, no accounts, no backend
+- No accounts, no backend; the only network use is Google AdMob
 
 Package name: `com.farezagames.potionrogue`

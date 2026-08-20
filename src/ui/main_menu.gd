@@ -80,27 +80,27 @@ func _build_interface() -> void:
 	guide.add_theme_font_size_override("font_size", 19)
 	guide.pressed.connect(func() -> void:
 		GuideScreen.return_scene = "res://scenes/main_menu.tscn"
-		get_tree().change_scene_to_file("res://scenes/guide.tscn"))
+		SceneRouter.go_to("res://scenes/guide.tscn"))
 	secondary.add_child(guide)
 	var upgrades := _command_button("UPGRADES", Color("52a83f"), btn_w * 0.31, 58)
 	upgrades.add_theme_font_size_override("font_size", 19)
 	upgrades.pressed.connect(func() -> void:
-		get_tree().change_scene_to_file("res://scenes/shop.tscn"))
+		SceneRouter.go_to("res://scenes/shop.tscn"))
 	secondary.add_child(upgrades)
 	var settings := _command_button("SETTINGS", Color("7948aa"), btn_w * 0.31, 58)
 	settings.add_theme_font_size_override("font_size", 19)
 	settings.pressed.connect(func() -> void:
-		get_tree().change_scene_to_file("res://scenes/settings.tscn"))
+		SceneRouter.go_to("res://scenes/settings.tscn"))
 	secondary.add_child(settings)
 
 	var nav := BottomNav.new()
 	nav.name = "BottomNavigation"
 	root.add_child(nav)
 	nav.add_item("home", "Home", Callable(), true)
-	nav.add_item("areas", "Areas", func(): get_tree().change_scene_to_file("res://scenes/area_select.tscn"))
-	nav.add_item("build", "Build", func(): get_tree().change_scene_to_file("res://scenes/shop.tscn"))
-	nav.add_item("history", "History", func(): get_tree().change_scene_to_file("res://scenes/run_history.tscn"))
-	nav.add_item("credits", "Credits", func(): get_tree().change_scene_to_file("res://scenes/credits.tscn"))
+	nav.add_item("areas", "Areas", func(): SceneRouter.go_to("res://scenes/area_select.tscn"))
+	nav.add_item("build", "Build", func(): SceneRouter.go_to("res://scenes/shop.tscn"))
+	nav.add_item("history", "History", func(): SceneRouter.go_to("res://scenes/run_history.tscn"))
+	nav.add_item("credits", "Credits", func(): SceneRouter.go_to("res://scenes/credits.tscn"))
 
 
 func _add_status_row(parent: VBoxContainer) -> void:
@@ -202,11 +202,11 @@ func _nav_button(text: String, scene_path: String, starts_run := false) -> Butto
 	if not scene_path.is_empty():
 		button.pressed.connect(func() -> void:
 			if starts_run and not RunState.active:
-				get_tree().change_scene_to_file("res://scenes/area_select.tscn")
+				SceneRouter.go_to("res://scenes/area_select.tscn")
 			elif starts_run:
-				get_tree().change_scene_to_file(RunState.resume_scene())
+				SceneRouter.go_to(RunState.resume_scene())
 			else:
-				get_tree().change_scene_to_file(scene_path))
+				SceneRouter.go_to(scene_path))
 	return button
 
 
@@ -226,10 +226,10 @@ func _add_readability_scrims() -> void:
 
 
 func _on_new_run_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/area_select.tscn")
+	SceneRouter.go_to("res://scenes/area_select.tscn")
 
 
 func _on_continue_pressed() -> void:
 	if not RunState.active:
 		return
-	get_tree().change_scene_to_file(RunState.resume_scene())
+	SceneRouter.go_to(RunState.resume_scene())

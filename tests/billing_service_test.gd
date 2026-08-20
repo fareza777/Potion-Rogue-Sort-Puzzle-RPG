@@ -8,9 +8,9 @@ func _ready() -> void:
 	var original := SaveSystem.data.duplicate(true)
 	SaveSystem.data = SaveSystem.DEFAULT_DATA.duplicate(true)
 	BillingService.refresh_entitlement_from_save()
-	check(BillingService.PRODUCT_ID == "potion_rogue_full_campaign",
-			"billing uses the approved campaign product id")
-	check(BillingService.product_title() == "Full Campaign Unlock",
+	check(BillingService.PRODUCT_ID == "potion_rogue_remove_ads",
+			"billing uses the approved Remove Ads product id")
+	check(BillingService.product_title() == "Remove Ads",
 			"billing exposes the English fallback product title")
 	check(BillingService.product_price() == "$4.99",
 			"billing exposes the approved fallback price")
@@ -23,7 +23,7 @@ func _ready() -> void:
 		"is_acknowledged": false,
 	})
 	check(not BillingService.is_entitled(),
-			"pending purchases never grant the campaign")
+			"pending purchases never remove ads")
 
 	BillingService.call("_process_purchase", {
 		"product_ids": PackedStringArray([BillingService.PRODUCT_ID]),
@@ -31,8 +31,8 @@ func _ready() -> void:
 		"is_acknowledged": true,
 	})
 	check(BillingService.is_entitled(),
-			"confirmed purchases grant the campaign")
-	check(SaveSystem.full_campaign_unlocked(),
+			"confirmed purchases remove ads")
+	check(SaveSystem.ads_removed(),
 			"confirmed purchases persist the entitlement")
 
 	SaveSystem.data = SaveSystem.DEFAULT_DATA.duplicate(true)
@@ -43,7 +43,17 @@ func _ready() -> void:
 		"is_acknowledged": true,
 	})
 	check(not BillingService.is_entitled(),
-			"unrelated products never grant the campaign")
+			"unrelated products never remove ads")
+
+	SaveSystem.data = SaveSystem.DEFAULT_DATA.duplicate(true)
+	BillingService.refresh_entitlement_from_save()
+	BillingService.call("_process_purchase", {
+		"product_ids": PackedStringArray(["potion_rogue_full_campaign"]),
+		"purchase_state": BillingClient.PurchaseState.PURCHASED,
+		"is_acknowledged": true,
+	})
+	check(BillingService.is_entitled(),
+			"legacy campaign buyers are honoured as Remove Ads owners")
 
 	SaveSystem.data = original
 	BillingService.refresh_entitlement_from_save()
