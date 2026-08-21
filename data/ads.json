@@ -1,12 +1,13 @@
 {
-	"_comment": "AdMob configuration. Replace every ca-app-pub-3940256099942544 value with the real unit ids from your AdMob console, then set test_mode to false for the production build. The app id also has to be declared in the Android manifest via the AdMob plugin settings.",
+	"_comment": "Production AdMob configuration for Potion Rogue. Debug Android runs use Google's test units through the Admob runtime node; release exports use these real units.",
 	"enabled": true,
-	"test_mode": true,
-	"android_app_id": "ca-app-pub-3940256099942544~3347511713",
+	"test_mode": false,
+	"android_app_id": "ca-app-pub-6279186647593327~2300822678",
+	"app_ads_txt_url": "https://fareza777.github.io/app-ads.txt",
 	"unit_ids": {
-		"banner": "ca-app-pub-3940256099942544/6300978111",
-		"interstitial": "ca-app-pub-3940256099942544/1033173712",
-		"rewarded": "ca-app-pub-3940256099942544/5224354917"
+		"banner": "ca-app-pub-6279186647593327/2085929206",
+		"interstitial": "ca-app-pub-6279186647593327/5833602524",
+		"rewarded": "ca-app-pub-6279186647593327/6763540816"
 	},
 	"interstitial": {
 		"min_battles_between": 3,

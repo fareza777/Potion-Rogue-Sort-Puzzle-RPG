@@ -13,10 +13,11 @@ in-app product that switches the ads off.
 | Purchase surface | `src/ui/components/remove_ads_card.gd` |
 | Entitlement + realm progression | `src/autoload/save_system.gd` |
 
-`AdService` resolves the AdMob Android plugin at runtime through
-`Engine.get_singleton`. It is not a hard dependency: with no plugin installed —
-editor, desktop, headless CI, or an Android build without the `.aar` — every ad
-call is a safe no-op and the game plays exactly as before.
+`AdService` resolves the configured `AdmobRuntime` node on Android and keeps
+the Engine singleton names as a compatibility fallback. The bundled AdMob
+Plugin v7.0 supplies the Google Mobile Ads SDK, UMP consent hooks, and the
+Android manifest App ID. Editor, desktop, headless CI, or a build without the
+Android plugin remain safe no-ops.
 
 ## Placements
 
@@ -38,32 +39,42 @@ The paywall is gone. Realms open by clearing the previous realm's boss
 Players who bought the old **Full Campaign Unlock** are migrated at save
 version 13: they keep every realm they paid for **and** get Remove Ads for free.
 
-## What you still need to do outside the repo
+## Live configuration
 
 ### 1. AdMob console
-1. Create the app in AdMob and note the **App ID** (`ca-app-pub-…~…`).
-2. Create three ad units: **Banner**, **Interstitial**, **Rewarded**.
-3. Put the App ID and the three unit IDs into `data/ads.json` and set
-   `"test_mode": false` for the production build. Until then the file ships
-   Google's official **test** IDs — never publish with those live, and never
-   click your own live ads.
-4. Configure the **UMP / Privacy & messaging** consent form (required for the
-   EEA, UK and Switzerland). The in-game button is
-   *Settings → Ad Privacy Settings*, wired to `AdService.open_privacy_options()`.
 
-### 2. Install the AdMob Godot Android plugin
-`AdService` looks for a singleton named `AdmobPlugin`, `AdMob`, `Admob` or
-`GodotAdMob` (in that order). Drop the plugin's `.aar` + `.gdap`/plugin config
-into `addons/`, enable it, and declare the App ID the way that plugin expects
-(usually its own export-preset field, which writes the
-`com.google.android.gms.ads.APPLICATION_ID` manifest entry).
+The Potion Rogue app and its three units are configured as follows:
 
-If your plugin exposes different method or signal names than the ones in
-`_connect_plugin_signals()` / `_call_plugin()`, adjust those two functions —
-that is the only place plugin names appear.
+| Item | Value |
+| --- | --- |
+| App ID | `ca-app-pub-6279186647593327~2300822678` |
+| Banner | `ca-app-pub-6279186647593327/2085929206` |
+| Interstitial | `ca-app-pub-6279186647593327/5833602524` |
+| Rewarded | `ca-app-pub-6279186647593327/6763540816` |
 
-### 3. Play Console
-1. Create the managed in-app product **`potion_rogue_remove_ads`**, title
+The production values are in `data/ads.json`. Local/debug runs are forced to
+Google's test units by `src/autoload/admob_runtime.gd`; never click live ads
+while testing.
+
+The publisher file is already live and returns:
+
+`google.com, pub-6279186647593327, DIRECT, f08c47fec0942fa0`
+
+AdMob still needs to review the manually added app and link it to the Play
+store listing after the closed-test listing becomes discoverable.
+
+AdMob **Privacy & messaging** is live for Potion Rogue:
+
+- `Potion Rogue - EEA GDPR Consent` targets the EEA, UK, and Switzerland and
+  exposes Consent, Do not consent, and Manage options.
+- `Potion Rogue - US States Privacy` targets every current and future supported
+  US state and exposes the opt-out flow.
+- Both messages use the live privacy-policy URL. The in-game
+  *Settings → Ad Privacy Settings* button is wired to
+  `AdService.open_privacy_options()` through the bundled UMP SDK.
+
+### 2. Play Console
+1. Create and activate the managed one-time product **`potion_rogue_remove_ads`**, title
    "Remove Ads", price US$4.99, and activate it. (The old
    `potion_rogue_full_campaign` product is still honoured by the code for
    existing buyers — deactivate it rather than deleting it.)
@@ -82,8 +93,8 @@ that is the only place plugin names appear.
    Advertising section. Redeploy it before submitting — the live URL in
    `src/autoload/app_links.gd` is what review reads.
 
-### 4. Version
-`1.7.0` / version code `30`.
+### 3. Version
+`1.7.5` / version code `35`.
 
 ## Verifying without ads
 

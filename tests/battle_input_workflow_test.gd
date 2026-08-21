@@ -9,7 +9,7 @@ func _ready() -> void:
 	await _test_android_emulated_mouse_does_not_double_tap()
 	await _test_full_battle_viewport_dispatch()
 	await _test_full_tutorial_input_dispatch()
-	_test_reaction_tutorial_keeps_board_interactive()
+	_test_play_tutorial_keeps_board_interactive()
 	_test_modal_overlay_blocks_and_releases_battle()
 	print("---\n%d checks, %d failures" % [checks, failures])
 	get_tree().quit(1 if failures else 0)
@@ -106,12 +106,13 @@ func _test_full_tutorial_input_dispatch() -> void:
 	check(board != null and director != null and tutorial != null,
 			"first battle creates the interactive tutorial")
 	if board != null and director != null and tutorial != null:
-		for action in ["select_source", "select_target", "complete_potion", "trigger_reaction"]:
+		for action in ["select_source", "select_target"]:
 			var index := _tutorial_index(director.steps, action)
 			director.index = index
 			tutorial._show_step(director.steps[index], index, director.steps.size())
 			await get_tree().process_frame
-			var tube_index := 1 if action == "select_target" else 0
+			var tube_index := board.tubes.find(board.tutorial_target_tube()) \
+					if action == "select_target" else board.tubes.find(board.tutorial_source_tube())
 			var point := board.tubes[tube_index].get_global_rect().get_center()
 			var motion := InputEventMouseMotion.new(); motion.position = point
 			Input.parse_input_event(motion)
@@ -131,20 +132,20 @@ func _tutorial_index(steps: Array, action: String) -> int:
 	return -1
 
 
-func _test_reaction_tutorial_keeps_board_interactive() -> void:
+func _test_play_tutorial_keeps_board_interactive() -> void:
 	var host := Control.new(); host.size = Vector2(720, 1280); add_child(host)
-	var chamber := Control.new(); chamber.name = "ReactionChamber"
-	chamber.position = Vector2(280, 1030); chamber.size = Vector2(160, 70); host.add_child(chamber)
+	var board := Control.new(); board.name = "PotionBoardBand"
+	board.position = Vector2(80, 720); board.size = Vector2(560, 240); host.add_child(board)
 	var director := TutorialDirector.new()
-	director.steps = [{"action":"trigger_reaction", "target":"ReactionChamber",
-			"title":"Reaction", "body":"Complete a second potion."}]
+	director.steps = [{"action":"play", "target":"PotionBoardBand",
+			"title":"Keep brewing", "body":"Fill flasks until the guardian falls."}]
 	director.index = 0; director.active = true
 	var tutorial := Tutorial.new(); host.add_child(tutorial)
-	tutorial.setup(host, director, func(_target: String) -> Control: return chamber)
+	tutorial.setup(host, director, func(_target: String) -> Control: return board)
 	var passthrough := true
 	for panel in tutorial.dim_panels:
 		passthrough = passthrough and panel.mouse_filter == Control.MOUSE_FILTER_IGNORE
-	check(passthrough, "reaction lesson leaves the potion board clickable")
+	check(passthrough, "play lesson leaves the potion board clickable")
 	host.queue_free()
 
 

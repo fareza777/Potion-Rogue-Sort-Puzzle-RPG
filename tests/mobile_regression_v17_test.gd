@@ -58,7 +58,7 @@ func _test_dungeon_route_scrolls_on_touch() -> void:
 
 
 func _test_launch_experience_contract() -> void:
-	check(FileAccess.file_exists("res://assets/art/app_icon_v2.png"),
+	check(FileAccess.file_exists("res://assets/art/app_icon_v3.png"),
 			"generated premium app icon is stored in the project")
 	check(FileAccess.file_exists("res://assets/art/backgrounds/launch_splash_v2.jpg"),
 			"generated portrait splash art is stored in the project")
@@ -72,7 +72,7 @@ func _test_launch_experience_contract() -> void:
 			"onboarding completion is persisted")
 	var project := FileAccess.get_file_as_string("res://project.godot")
 	check(project.contains('run/main_scene="res://scenes/boot.tscn"')
-			and project.contains('config/icon="res://assets/art/app_icon_v2.png"'),
+			and project.contains('config/icon="res://assets/art/app_icon_v3.png"'),
 			"project launches through the new branded boot flow")
 
 

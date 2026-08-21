@@ -19,7 +19,7 @@ func _ready() -> void:
 	var margin := UiKit.safe_margin(self,
 			int(profile.get("safe_horizontal", 24)),
 			int(profile.get("safe_top", 28)),
-			int(profile.get("safe_bottom", 24)))
+			UiKit.banner_bottom_pad(int(profile.get("safe_bottom", 24))))
 
 	var root := VBoxContainer.new()
 	root.add_theme_constant_override("separation", 14)

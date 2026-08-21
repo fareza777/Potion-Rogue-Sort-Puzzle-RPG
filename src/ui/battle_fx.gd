@@ -39,6 +39,15 @@ func impact_freeze(duration_ms: int) -> int:
 	return applied
 
 
+func cancel_freeze() -> void:
+	_freeze_serial += 1
+	Engine.time_scale = 1.0
+
+
+func _exit_tree() -> void:
+	cancel_freeze()
+
+
 func hit(target: Control, strength: float = 1.0) -> void:
 	if target == null or not is_instance_valid(target):
 		return

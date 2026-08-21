@@ -141,6 +141,9 @@ func _process(_delta: float) -> void:
 
 func _exit_tree() -> void:
 	remix_jobs.cancel()
+	Engine.time_scale = 1.0
+	if battle_log != null:
+		battle_log.close_history()
 
 
 func _ready() -> void:
@@ -191,6 +194,8 @@ func _ready() -> void:
 	var saved_enemy := str(saved_battle.get("enemy_id", ""))
 	if not saved_enemy.is_empty() and GameState.enemies.has(saved_enemy):
 		starting_enemy = saved_enemy
+	if _is_guided_battle():
+		starting_enemy = "slime"
 	battle.setup(starting_enemy)
 	encounter_coordinator.configure(battle, board, entry)
 	_setup_tactical_controllers(starting_enemy)
@@ -200,13 +205,17 @@ func _ready() -> void:
 	enemy_display.play_intro()
 	undo_left = int(encounter.get("undo_left", battle.undos_allowed())) if resumed else battle.undos_allowed()
 	_set_message("Battle resumed exactly where you left it." if resumed \
-			else "Sort potions of one color to unleash them!")
+			else ("Tap a flask, then a matching flask." if _is_guided_battle() \
+			else "Sort potions of one color to unleash them!"))
 
 	var combat_kind := str(entry.get("kind", "battle"))
 	AudioManager.set_area(str(RunState.current_area().get("music", "dungeon")))
 	AudioManager.set_combat_layer("boss_phase_1" if combat_kind == "boss" else "elite" if combat_kind == "elite" else "battle")
-	if not resumed and not SaveSystem.is_tutorial_done() and RunState.battle_index == 0:
-		board.generate_tutorial_board()
+	if _is_guided_battle():
+		if resumed:
+			board.clear_tube_hazards()
+		else:
+			board.generate_tutorial_board()
 		tutorial_director = TutorialDirector.new(); tutorial_director.configure()
 		tutorial_overlay = Tutorial.new(); add_child(tutorial_overlay)
 		tutorial_overlay.setup(self, tutorial_director, _tutorial_target)
@@ -276,10 +285,18 @@ func _checkpoint_encounter() -> void:
 		RunState.request_checkpoint(RunState.PHASE_BATTLE, {"encounter": _capture_encounter()})
 
 
+func _is_guided_battle() -> bool:
+	return not SaveSystem.is_tutorial_done() and RunState.battle_index == 0
+
+
 func _tutorial_target(target_name: String) -> Control:
 	match target_name:
-		"TutorialSource": return board.tubes[0] if board.tubes.size() > 0 else board
-		"TutorialTarget": return board.tubes[1] if board.tubes.size() > 1 else board
+		"TutorialSource":
+			var source := board.tutorial_source_tube()
+			return source if source != null else board
+		"TutorialTarget":
+			var target := board.tutorial_target_tube()
+			return target if target != null else board
 		"ReactionChamber": return reaction_chamber
 		_: return find_child(target_name, true, false) as Control
 
@@ -295,9 +312,11 @@ func _tutorial_action(action: String) -> void:
 
 func _setup_tactical_controllers(enemy_id: String) -> void:
 	var contract: Dictionary = RunState.current_contract()
-	encounter_format.configure(contract.get("profile", {}))
+	encounter_format.configure({} if _is_guided_battle() else contract.get("profile", {}))
 	objective_controller = ObjectiveController.new()
 	var objective_id := str(contract.get("objective_id", "defeat"))
+	if _is_guided_battle():
+		objective_id = "defeat"
 	objective_controller.configure(objective_id, GameState.objectives.get(objective_id, {}))
 	objective_controller.progress_changed.connect(_on_objective_progress)
 	_on_objective_progress(objective_controller.current, objective_controller.target)
@@ -310,8 +329,11 @@ func _setup_tactical_controllers(enemy_id: String) -> void:
 	battle.intent_controller = intent_controller
 	battle.intent_board = board
 	signature_controller = EnemySignatureController.new()
-	signature_controller.configure(enemy_id, GameState.enemies.get(enemy_id, {}),
-			RunState.run_seed + RunState.battle_index * 37 + 11)
+	if _is_guided_battle():
+		signature_controller.configure(enemy_id, {}, RunState.run_seed + RunState.battle_index * 37 + 11)
+	else:
+		signature_controller.configure(enemy_id, GameState.enemies.get(enemy_id, {}),
+				RunState.run_seed + RunState.battle_index * 37 + 11)
 	board.move_made.connect(_on_signature_move)
 	if RunState.is_boss_battle():
 		boss_phase_controller = BossPhaseController.new()
@@ -321,7 +343,8 @@ func _setup_tactical_controllers(enemy_id: String) -> void:
 	_refresh_reaction_counterplay()
 	modifier_controller = ModifierController.new()
 	var modifier_ids: Array[String] = []
-	for id in contract.get("modifier_ids", []): modifier_ids.append(str(id))
+	if not _is_guided_battle():
+		for id in contract.get("modifier_ids", []): modifier_ids.append(str(id))
 	modifier_controller.configure(modifier_ids, RunState.run_seed + 71, board)
 	modifier_controller.curse_cleansed.connect(objective_controller.on_curse_cleansed)
 	board.invalid_move.connect(func() -> void:
@@ -408,6 +431,8 @@ func _on_tactical_move() -> void:
 
 
 func _on_signature_move() -> void:
+	if tutorial_director != null:
+		return
 	var payload := signature_controller.on_player_move(board)
 	if not bool(payload.get("triggered", false)):
 		return
@@ -503,7 +528,8 @@ func _refresh_tactical_hud() -> void:
 	if not str(counter.get("counter_tag", "")).is_empty():
 		preview.label = "%s  [COUNTER: %s]" % [str(preview.label),
 				str(counter.counter_tag).to_upper()]
-	var trick := signature_controller.preview() if signature_controller != null else {}
+	var trick := {} if tutorial_director != null or _is_guided_battle() \
+			else (signature_controller.preview() if signature_controller != null else {})
 	battle_log.update_payload(preview, trick)
 	var kit: Dictionary = GameState.kits.get(RunState.kit_id, {})
 	var active_id := str(kit.get("active", "skill"))
@@ -1121,6 +1147,8 @@ func _on_player_poison_ticked(damage: int) -> void:
 
 
 func _on_tube_lock_requested(moves: int) -> void:
+	if tutorial_director != null or _is_guided_battle():
+		return
 	board.lock_random_tube(moves)
 	_set_message("%s seals a tube for %d moves!" % [battle.enemy_name, moves], "enemy")
 
@@ -1128,6 +1156,9 @@ func _on_tube_lock_requested(moves: int) -> void:
 # --- Run flow ----------------------------------------------------------------
 
 func _on_battle_won() -> void:
+	_restore_battle_clock()
+	if tutorial_director != null and tutorial_director.active:
+		tutorial_director.finish()
 	if encounter_format.on_enemy_defeated() == "next_wave":
 		board.enabled = false
 		var roster: Array = RunState.ensure_current_encounter_profile().get(
@@ -1166,7 +1197,9 @@ func _on_battle_won() -> void:
 	if not was_last:
 		RunState.checkpoint(RunState.PHASE_REWARD, {"encounter": _capture_encounter(),
 				"elite": was_elite})
-	await StoryboardService.play("battle_victory", story_context)
+	if StoryboardService.should_play_victory_story(
+			str(RunState.current_battle().get("kind", "battle")), was_last):
+		await StoryboardService.play("battle_victory", story_context)
 	if was_last:
 		var epilogue_context := story_context.duplicate(true)
 		epilogue_context["first_clear"] = bool(campaign_result.get("first_clear", false))
@@ -1261,13 +1294,23 @@ func _on_upgrade_picked(id: String) -> void:
 ## interstitial goes. The run is checkpointed first: the ad takes over the
 ## activity, and the player may never come back to this scene.
 func _leave_for_map() -> void:
+	_restore_battle_clock()
 	RunState.checkpoint(RunState.PHASE_MAP)
 	if AdService.maybe_show_interstitial():
 		await AdService.interstitial_dismissed
 	SceneRouter.go_to("res://scenes/map.tscn")
 
 
+func _restore_battle_clock() -> void:
+	Engine.time_scale = 1.0
+	if battle_fx != null:
+		battle_fx.cancel_freeze()
+	if battle_log != null:
+		battle_log.close_history()
+
+
 func _on_battle_lost() -> void:
+	_restore_battle_clock()
 	AudioManager.set_scene_state("defeat")
 	board.enabled = false
 	AudioManager.stop_music()

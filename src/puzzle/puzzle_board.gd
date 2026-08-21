@@ -302,16 +302,29 @@ func _apply_factory_result(result: Dictionary) -> void:
 		tubes[index].set_contents(contents)
 
 
-## Deterministic first-run layout. Three exposed green units teach legal
-## matching immediately while preserving the complete four-color puzzle.
+## Clears locks, shrunk flasks, and layer curses so a lesson board cannot jam.
+func clear_tube_hazards() -> void:
+	for tube in tubes:
+		tube.capacity = PotionTube.CAPACITY
+		tube.locked_moves = 0
+		for index in tube.layer_effects.size():
+			tube.layer_effects[index] = []
+		tube.queue_redraw()
+
+
+## Deterministic first-run layout. The first legal pour (flask 1 onto flask 2)
+## completes a red potion so the guided lesson never stalls on a locked flask.
 func generate_tutorial_board() -> void:
 	_undo_stack.clear()
 	_deselect()
+	clear_tube_hazards()
 	var layouts: Array[Array] = [
-		["red", "purple", "blue", "green"],
-		["purple", "red", "blue", "green"],
-		["blue", "purple", "red", "green"],
-		["green", "blue", "purple", "red"],
+		["red", "red", "red"],
+		["red"],
+		["green", "green", "green"],
+		["blue", "blue", "green"],
+		["purple", "purple", "purple"],
+		["blue", "blue", "purple"],
 	]
 	for t in tubes.size():
 		if t < layouts.size():
@@ -320,6 +333,30 @@ func generate_tutorial_board() -> void:
 			tubes[t].set_contents(contents)
 		else:
 			tubes[t].set_contents([] as Array[String])
+
+
+## Returns the authored source for the first guided pour. Resolve this from the
+## real legal-move list so tutorial copy can never point at an impossible move.
+func tutorial_source_tube() -> PotionTube:
+	var move := _tutorial_pour_move()
+	return tubes[move.x] if move.x >= 0 else null
+
+
+## Returns the matching destination for the first guided pour.
+func tutorial_target_tube() -> PotionTube:
+	var move := _tutorial_pour_move()
+	return tubes[move.y] if move.y >= 0 else null
+
+
+func _tutorial_pour_move() -> Vector2i:
+	var authored := Vector2i(0, 1)
+	if authored in legal_moves():
+		return authored
+	var moves := legal_moves()
+	for move in moves:
+		if tubes[move.y].contents.is_empty():
+			return move
+	return moves[0] if not moves.is_empty() else Vector2i(-1, -1)
 
 
 func undo() -> bool:

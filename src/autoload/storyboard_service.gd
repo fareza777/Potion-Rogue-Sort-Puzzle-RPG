@@ -46,6 +46,13 @@ func is_playing() -> bool:
 	return _busy
 
 
+## Regular victories should reveal their reward immediately. The authored
+## full-screen outcome painting is reserved for the final boss, where it reads
+## as a campaign beat instead of looking like a stray enemy screen.
+func should_play_victory_story(encounter_kind: String, is_last: bool) -> bool:
+	return is_last or encounter_kind == "boss"
+
+
 func cancel() -> void:
 	_pending = {}
 	if is_instance_valid(_current):

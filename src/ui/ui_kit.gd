@@ -59,6 +59,16 @@ static func safe_margin(parent: Control, horizontal := 24,
 	return margin
 
 
+static func banner_bottom_pad(base := 24) -> int:
+	var extra := 0
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree != null and tree.root != null:
+		var ads := tree.root.get_node_or_null("AdService")
+		if ads != null and ads.has_method("banner_reserve_px"):
+			extra = int(ads.call("banner_reserve_px"))
+	return base + extra
+
+
 static func title_font() -> Font:
 	if _title_font == null:
 		_title_font = load("res://assets/fonts/Cinzel.ttf")

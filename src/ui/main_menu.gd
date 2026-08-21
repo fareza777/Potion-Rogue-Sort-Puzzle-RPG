@@ -22,7 +22,7 @@ func _build_interface() -> void:
 	var view_w := get_viewport_rect().size.x
 	var narrow := view_w < 640.0
 	var margin := UiKit.safe_margin(self, 16 if narrow else 18,
-			int(profile.safe_top * 0.55), 10)
+			int(profile.safe_top * 0.55), UiKit.banner_bottom_pad(10))
 	margin.name = "SafeContent"
 	var root := VBoxContainer.new()
 	root.name = "MainStack"

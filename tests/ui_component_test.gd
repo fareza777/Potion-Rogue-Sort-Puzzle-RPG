@@ -75,10 +75,33 @@ func _ready() -> void:
 					"battle log entry %d never combines autowrap with ellipsis"
 					% entry_index)
 		battle_log.push_entry("Fire Burst — 14 damage", "reaction")
+		battle_log.push_entry("Enemy attacks for 8", "enemy")
+		battle_log.push_entry("Shield absorbs 5", "shield")
+		battle_log.push_entry("Poison deals 4", "damage")
+		battle_log.push_entry("Player brews Red", "player")
 		var newest := battle_log.find_child("BattleLogEntry%d"
 				% (BattleLog.VISIBLE_ENTRIES - 1), true, false) as Label
-		check(newest != null and newest.text.contains("Fire Burst"),
+		check(newest != null and newest.text.contains("Player brews Red"),
 				"battle log renders the newest entry at the bottom")
+		check(battle_log.has_method("history_entries")
+				and battle_log.has_method("open_history"),
+				"battle log exposes its tappable full-history view")
+		if battle_log.has_method("history_entries") and battle_log.has_method("open_history"):
+			check((battle_log.call("history_entries") as Array).size() == 5,
+					"compact battle log retains older entries for history")
+			battle_log.call("open_history")
+			await get_tree().process_frame
+			var history_popup = battle_log.find_child("BattleLogHistoryPopup",
+					true, false)
+			var history_scroll := battle_log.find_child("BattleLogHistoryScroll",
+					true, false) as ScrollContainer
+			var history_box := battle_log.find_child("BattleLogHistoryBox",
+					true, false) as PanelContainer
+			check(history_popup != null and history_popup.visible
+					and history_popup is Control,
+					"tapping the battle log opens an in-game history overlay")
+			check(history_scroll is ScrollContainer and history_box is PanelContainer,
+					"zoomed battle history is a dedicated scrollable journal box")
 	var summary_path := "res://src/ui/build_summary.gd"
 	check(ResourceLoader.exists(summary_path), "map owns reusable build summary")
 	if ResourceLoader.exists(summary_path):

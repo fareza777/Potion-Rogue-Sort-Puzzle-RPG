@@ -47,11 +47,12 @@ func _test_board_boundary() -> void:
 
 func _test_solver() -> void:
 	var tutorial: Array = [
-		["red", "purple", "blue", "green"],
-		["purple", "red", "blue", "green"],
-		["blue", "purple", "red", "green"],
-		["green", "blue", "purple", "red"],
-		[], [],
+		["red", "red", "red"],
+		["red"],
+		["green", "green", "green"],
+		["blue", "blue", "green"],
+		["purple", "purple", "purple"],
+		["blue", "blue", "purple"],
 	]
 	check(BoardSolver.has_solution(tutorial, 4),
 			"tutorial board is solvable")

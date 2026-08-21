@@ -90,6 +90,14 @@ func _ready() -> void:
 			"service queues one critical story trigger while busy")
 	check(service_source.contains("RunState.record_replay"),
 			"story service journals compact beat identities")
+	check(StoryboardService.has_method("should_play_victory_story"),
+			"victory flow exposes a deliberate cinematic policy")
+	if StoryboardService.has_method("should_play_victory_story"):
+		check(not bool(StoryboardService.call("should_play_victory_story", "battle", false))
+				and not bool(StoryboardService.call("should_play_victory_story", "elite", false)),
+				"regular and elite wins go straight to rewards")
+		check(bool(StoryboardService.call("should_play_victory_story", "boss", true)),
+				"the final boss keeps the authored victory story")
 	player.queue_free()
 	AudioManager.stop_music()
 	await get_tree().create_timer(0.08).timeout

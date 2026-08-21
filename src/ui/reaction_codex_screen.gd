@@ -6,7 +6,7 @@ var _formula_scroll: ScrollContainer
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	UiKit.battle_background(self, VisualRegistry.background("main_hall"))
-	var margin := UiKit.safe_margin(self, 22, 34, 22)
+	var margin := UiKit.safe_margin(self, 22, 34, UiKit.banner_bottom_pad(22))
 	var root := VBoxContainer.new()
 	root.add_theme_constant_override("separation", 10)
 	margin.add_child(root)

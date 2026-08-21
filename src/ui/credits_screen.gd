@@ -15,7 +15,7 @@ func _ready() -> void:
 	var margin := UiKit.safe_margin(self,
 			int(profile.get("safe_horizontal", 24)),
 			int(profile.get("safe_top", 28)),
-			int(profile.get("safe_bottom", 24)))
+			UiKit.banner_bottom_pad(int(profile.get("safe_bottom", 24))))
 	var panel := UiKit.textured_panel("res://assets/art/ui/battle_panel.png", 34)
 	panel.name = "CreditsPanel"
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL

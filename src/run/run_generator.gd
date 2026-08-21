@@ -2,8 +2,8 @@ class_name RunGenerator
 extends RefCounted
 
 const AREA_GRAMMAR := preload("res://src/run/area_grammar.gd")
-const INTRO_MODIFIERS := ["hidden_layer", "frozen_tube"]
-const ADVANCED_MODIFIERS := ["cursed_layer", "volatile_liquid", "wild_essence", "chain_lock", "corruption", "unstable_flask"]
+const INTRO_MODIFIERS := ["hidden_layer"]
+const ADVANCED_MODIFIERS := ["cursed_layer", "volatile_liquid", "wild_essence", "chain_lock", "corruption", "unstable_flask", "frozen_tube"]
 var _ascension := 0
 ## Optional board modifier forced into every battle contract (daily twist).
 var _forced_modifier := ""
@@ -118,7 +118,8 @@ func _decorate_contract(node: Dictionary, rng: RunRng,
 	for modifier_id in area.get("area_modifiers", []):
 		if str(modifier_id) not in pool:
 			pool.append(str(modifier_id))
-	var count := 2 if kind == "elite" else (1 if floor <= 2 else rng.randi_range(1, 2))
+	var count := 2 if kind == "elite" else (
+			0 if floor <= 1 else (1 if floor == 2 else rng.randi_range(1, 2)))
 	# Daily twist: the authored modifier leads every battle of the day.
 	if not _forced_modifier.is_empty() \
 			and GameState.modifiers.has(_forced_modifier):
@@ -132,6 +133,7 @@ func _decorate_contract(node: Dictionary, rng: RunRng,
 			and "hidden_layer" not in node.contract.modifier_ids \
 			and rng.randf() < 0.5:
 		node.contract.modifier_ids.append("hidden_layer")
+	count = mini(count, pool.size()) if not pool.is_empty() else node.contract.modifier_ids.size()
 	while node.contract.modifier_ids.size() < count:
 		var id := str(pool[rng.randi_range(0, pool.size() - 1)])
 		if id not in node.contract.modifier_ids: node.contract.modifier_ids.append(id)

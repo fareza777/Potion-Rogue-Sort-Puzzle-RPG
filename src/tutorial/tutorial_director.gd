@@ -45,3 +45,10 @@ func skip() -> void:
 	active = false
 	SaveSystem.skip_tutorial()
 	skipped.emit()
+
+
+func finish() -> void:
+	if not active: return
+	active = false
+	SaveSystem.complete_tutorial()
+	completed.emit()

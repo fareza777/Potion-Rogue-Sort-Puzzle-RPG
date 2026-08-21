@@ -9,14 +9,11 @@ var _route_scroll: ScrollContainer
 
 
 func _ready() -> void:
+	if not RunState.active or RunState.phase != RunState.PHASE_MAP:
+		call_deferred("_redirect_from_invalid_map")
+		return
 	AudioManager.set_area(str(RunState.current_area().get("music", "dungeon")))
 	AudioManager.set_scene_state("explore")
-	if not RunState.active:
-		SceneRouter.go_to("res://scenes/area_select.tscn")
-		return
-	if RunState.phase != RunState.PHASE_MAP:
-		SceneRouter.go_to(RunState.resume_scene())
-		return
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	UiKit.battle_background(self, str(RunState.current_area().get("background",
 			"res://assets/art/backgrounds/shadow_crypt_battle.png")))
@@ -58,11 +55,16 @@ func _ready() -> void:
 
 	root.add_child(_make_status_panel())
 	root.add_child(_make_route_legend())
-	if not SaveSystem.is_tutorial_done() and SaveSystem.tutorial_step() >= 9:
-		tutorial_director = TutorialDirector.new(); tutorial_director.configure()
-		var tutorial := Tutorial.new(); add_child(tutorial)
-		tutorial.setup(self, tutorial_director,
-				func(_target: String) -> Control: return route_control)
+	if not SaveSystem.is_tutorial_done() and (SaveSystem.tutorial_step() > 0 \
+			or RunState.battle_index > 0):
+		SaveSystem.complete_tutorial()
+
+
+func _redirect_from_invalid_map() -> void:
+	if not RunState.active:
+		SceneRouter.go_to("res://scenes/area_select.tscn")
+	elif RunState.phase != RunState.PHASE_MAP:
+		SceneRouter.go_to(RunState.resume_scene())
 
 
 func _input(event: InputEvent) -> void:

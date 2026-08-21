@@ -1,37 +1,49 @@
 param(
-    [string]$Output = (Join-Path (Split-Path $PSScriptRoot -Parent) 'assets\art\app_icon.png')
+    [string]$MasterInput = (Join-Path (Split-Path $PSScriptRoot -Parent) 'assets\art\app_icon_v3_master.png'),
+    [string]$ProjectOutput = (Join-Path (Split-Path $PSScriptRoot -Parent) 'assets\art\app_icon_v3.png'),
+    [string]$StoreOutput = (Join-Path $PSScriptRoot 'app-icon-v3-512.png')
 )
 
+$ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
-$root = Split-Path $PSScriptRoot -Parent
-$canvas = [System.Drawing.Bitmap]::new(512, 512, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
-$graphics = [System.Drawing.Graphics]::FromImage($canvas)
-$graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
-$graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
-$graphics.Clear([System.Drawing.Color]::FromArgb(255, 8, 5, 14))
 
-$background = [System.Drawing.Image]::FromFile((Join-Path $root 'assets\art\backgrounds\shadow_crypt_battle.png'))
-$source = [System.Drawing.RectangleF]::new(($background.Width - $background.Height) / 2, 0,
-    $background.Height, $background.Height)
-$target = [System.Drawing.RectangleF]::new(0, 0, 512, 512)
-$graphics.DrawImage($background, $target, $source, [System.Drawing.GraphicsUnit]::Pixel)
+function Save-ResizedPng {
+    param(
+        [Parameter(Mandatory = $true)][string]$InputPath,
+        [Parameter(Mandatory = $true)][string]$OutputPath,
+        [Parameter(Mandatory = $true)][int]$Size
+    )
 
-$dark = [System.Drawing.SolidBrush]::new([System.Drawing.Color]::FromArgb(70, 5, 2, 11))
-$graphics.FillEllipse($dark, 24, 24, 464, 464)
-$slime = [System.Drawing.Image]::FromFile((Join-Path $root 'assets\art\enemies\slime\cave_slime.png'))
-$graphics.DrawImage($slime, [System.Drawing.RectangleF]::new(22, 68, 468, 390))
+    $source = [System.Drawing.Image]::FromFile($InputPath)
+    try {
+        $canvas = [System.Drawing.Bitmap]::new($Size, $Size,
+            [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+        try {
+            $graphics = [System.Drawing.Graphics]::FromImage($canvas)
+            try {
+                $graphics.CompositingQuality = [System.Drawing.Drawing2D.CompositingQuality]::HighQuality
+                $graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+                $graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
+                $graphics.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
+                $graphics.DrawImage($source, 0, 0, $Size, $Size)
+            }
+            finally {
+                $graphics.Dispose()
+            }
+            $canvas.Save($OutputPath, [System.Drawing.Imaging.ImageFormat]::Png)
+        }
+        finally {
+            $canvas.Dispose()
+        }
+    }
+    finally {
+        $source.Dispose()
+    }
+}
 
-$outer = [System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(255, 239, 185, 66), 16)
-$inner = [System.Drawing.Pen]::new([System.Drawing.Color]::FromArgb(230, 66, 38, 18), 7)
-$graphics.DrawEllipse($outer, 15, 15, 482, 482)
-$graphics.DrawEllipse($inner, 29, 29, 454, 454)
-
-$canvas.Save($Output, [System.Drawing.Imaging.ImageFormat]::Png)
-$inner.Dispose()
-$outer.Dispose()
-$slime.Dispose()
-$dark.Dispose()
-$background.Dispose()
-$graphics.Dispose()
-$canvas.Dispose()
-Write-Output "Wrote $Output"
+# Android's largest launcher foreground target is 432 px. A 448 px source
+# preserves a small resampling margin without packaging an oversized texture.
+Save-ResizedPng -InputPath $MasterInput -OutputPath $ProjectOutput -Size 448
+Save-ResizedPng -InputPath $MasterInput -OutputPath $StoreOutput -Size 512
+Write-Output "Wrote $ProjectOutput"
+Write-Output "Wrote $StoreOutput"

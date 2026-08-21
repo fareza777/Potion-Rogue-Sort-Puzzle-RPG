@@ -11,12 +11,14 @@ var _preview_background: TextureRect
 var _preview_label: Label
 var _background_tween: Tween
 var _ad_unlock_pending := ""
+var _ad_unlock_button: Button
 
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	AdService.rewarded_granted.connect(_on_rewarded_granted)
 	AdService.rewarded_dismissed.connect(_on_rewarded_dismissed)
+	AdService.rewarded_availability_changed.connect(_on_rewarded_availability_changed)
 	_preview_background = UiKit.battle_background(self, VisualRegistry.background("main_hall"))
 	var shade := ColorRect.new()
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -25,7 +27,7 @@ func _ready() -> void:
 	add_child(shade)
 	var narrow := get_viewport_rect().size.x < 640.0
 	var side := 14 if narrow else 22
-	var margin := UiKit.safe_margin(self, side, 24 if narrow else 28, side)
+	var margin := UiKit.safe_margin(self, side, 24 if narrow else 28, UiKit.banner_bottom_pad(side))
 	var root := VBoxContainer.new()
 	root.name = "ExpeditionStack"
 	root.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -226,8 +228,10 @@ func _area_card(area_id: String) -> PanelContainer:
 		SceneRouter.go_to("res://scenes/kit_select.tscn"))
 	stack.add_child(action)
 	if not unlocked and area_id == SaveSystem.next_locked_area() \
-			and AdService.rewarded_ready():
-		stack.add_child(_rewarded_unlock_button(area_id, narrow))
+			and AdService.rewarded_supported():
+		_ad_unlock_button = _rewarded_unlock_button(area_id, narrow)
+		stack.add_child(_ad_unlock_button)
+		_refresh_ad_unlock_button()
 	return card
 
 
@@ -250,6 +254,22 @@ func _rewarded_unlock_button(area_id: String, narrow: bool) -> Button:
 		watch.disabled = true
 		watch.text = "OPENING…")
 	return watch
+
+
+## The offer is built whenever this build can serve rewarded ads at all, then
+## follows the load state. Testing readiness once while building the card meant
+## a slow first fill hid the offer until the player reopened the screen.
+func _refresh_ad_unlock_button() -> void:
+	if not is_instance_valid(_ad_unlock_button) or not _ad_unlock_pending.is_empty():
+		return
+	var ready := AdService.rewarded_ready()
+	_ad_unlock_button.disabled = not ready
+	_ad_unlock_button.text = "WATCH AD  •  OPEN THIS REALM" if ready \
+			else "PREPARING AD…"
+
+
+func _on_rewarded_availability_changed(_ready: bool) -> void:
+	_refresh_ad_unlock_button()
 
 
 func _previous_area_name(area_id: String) -> String:

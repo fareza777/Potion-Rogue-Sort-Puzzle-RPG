@@ -8,11 +8,11 @@ config_version=5
 
 config/name="Potion Rogue: Sort Puzzle RPG"
 config/description="Sort potions, cast powerful spells, and conquer the dungeon."
-config/version="1.7.0"
+config/version="1.7.5"
 run/main_scene="res://scenes/boot.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
-config/icon="res://assets/art/app_icon_v2.png"
-boot_splash/image="res://assets/art/app_icon_v2.png"
+config/icon="res://assets/art/app_icon_v3.png"
+boot_splash/image="res://assets/art/app_icon_v3.png"
 boot_splash/bg_color=Color(0.008, 0.004, 0.025, 1)
 boot_splash/fullsize=false
 boot_splash/use_filter=true
@@ -22,6 +22,7 @@ boot_splash/use_filter=true
 GameState="*res://src/autoload/game_state.gd"
 SaveSystem="*res://src/autoload/save_system.gd"
 SceneRouter="*res://src/autoload/scene_router.gd"
+AdmobRuntime="*res://scenes/admob_runtime.tscn"
 BillingService="*res://src/autoload/billing_service.gd"
 AdService="*res://src/autoload/ad_service.gd"
 AppLinks="*res://src/autoload/app_links.gd"
@@ -32,7 +33,7 @@ DevTools="*res://src/autoload/dev_tools.gd"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/GodotGooglePlayBilling/plugin.cfg")
+enabled=PackedStringArray("res://addons/GodotGooglePlayBilling/plugin.cfg", "res://addons/AdmobPlugin/plugin.cfg")
 
 [display]
 

@@ -6,12 +6,17 @@ var failures := 0
 
 func _ready() -> void:
 	var tutorial := FileAccess.get_file_as_string("res://data/tutorial_steps.json")
-	check(tutorial.contains("last three completed potion"), "Tutorial names the three colored dots")
-	check(tutorial.contains("Order matters"), "Tutorial explains ordered reactions")
-	check(tutorial.contains("Ultimate charge") and tutorial.contains("Mana"),
-			"Tutorial distinguishes Mana from Ultimate charge")
-	check(tutorial.contains("first normal New Mix") and tutorial.contains("one move"),
-			"Tutorial explains New Mix economy")
+	check(tutorial.contains("Tap one flask") and tutorial.contains("Four matching layers"),
+			"Tutorial teaches the basic pour first")
+	check(not tutorial.contains("Ultimate charge") and not tutorial.contains("New Mix"),
+			"Battle tutorial leaves advanced systems to the guide")
+	var guide := FileAccess.get_file_as_string("res://src/guide/guide_content.gd")
+	check(guide.contains("last three completed potion essences"), "Guide names the three colored dots")
+	check(guide.contains("Order matters"), "Guide explains ordered reactions")
+	check(guide.contains("Ultimate charge") and guide.contains("Mana"),
+			"Guide distinguishes Mana from Ultimate charge")
+	check(guide.contains("first normal use is free") and guide.contains("one move"),
+			"Guide explains New Mix economy")
 	var chamber := FileAccess.get_file_as_string("res://src/ui/components/reaction_chamber.gd")
 	check(chamber.contains("Last three completed potion essences") and chamber.contains("Order creates reactions"),
 			"Reaction Chamber tooltip is explicit")

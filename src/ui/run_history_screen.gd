@@ -4,7 +4,7 @@ extends Control
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	UiKit.battle_background(self, VisualRegistry.background("main_hall"))
-	var margin := UiKit.safe_margin(self, 24, 44, 24)
+	var margin := UiKit.safe_margin(self, 24, 44, UiKit.banner_bottom_pad(24))
 	var root := VBoxContainer.new(); root.add_theme_constant_override("separation", 12); margin.add_child(root)
 	root.add_child(UiKit.title_label("RUN HISTORY", 38))
 	root.add_child(UiKit.label("Your latest 20 expeditions — newest first", 16, UiKit.COLOR_TEXT_DIM))
