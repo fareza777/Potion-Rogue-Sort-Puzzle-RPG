@@ -23,10 +23,13 @@ Android plugin remain safe no-ops.
 
 | Placement | Where | Rules |
 | --- | --- | --- |
-| Banner | Hall, Expedition select, Workshop, History, Codex, Credits | Never in battle, on the map, in events, or over a story beat. |
+| Banner | Hall, Expedition select, Workshop, History, Codex, Credits | Never in battle, on the map, in events, or over a story beat. Exactly one banner exists per session. |
 | Interstitial | Leaving the reward screen for the map | Capped: skips the first 3 battles, then at most one per 3 battles **and** per 150s. Never after a boss clear. |
+| App Open | Returning to the foreground on a menu, the map or kit select | Never on the install session, never after a glance under 45s, at most one per 15 min, and never within 2 min of another full-screen ad. Dormant until an App Open unit id is set. |
 | Rewarded — Second Wind | Defeat screen | Opt-in. Revive at 50% HP, once per run, offered *before* the run is failed. |
 | Rewarded — Open a realm | Expedition select | Opt-in. Opens only the **next** sealed realm, never further ahead. |
+| Rewarded — Reroll reward | Upgrade/relic choice | Opt-in. One reshuffle per battle; the roll is a serialized permutation so the new spread is genuinely different. |
+| Rewarded — Multiply crystals | Run-end screen | Opt-in, once per run. Only ever adds on top of what was earned. |
 
 All caps live in `data/ads.json` — change them there, not in code.
 
@@ -94,7 +97,7 @@ AdMob **Privacy & messaging** is live for Potion Rogue:
    `src/autoload/app_links.gd` is what review reads.
 
 ### 3. Version
-`1.7.5` / version code `35`.
+`1.7.6` / version code `36`.
 
 ## Verifying without ads
 

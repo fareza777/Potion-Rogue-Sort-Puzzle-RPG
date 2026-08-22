@@ -11,6 +11,13 @@ var battle: BattleManager
 var board: PuzzleBoard
 var undo_left := 0
 var _last_moves_until_attack := -1
+## Rewarded reward-reroll state. The battle scene is rebuilt per encounter, so
+## these naturally reset every battle.
+var _reroll_used := false
+var _pending_reroll := Callable()
+var _run_crystals_banked := 0
+var _crystals_doubled := false
+var _run_end_summary: Dictionary = {}
 
 var battle_kind_label: Label
 var enemy_name_label: Label
@@ -158,6 +165,10 @@ func _ready() -> void:
 		call_deferred("_finish_scene_probe")
 	enemy_display.set_reduced_effects(bool(SaveSystem.setting("reduced_effects")))
 	battle_navigation.configure(get_tree())
+	AdService.rewarded_granted.connect(_on_reroll_granted)
+	AdService.rewarded_dismissed.connect(_on_reroll_dismissed)
+	AdService.rewarded_granted.connect(_on_double_crystals_granted)
+	AdService.rewarded_dismissed.connect(_on_double_crystals_dismissed)
 	hud_presenter.build(self, _layout_profile)
 	hud_presenter.bind({"stage": battle_kind_label, "enemy_name": enemy_name_label,
 		"countdown": countdown_label, "undo_count": undo_count_label})
@@ -1217,19 +1228,77 @@ func _on_battle_won() -> void:
 		var reward_copy := "\nFirst-clear bonus: +%d crystals" % first_reward if first_reward > 0 else ""
 		var title := "Campaign Conquered!" if bool(campaign_result.get("campaign_complete", false)) \
 				else ("Area Conquered!" if bool(campaign_result.get("first_clear", false)) else "Boss Defeated!")
-		var actions: Array = []
-		if not unlocked_id.is_empty():
-			actions.append(["Next Expedition", _go_to_area_select])
-		actions.append(["Replay Area", _replay_area])
-		actions.append(["Main Menu", _go_to_menu])
-		_show_overlay(title,
-				"You conquered %s!\nRun crystals: %d%s%s\nTotal crystals: %d"
-				% [area_name, RunState.run_crystals, reward_copy, unlocked_copy,
-					SaveSystem.crystals()], actions)
+		_run_crystals_banked = RunState.run_crystals
+		_run_end_summary = {"area": area_name, "reward_copy": reward_copy,
+			"unlocked_copy": unlocked_copy, "unlocked_id": unlocked_id,
+			"title": title}
+		_show_run_end_overlay()
 	elif was_elite:
 		_show_relic_choice()
 	else:
 		_show_upgrade_choice()
+
+
+## Rebuilt rather than patched so the doubled total, the offer button and the
+## navigation actions can never drift out of sync after the ad is watched.
+func _show_run_end_overlay() -> void:
+	var actions: Array = []
+	if not str(_run_end_summary.get("unlocked_id", "")).is_empty():
+		actions.append(["Next Expedition", _go_to_area_select])
+	actions.append(["Replay Area", _replay_area])
+	actions.append(["Main Menu", _go_to_menu])
+	var earned_copy := "\nRun crystals: %d" % _run_crystals_banked
+	if _crystals_doubled:
+		earned_copy = "\nRun crystals: %d  (×%d BONUS CLAIMED)" % [
+			_run_crystals_banked * AdService.double_crystals_multiplier(),
+			AdService.double_crystals_multiplier()]
+	_show_overlay(str(_run_end_summary.get("title", "Boss Defeated!")),
+			"You conquered %s!%s%s%s\nTotal crystals: %d" % [
+				str(_run_end_summary.get("area", "the expedition")), earned_copy,
+				str(_run_end_summary.get("reward_copy", "")),
+				str(_run_end_summary.get("unlocked_copy", "")),
+				SaveSystem.crystals()], actions)
+	_add_double_crystals_offer()
+
+
+## Opt-in only, once per run, and it never touches the crystals the player
+## already earned — it can only add on top.
+func _add_double_crystals_offer() -> void:
+	if _crystals_doubled or _run_crystals_banked <= 0 \
+			or not AdService.rewarded_supported():
+		return
+	var multiplier := AdService.double_crystals_multiplier()
+	var ready := AdService.rewarded_ready()
+	var offer := UiKit.cta_bar("WATCH AD  •  ×%d CRYSTALS" % multiplier if ready
+			else "PREPARING AD…", Color("f1c45c"), 56)
+	offer.name = "DoubleCrystalsOffer"
+	offer.disabled = not ready
+	offer.add_theme_font_size_override("font_size", 18)
+	offer.tooltip_text = "Watch one rewarded ad to multiply this run's crystals."
+	offer.pressed.connect(func() -> void:
+		if _crystals_doubled \
+				or not AdService.show_rewarded(AdService.PLACEMENT_DOUBLE_CRYSTALS):
+			offer.text = "AD NOT READY  •  TRY AGAIN"
+			return
+		offer.disabled = true
+		offer.text = "LOADING…")
+	overlay_choices.add_child(offer)
+
+
+func _on_double_crystals_granted(placement: String) -> void:
+	if placement != AdService.PLACEMENT_DOUBLE_CRYSTALS or _crystals_doubled:
+		return
+	_crystals_doubled = true
+	var bonus := _run_crystals_banked * (AdService.double_crystals_multiplier() - 1)
+	if bonus > 0:
+		SaveSystem.add_crystals(bonus)
+	_show_run_end_overlay()
+
+
+func _on_double_crystals_dismissed(placement: String) -> void:
+	if placement != AdService.PLACEMENT_DOUBLE_CRYSTALS or _crystals_doubled:
+		return
+	_show_run_end_overlay()
 
 
 func _show_upgrade_choice() -> void:
@@ -1241,6 +1310,7 @@ func _show_upgrade_choice() -> void:
 				RunState.upgrade_description(id))
 		card.pressed.connect(_on_upgrade_picked.bind(str(id)))
 		overlay_choices.add_child(card)
+	_add_reroll_offer(_show_upgrade_choice)
 
 
 func _show_relic_choice() -> void:
@@ -1256,6 +1326,47 @@ func _show_relic_choice() -> void:
 				RunState.relic_description(id), Color("c07ce8"))
 		card.pressed.connect(_on_relic_picked.bind(str(id)))
 		overlay_choices.add_child(card)
+	_add_reroll_offer(_show_relic_choice)
+
+
+## Opt-in reshuffle of the three cards, once per battle. RunState's roll uses a
+## serialized permutation, so a second call genuinely produces a new spread
+## rather than repeating the same three ids.
+func _add_reroll_offer(reopen: Callable) -> void:
+	if _reroll_used or AdService.rerolls_per_battle() <= 0 \
+			or not AdService.rewarded_supported():
+		return
+	var ready := AdService.rewarded_ready()
+	var reroll := UiKit.cta_bar("WATCH AD  •  NEW CHOICES" if ready
+			else "PREPARING AD…", Color("62b9ff"), 52)
+	reroll.name = "RewardRerollOffer"
+	reroll.disabled = not ready
+	reroll.add_theme_font_size_override("font_size", 17)
+	reroll.pressed.connect(func() -> void:
+		if _reroll_used or not AdService.show_rewarded(AdService.PLACEMENT_REROLL):
+			reroll.text = "AD NOT READY  •  TRY AGAIN"
+			return
+		_pending_reroll = reopen
+		reroll.disabled = true
+		reroll.text = "LOADING…")
+	overlay_choices.add_child(reroll)
+
+
+func _on_reroll_granted(placement: String) -> void:
+	if placement != AdService.PLACEMENT_REROLL or not _pending_reroll.is_valid():
+		return
+	var reopen := _pending_reroll
+	_pending_reroll = Callable()
+	_reroll_used = true
+	reopen.call()
+
+
+func _on_reroll_dismissed(placement: String) -> void:
+	if placement != AdService.PLACEMENT_REROLL or not _pending_reroll.is_valid():
+		return
+	var reopen := _pending_reroll
+	_pending_reroll = Callable()
+	reopen.call()
 
 
 func _reward_choice_button(title: String, description: String,
@@ -1291,13 +1402,13 @@ func _on_upgrade_picked(id: String) -> void:
 
 
 ## Leaving the reward screen is the one quiet beat in a run, so that is where an
-## interstitial goes. The run is checkpointed first: the ad takes over the
-## activity, and the player may never come back to this scene.
+## interstitial goes. The run is checkpointed first, then the map loads; the ad
+## is presented from AdService after that swap so the battle scene is never
+## awaiting a native full-screen activity that tears down its renderer.
 func _leave_for_map() -> void:
 	_restore_battle_clock()
 	RunState.checkpoint(RunState.PHASE_MAP)
-	if AdService.maybe_show_interstitial():
-		await AdService.interstitial_dismissed
+	AdService.queue_break_interstitial()
 	SceneRouter.go_to("res://scenes/map.tscn")
 
 

@@ -11,12 +11,28 @@ class FakeAdmob:
 	extends Node
 	var banner_load_calls := 0
 	var banner_hide_calls := 0
+	var interstitial_show_calls := 0
+	var interstitial_ready := true
+
+	var banner_remove_calls: Array[String] = []
 
 	func load_banner_ad() -> void:
 		banner_load_calls += 1
 
 	func hide_banner_ad() -> void:
 		banner_hide_calls += 1
+
+	func remove_banner_ad(ad_id: String) -> void:
+		banner_remove_calls.append(ad_id)
+
+	func is_interstitial_ad_loaded() -> bool:
+		return interstitial_ready
+
+	func show_interstitial_ad() -> void:
+		interstitial_show_calls += 1
+
+	func load_interstitial_ad() -> void:
+		pass
 
 
 func _ready() -> void:
@@ -121,7 +137,116 @@ func _ready() -> void:
 	retry_service.hide_banner()
 	check(fake_admob.banner_hide_calls == 0,
 			"hiding an unloaded banner does not call the plugin")
+	# A banner the plugin still holds is always taken down, even when our own
+	# flag says it is already hidden: a desynced flag is exactly what stranded
+	# a banner over the battle board.
+	retry_service._banner_loaded = true
+	retry_service._banner_shown = false
+	retry_service.hide_banner()
+	check(fake_admob.banner_hide_calls == 1,
+			"a loaded banner is hidden even if the shown flag desynced")
+	fake_admob.banner_hide_calls = 0
+	retry_service._interstitial_open = true
+	retry_service._banner_shown = true
+	retry_service.hide_banner()
+	check(fake_admob.banner_hide_calls == 0,
+			"no native view swap while a full-screen ad owns the activity")
+	retry_service._interstitial_open = false
+
+	# Only one banner request may be in flight. A second AdView would keep
+	# drawing forever, because the vendor only ever hides its newest ad.
+	retry_service._banner_loaded = false
+	retry_service._banner_loading = false
+	fake_admob.banner_load_calls = 0
+	retry_service.show_banner()
+	retry_service.show_banner()
+	retry_service.show_banner()
+	check(fake_admob.banner_load_calls == 1,
+			"repeated show_banner calls never stack a second banner request")
+
+	# Whatever slipped through before is destroyed, not merely hidden.
+	retry_service._banner_ad_ids = ["stale-a", "stale-b"] as Array[String]
+	retry_service._retire_stale_banners("fresh")
+	var removed: Array = fake_admob.banner_remove_calls
+	check(removed.size() == 2 and removed[0] == "stale-a" and removed[1] == "stale-b",
+			"older banner AdViews are removed instead of left on screen")
+	var tracked: Array = retry_service._banner_ad_ids
+	check(tracked.size() == 1 and tracked[0] == "fresh",
+			"only the newest banner id is tracked afterwards")
 	retry_service.queue_free()
+
+	var gate = load("res://src/autoload/ad_service.gd").new()
+	add_child(gate)
+	await get_tree().process_frame
+	var presenter := FakeAdmob.new()
+	gate._plugin = presenter
+	gate._initialized = true
+	gate._ads_removed = false
+	gate._interstitial_loaded = true
+	gate._battles_completed = 4
+	gate._battles_since_interstitial = 3
+	gate._last_interstitial_ms = Time.get_ticks_msec() - 200_000
+	gate.queue_break_interstitial()
+	check(presenter.interstitial_show_calls == 0,
+			"a queued interstitial does not show from the dying battle scene")
+	gate._on_scene_changed("res://scenes/map.tscn")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await get_tree().process_frame
+	check(presenter.interstitial_show_calls == 1,
+			"the interstitial presents only after the map is live")
+	presenter.interstitial_ready = false
+	gate._interstitial_open = false
+	gate._interstitial_loaded = true
+	gate._battles_completed = 8
+	gate._battles_since_interstitial = 3
+	gate._last_interstitial_ms = Time.get_ticks_msec() - 200_000
+	check(not gate.maybe_show_interstitial(),
+			"a stale loaded flag cannot show an empty interstitial cache")
+	gate.queue_free()
+
+	# App Open must stay invisible to a normal player: the gates below are the
+	# whole reason the format is acceptable at all.
+	var opener = load("res://src/autoload/ad_service.gd").new()
+	add_child(opener)
+	await get_tree().process_frame
+	opener._plugin = FakeAdmob.new()
+	opener._initialized = true
+	opener._ads_removed = false
+	opener._app_open_loaded = true
+	opener._current_scene_path = "res://scenes/main_menu.tscn"
+	# Headless starts near tick zero, so "120s ago" would go negative and trip
+	# the never-backgrounded guard. Drive the window from config instead.
+	opener.config["app_open"]["min_background_seconds"] = 0
+	opener._backgrounded_at_ms = 1
+	SaveSystem.data["stats"] = {"runs_started": 3}
+	check(opener._app_open_due(), "a returning player on the Hall may see App Open")
+	opener._current_scene_path = "res://scenes/battle.tscn"
+	check(not opener._app_open_due(), "App Open never covers a battle")
+	opener._current_scene_path = "res://scenes/event.tscn"
+	check(not opener._app_open_due(), "App Open never covers an event choice")
+	opener._current_scene_path = "res://scenes/main_menu.tscn"
+	opener.config["app_open"]["min_background_seconds"] = 45
+	opener._backgrounded_at_ms = Time.get_ticks_msec()
+	check(not opener._app_open_due(),
+			"a glance at a notification does not earn an App Open")
+	opener.config["app_open"]["min_background_seconds"] = 0
+	opener._backgrounded_at_ms = 1
+	SaveSystem.data["stats"] = {"runs_started": 0}
+	check(not opener._app_open_due(),
+			"the install session never sees an App Open")
+	SaveSystem.data["stats"] = {"runs_started": 3}
+	opener._last_fullscreen_close_ms = Time.get_ticks_msec()
+	check(not opener._app_open_due(),
+			"returning from another full-screen ad never chains into App Open")
+	opener._last_fullscreen_close_ms = -1_000_000
+	opener._last_app_open_ms = Time.get_ticks_msec()
+	check(not opener._app_open_due(), "App Open respects its own spacing")
+	opener._last_app_open_ms = -1_000_000
+	opener._ads_removed = true
+	check(not opener._app_open_due(), "Remove Ads owners never see App Open")
+	opener.queue_free()
+	SaveSystem.data = SaveSystem.DEFAULT_DATA.duplicate(true)
 
 	# Entitlement flows from Billing through AdService without the game asking.
 	SaveSystem.set_ads_removed(true)
@@ -132,8 +257,16 @@ func _ready() -> void:
 	var battle_source := FileAccess.get_file_as_string("res://src/ui/battle_screen.gd")
 	check(battle_source.contains("_second_wind_available"),
 			"defeat offers the rewarded revive before failing the run")
-	check(battle_source.contains("AdService.maybe_show_interstitial()"),
-			"the interstitial lands on the reward-to-map break")
+	check(battle_source.contains("AdService.queue_break_interstitial()"),
+			"the interstitial is queued for the reward-to-map break")
+	check(not battle_source.contains("await AdService.interstitial_dismissed"),
+			"battle never awaits a native full-screen ad on the dying scene")
+	var ad_source := FileAccess.get_file_as_string("res://src/autoload/ad_service.gd")
+	check(ad_source.contains("render_loop_enabled")
+			and ad_source.contains("_arm_fullscreen_ad"),
+			"full-screen ads stop the Godot render loop after the current GL frame")
+	check(ad_source.contains("set_app_pause_on_background"),
+			"AdMob pauses Godot when a full-screen ad covers the activity")
 	check(not battle_source.contains("AdService.show_banner"),
 			"battle never asks for a banner")
 	check(battle_source.contains("_restore_battle_clock"),

@@ -10,6 +10,7 @@ const DEBUG_APP_ID := "ca-app-pub-3940256099942544~3347511713"
 const DEBUG_BANNER_ID := "ca-app-pub-3940256099942544/2014213617"
 const DEBUG_INTERSTITIAL_ID := "ca-app-pub-3940256099942544/1033173712"
 const DEBUG_REWARDED_ID := "ca-app-pub-3940256099942544/5224354917"
+const DEBUG_APP_OPEN_ID := "ca-app-pub-3940256099942544/9257395921"
 
 
 func _init() -> void:
@@ -28,11 +29,15 @@ func _init() -> void:
 	android_debug_banner_id = DEBUG_BANNER_ID
 	android_debug_interstitial_id = DEBUG_INTERSTITIAL_ID
 	android_debug_rewarded_id = DEBUG_REWARDED_ID
+	android_debug_app_open_id = DEBUG_APP_OPEN_ID
 	android_real_application_id = str(config.get("android_app_id", ""))
 	var unit_ids: Dictionary = config.get("unit_ids", {})
 	android_real_banner_id = str(unit_ids.get("banner", ""))
 	android_real_interstitial_id = str(unit_ids.get("interstitial", ""))
 	android_real_rewarded_id = str(unit_ids.get("rewarded", ""))
+	# Left empty until an App Open unit exists in AdMob; AdService then simply
+	# never requests one in release, while debug still uses Google's test unit.
+	android_real_app_open_id = str(unit_ids.get("app_open", ""))
 
 	banner_position = LoadAdRequest.AdPosition.BOTTOM
 	banner_size = LoadAdRequest.RequestedAdSize.ADAPTIVE
@@ -42,6 +47,11 @@ func _init() -> void:
 	remove_banner_ads_after_scene = false
 	remove_interstitial_ads_after_scene = false
 	remove_rewarded_ads_after_scene = false
+	# AdService decides when an App Open ad is appropriate; the plugin must not
+	# fire one by itself on every resume, including resumes from its own ads.
+	# The vendor exposes no remove_app_open_* switches, so AdService reloads the
+	# next App Open itself after each dismissal.
+	auto_show_on_resume = false
 
 
 func _ready() -> void:

@@ -19,11 +19,15 @@ const DEFAULT_CONFIG := {
 	"enabled": true,
 	"test_mode": true,
 	"android_app_id": "",
-	"unit_ids": {"banner": "", "interstitial": "", "rewarded": ""},
+	"unit_ids": {"banner": "", "interstitial": "", "rewarded": "", "app_open": ""},
 	"interstitial": {"min_battles_between": 3, "min_seconds_between": 150,
 		"skip_first_battles": 3, "skip_boss_victory": true},
-	"rewarded": {"second_wind_hp_percent": 0.5, "second_wind_per_run": 1},
+	"rewarded": {"second_wind_hp_percent": 0.5, "second_wind_per_run": 1,
+		"double_crystals_multiplier": 2, "rerolls_per_battle": 1},
 	"banner": {"enabled": true, "position": "bottom"},
+	"app_open": {"enabled": true, "skip_first_session": true,
+		"min_background_seconds": 45, "min_seconds_between": 900,
+		"cooldown_after_fullscreen_seconds": 120},
 }
 
 ## Menus that may carry a banner. Everything else — battle, map, events, story
@@ -34,14 +38,26 @@ const BANNER_SCENES := ["res://scenes/main_menu.tscn", "res://scenes/area_select
 
 ## Longest a full-screen ad may run before the game stops waiting on it.
 const AD_WATCHDOG_SECONDS := 60.0
+## After the map is live, wait this long with the render loop stopped so
+## Godot's GL thread is not inside onDrawFrame when AdMob takes the activity.
+const FULLSCREEN_SETTLE_SECONDS := 0.15
 const BANNER_RETRY_DELAYS := [5.0, 15.0, 30.0]
 ## Viewport pixels reserved under menu content so a bottom banner is not hidden
 ## behind the Hall dock or covered by edge-to-edge system chrome.
 const BANNER_HEIGHT_PX := 100
 
+## Scenes an App Open ad may cover when the player returns. Resuming straight
+## into a battle, an event choice or a story beat is the one moment a
+## full-screen ad genuinely interrupts play, so those are excluded.
+const APP_OPEN_SCENES := BANNER_SCENES + ["res://scenes/map.tscn",
+	"res://scenes/guide.tscn", "res://scenes/settings.tscn",
+	"res://scenes/kit_select.tscn"]
+
 ## Placement ids the game asks for. Kept as constants so call sites cannot drift.
 const PLACEMENT_SECOND_WIND := "second_wind"
 const PLACEMENT_REALM_UNLOCK := "realm_unlock"
+const PLACEMENT_REROLL := "reward_reroll"
+const PLACEMENT_DOUBLE_CRYSTALS := "double_crystals"
 
 signal ads_removed_changed(removed: bool)
 signal rewarded_granted(placement: String)
@@ -71,9 +87,23 @@ var _boss_just_cleared := false
 var _interstitial_open := false
 var _ads_removed := false
 var _current_scene_path := ""
+var _banner_shown := false
+var _banner_loading := false
+var _app_open_loaded := false
+var _app_open_loading := false
+var _app_open_open := false
+var _last_app_open_ms := -1_000_000
+var _last_fullscreen_close_ms := -1_000_000
+var _backgrounded_at_ms := 0
+## Every banner ad id the plugin has handed back, so stale AdViews can be
+## destroyed instead of lingering behind the newest one.
+var _banner_ad_ids: Array[String] = []
+var _break_interstitial_pending := false
+var _render_suspended := false
 
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	config = _merge_defaults(GameState.load_data_file("ads.json", DEFAULT_CONFIG))
 	_ads_removed = SaveSystem.ads_removed()
 	BillingService.entitlement_changed.connect(_on_entitlement_changed)
@@ -91,11 +121,24 @@ func _ready() -> void:
 
 
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_APPLICATION_RESUMED and _initialized:
-		_request_interstitial()
-		_request_rewarded()
-		if _banner_wanted:
-			show_banner()
+	if what == NOTIFICATION_APPLICATION_PAUSED:
+		_backgrounded_at_ms = Time.get_ticks_msec()
+	elif what == NOTIFICATION_APPLICATION_RESUMED and _initialized:
+		if _interstitial_open or _app_open_open or not _rewarded_placement.is_empty():
+			return
+		call_deferred("_refresh_ads_after_resume")
+
+
+func _refresh_ads_after_resume() -> void:
+	if _interstitial_open or _app_open_open or not _rewarded_placement.is_empty():
+		return
+	_request_interstitial()
+	_request_rewarded()
+	_request_app_open()
+	if _banner_wanted:
+		show_banner()
+	if _app_open_due():
+		call_deferred("_present_app_open")
 
 
 # --- Public API -------------------------------------------------------------
@@ -142,10 +185,20 @@ func show_banner() -> void:
 	_banner_wanted = true
 	if _ads_removed or not is_active() or not bool(_section("banner").get("enabled", true)):
 		return
+	if _interstitial_open:
+		return
 	if not _banner_loaded:
-		_call_plugin("load_banner_ad")
+		# One request at a time, and only one banner for the whole session.
+		# Every load_banner_ad() builds a fresh native AdView, but the vendor
+		# only ever hides `last_key()`, so a second request leaves the first
+		# banner stuck on screen across every scene — including battle, where
+		# it covered the action row.
+		if not _banner_loading:
+			_banner_loading = true
+			_call_plugin("load_banner_ad")
 		return
 	_call_plugin("show_banner_ad")
+	_banner_shown = true
 
 
 func hide_banner() -> void:
@@ -153,9 +206,65 @@ func hide_banner() -> void:
 	_banner_retry_attempt = 0
 	if _banner_retry_timer != null:
 		_banner_retry_timer.stop()
-	if not is_active() or not _banner_loaded:
+	if not is_active():
+		_banner_shown = false
 		return
+	# Never touch a native view while a full-screen ad owns the activity: that
+	# swap is the SIGSEGV in Godot's GL thread. Outside that window, hide any
+	# banner the plugin still holds even when our own flag says it is down —
+	# a desynced flag is what left a banner stranded over the battle board.
+	if _interstitial_open or not _rewarded_placement.is_empty():
+		_banner_shown = false
+		return
+	if not _banner_shown and not _banner_loaded:
+		return
+	_banner_shown = false
 	_call_plugin("hide_banner_ad")
+
+
+## True when returning to the foreground has earned an App Open ad. Every gate
+## here exists to keep the format invisible to a normal player: never on the
+## install session, never after a short glance at a notification, never on top
+## of gameplay, and never straight after another full-screen ad — including the
+## resume that fires when one of our own ads closes.
+func _app_open_due() -> bool:
+	var rules := _section("app_open")
+	if _ads_removed or not is_active() or not bool(rules.get("enabled", true)):
+		return false
+	if not _app_open_loaded or _app_open_open or _interstitial_open:
+		return false
+	if not _rewarded_placement.is_empty():
+		return false
+	if bool(rules.get("skip_first_session", true)) and _is_install_session():
+		return false
+	if not _is_app_open_scene(_current_scene_path):
+		return false
+	var away := float(Time.get_ticks_msec() - _backgrounded_at_ms) / 1000.0
+	if _backgrounded_at_ms <= 0 \
+			or away < float(rules.get("min_background_seconds", 45)):
+		return false
+	var since_last := float(Time.get_ticks_msec() - _last_app_open_ms) / 1000.0
+	if since_last < float(rules.get("min_seconds_between", 900)):
+		return false
+	var since_fullscreen := float(Time.get_ticks_msec() - _last_fullscreen_close_ms) / 1000.0
+	return since_fullscreen >= float(rules.get("cooldown_after_fullscreen_seconds", 120))
+
+
+func _is_app_open_scene(path: String) -> bool:
+	if path.is_empty():
+		return false
+	var file := path.get_file()
+	for scene in APP_OPEN_SCENES:
+		if str(scene).get_file() == file:
+			return true
+	return false
+
+
+## A player who has never finished a run is still deciding whether they like
+## the game; an ad on their first return is the cheapest way to lose them.
+func _is_install_session() -> bool:
+	var stats: Dictionary = SaveSystem.data.get("stats", {})
+	return int(stats.get("runs_started", 0)) <= 0
 
 
 ## Records that a battle ended. Kept separate from showing the ad so the
@@ -176,6 +285,16 @@ func maybe_show_interstitial() -> bool:
 	return _try_interstitial()
 
 
+## Marks that a gameplay break is coming. The interstitial is presented only
+## after the next map scene is live, never from the battle node that is about
+## to be freed while AdMob tears down the renderer.
+func queue_break_interstitial() -> void:
+	if _boss_just_cleared and bool(_section("interstitial").get("skip_boss_victory", true)):
+		_break_interstitial_pending = false
+		return
+	_break_interstitial_pending = true
+
+
 ## Rewarded ads are always opt-in: only call this from a button the player
 ## pressed. Listen for `rewarded_granted` / `rewarded_dismissed` on the returned
 ## placement. Returns false when no ad could be shown, in which case neither
@@ -187,8 +306,8 @@ func show_rewarded(placement: String) -> bool:
 	_rewarded_earned = false
 	_rewarded_loaded = false
 	rewarded_availability_changed.emit(false)
-	_call_plugin("show_rewarded_ad")
 	_start_watchdog(_finish_rewarded)
+	call_deferred("_present_rewarded")
 	return true
 
 
@@ -226,6 +345,16 @@ func second_wind_hp_percent() -> float:
 	return clampf(float(_section("rewarded").get("second_wind_hp_percent", 0.5)), 0.1, 1.0)
 
 
+## How many extra copies of a run's crystals a rewarded ad may grant. A value
+## of 2 means the player ends up with twice what they earned.
+func double_crystals_multiplier() -> int:
+	return maxi(int(_section("rewarded").get("double_crystals_multiplier", 2)), 1)
+
+
+func rerolls_per_battle() -> int:
+	return maxi(int(_section("rewarded").get("rerolls_per_battle", 1)), 0)
+
+
 func second_wind_per_run() -> int:
 	return maxi(int(_section("rewarded").get("second_wind_per_run", 1)), 0)
 
@@ -237,19 +366,114 @@ func reset_frequency_caps() -> void:
 
 func _on_scene_changed(path: String) -> void:
 	_current_scene_path = path
+	var show_break := _break_interstitial_pending and _is_break_scene(path)
+	_break_interstitial_pending = false
+	if show_break:
+		# Do not hide/show a banner in the same beat as a full-screen ad; the
+		# native view swap is what SIGSEGVs Godot's GL thread on Android.
+		call_deferred("_present_queued_interstitial")
+		return
 	if is_banner_scene(path):
 		show_banner()
 	else:
 		hide_banner()
 
 
+func _is_break_scene(path: String) -> bool:
+	return path.get_file() == "map.tscn"
+
+
+func _present_queued_interstitial() -> void:
+	if not is_inside_tree() or get_tree() == null:
+		return
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if OS.has_feature("android"):
+		await _arm_fullscreen_ad()
+	if not _try_interstitial():
+		_resume_render_after_fullscreen()
+
+
+func _present_app_open() -> void:
+	if not _app_open_due():
+		return
+	_app_open_loaded = false
+	_app_open_open = true
+	_last_app_open_ms = Time.get_ticks_msec()
+	if OS.has_feature("android"):
+		await _arm_fullscreen_ad()
+	if not _call_plugin("show_app_open_ad"):
+		_close_app_open()
+		return
+	_start_watchdog(_close_app_open)
+
+
+func _close_app_open() -> void:
+	if not _app_open_open:
+		return
+	_app_open_open = false
+	_last_fullscreen_close_ms = Time.get_ticks_msec()
+	_resume_render_after_fullscreen()
+	_request_app_open()
+
+
+func _present_rewarded() -> void:
+	if _rewarded_placement.is_empty():
+		return
+	if OS.has_feature("android"):
+		await _arm_fullscreen_ad()
+		if _rewarded_placement.is_empty():
+			_resume_render_after_fullscreen()
+			return
+	if not _call_plugin("show_rewarded_ad"):
+		_resume_render_after_fullscreen()
+		_finish_rewarded()
+
+
+## Stops Godot drawing before AdMob covers the activity. Calling show from a
+## live GL frame is the SIGSEGV we saw on device (null deref in GodotLib.step).
+func _arm_fullscreen_ad() -> void:
+	var tree := get_tree()
+	if tree == null:
+		return
+	while SceneRouter.is_transitioning():
+		await tree.process_frame
+	await RenderingServer.frame_post_draw
+	await RenderingServer.frame_post_draw
+	_suspend_render_for_fullscreen()
+	await tree.create_timer(FULLSCREEN_SETTLE_SECONDS, true, true, true).timeout
+
+
+func _suspend_render_for_fullscreen() -> void:
+	if _render_suspended or not OS.has_feature("android"):
+		return
+	_render_suspended = true
+	var tree := get_tree()
+	if tree != null:
+		tree.paused = true
+	RenderingServer.render_loop_enabled = false
+
+
+func _resume_render_after_fullscreen() -> void:
+	if not _render_suspended:
+		return
+	_render_suspended = false
+	RenderingServer.render_loop_enabled = true
+	var tree := get_tree()
+	if tree != null:
+		tree.paused = false
+	call_deferred("_sync_banner_for_current_scene")
+
+
 func _on_plugin_initialized(_a: Variant = null, _b: Variant = null) -> void:
 	if _initialized:
 		return
 	_initialized = true
+	_call_plugin("set_app_pause_on_background", [true])
 	_sync_banner_for_current_scene()
 	_request_interstitial()
 	_request_rewarded()
+	_request_app_open()
 	if _banner_wanted:
 		show_banner()
 
@@ -269,7 +493,10 @@ func _on_consent_form_loaded() -> void:
 # --- Interstitial pacing ----------------------------------------------------
 
 func _try_interstitial() -> bool:
-	if _ads_removed or not is_active() or not _interstitial_loaded:
+	if _ads_removed or not is_active() or _interstitial_open:
+		return false
+	if not _plugin_has_interstitial():
+		_interstitial_loaded = false
 		return false
 	var rules := _section("interstitial")
 	if _battles_completed <= int(rules.get("skip_first_battles", 3)):
@@ -282,9 +509,20 @@ func _try_interstitial() -> bool:
 	_interstitial_loaded = false
 	_interstitial_open = true
 	reset_frequency_caps()
-	_call_plugin("show_interstitial_ad")
+	if OS.has_feature("android") and not _render_suspended:
+		_suspend_render_for_fullscreen()
+	if not _call_plugin("show_interstitial_ad"):
+		_interstitial_open = false
+		_resume_render_after_fullscreen()
+		return false
 	_start_watchdog(_close_interstitial)
 	return true
+
+
+func _plugin_has_interstitial() -> bool:
+	if _plugin != null and _plugin.has_method("is_interstitial_ad_loaded"):
+		return bool(_plugin.call("is_interstitial_ad_loaded"))
+	return _interstitial_loaded
 
 
 ## A full-screen ad that never reports back would leave the caller awaiting a
@@ -292,7 +530,7 @@ func _try_interstitial() -> bool:
 ## full-screen present is therefore backed by a watchdog that closes the flow
 ## itself; the real callbacks are idempotent, so whichever fires first wins.
 func _start_watchdog(closer: Callable) -> void:
-	get_tree().create_timer(AD_WATCHDOG_SECONDS, true, false, true).timeout.connect(closer)
+	get_tree().create_timer(AD_WATCHDOG_SECONDS, true, true, true).timeout.connect(closer)
 
 
 # --- Plugin boundary --------------------------------------------------------
@@ -336,6 +574,10 @@ func _connect_plugin_signals() -> void:
 	_try_connect("rewarded_ad_failed_to_show_full_screen_content", _on_rewarded_closed)
 	_try_connect("user_earned_rewarded", _on_rewarded_earned)
 	_try_connect("rewarded_ad_user_earned_reward", _on_rewarded_earned)
+	_try_connect("app_open_ad_loaded", _on_app_open_loaded)
+	_try_connect("app_open_ad_failed_to_load", _on_app_open_failed)
+	_try_connect("app_open_ad_dismissed_full_screen_content", _on_app_open_closed)
+	_try_connect("app_open_ad_failed_to_show_full_screen_content", _on_app_open_closed)
 	_try_connect("consent_form_loaded", _on_consent_form_loaded)
 	_try_connect("consent_info_updated", _on_consent_info_updated)
 
@@ -360,6 +602,26 @@ func _request_interstitial() -> void:
 	_call_plugin("load_interstitial_ad")
 
 
+## Release builds without an App Open unit id simply never request one, so the
+## format stays dormant until the AdMob console has it.
+func _request_app_open() -> void:
+	if _ads_removed or _app_open_loaded or _app_open_loading:
+		return
+	if not bool(_section("app_open").get("enabled", true)):
+		return
+	if not _app_open_unit_configured():
+		return
+	_app_open_loading = true
+	if not _call_plugin("load_app_open_ad"):
+		_app_open_loading = false
+
+
+func _app_open_unit_configured() -> bool:
+	if OS.has_feature("debug"):
+		return true
+	return not str((config.get("unit_ids", {}) as Dictionary).get("app_open", "")).is_empty()
+
+
 func _request_rewarded() -> void:
 	if _rewarded_loaded:
 		return
@@ -369,15 +631,39 @@ func _request_rewarded() -> void:
 # --- Plugin callbacks -------------------------------------------------------
 
 func _on_banner_loaded(_a: Variant = null, _b: Variant = null) -> void:
+	_banner_loading = false
 	_banner_loaded = true
 	_banner_retry_attempt = 0
 	if _banner_retry_timer != null:
 		_banner_retry_timer.stop()
-	if _banner_wanted and not _ads_removed:
+	_retire_stale_banners(_banner_id_from(_a))
+	if _banner_wanted and not _ads_removed and not _interstitial_open:
 		_call_plugin("show_banner_ad")
+		_banner_shown = true
+
+
+## Destroys every banner except the newest. Hiding is not enough: the vendor
+## hides only its most recent ad, so any older AdView keeps drawing over the
+## game forever. Removal has to happen while the id is still cached, because
+## `remove_banner_ad` refuses ids it can no longer find.
+func _retire_stale_banners(current_id: String) -> void:
+	for previous_id in _banner_ad_ids:
+		if previous_id != current_id and not previous_id.is_empty():
+			_call_plugin("remove_banner_ad", [previous_id])
+	_banner_ad_ids.clear()
+	if not current_id.is_empty():
+		_banner_ad_ids.append(current_id)
+
+
+func _banner_id_from(ad_info: Variant) -> String:
+	if ad_info != null and typeof(ad_info) == TYPE_OBJECT \
+			and (ad_info as Object).has_method("get_ad_id"):
+		return str((ad_info as Object).call("get_ad_id"))
+	return ""
 
 
 func _on_banner_failed(_a: Variant = null, _b: Variant = null) -> void:
+	_banner_loading = false
 	_banner_loaded = false
 	_schedule_banner_retry()
 
@@ -388,7 +674,13 @@ func _sync_banner_for_current_scene() -> void:
 		path = get_tree().current_scene.scene_file_path
 	if path.is_empty():
 		return
-	_banner_wanted = is_banner_scene(path)
+	if _interstitial_open or not _rewarded_placement.is_empty():
+		_banner_wanted = false
+		return
+	if is_banner_scene(path):
+		show_banner()
+	else:
+		hide_banner()
 
 
 func _schedule_banner_retry() -> void:
@@ -410,6 +702,20 @@ func _on_banner_retry_timeout() -> void:
 		show_banner()
 
 
+func _on_app_open_loaded(_a: Variant = null, _b: Variant = null) -> void:
+	_app_open_loading = false
+	_app_open_loaded = true
+
+
+func _on_app_open_failed(_a: Variant = null, _b: Variant = null) -> void:
+	_app_open_loading = false
+	_app_open_loaded = false
+
+
+func _on_app_open_closed(_a: Variant = null, _b: Variant = null) -> void:
+	_close_app_open()
+
+
 func _on_interstitial_loaded(_a: Variant = null, _b: Variant = null) -> void:
 	_interstitial_loaded = true
 
@@ -426,8 +732,10 @@ func _close_interstitial() -> void:
 	if not _interstitial_open:
 		return
 	_interstitial_open = false
+	_last_fullscreen_close_ms = Time.get_ticks_msec()
+	_resume_render_after_fullscreen()
 	interstitial_dismissed.emit()
-	_request_interstitial()
+	call_deferred("_request_interstitial")
 
 
 func _on_rewarded_loaded(_a: Variant = null, _b: Variant = null) -> void:
@@ -452,9 +760,12 @@ func _on_rewarded_closed(_a: Variant = null, _b: Variant = null) -> void:
 
 func _finish_rewarded() -> void:
 	if _rewarded_placement.is_empty():
+		_resume_render_after_fullscreen()
 		return
 	var placement := _rewarded_placement
 	_rewarded_placement = ""
+	_last_fullscreen_close_ms = Time.get_ticks_msec()
+	_resume_render_after_fullscreen()
 	if _rewarded_earned:
 		_rewarded_earned = false
 		rewarded_granted.emit(placement)
@@ -471,7 +782,9 @@ func _on_entitlement_changed(removed: bool) -> void:
 	if removed:
 		hide_banner()
 		_banner_wanted = false
+		_banner_shown = false
 		_interstitial_loaded = false
+		_break_interstitial_pending = false
 		if not _call_plugin("remove_banner_ad"):
 			_call_plugin("destroy_banner_ad")
 	ads_removed_changed.emit(removed)

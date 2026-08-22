@@ -1,5 +1,5 @@
 {
-	"_comment": "Production AdMob configuration for Potion Rogue. Debug Android runs use Google's test units through the Admob runtime node; release exports use these real units.",
+	"_comment": "Production AdMob configuration for Potion Rogue. Debug Android runs use Google's test units through the Admob runtime node; release exports use these real units. Leave a unit id empty to disable that format in release.",
 	"enabled": true,
 	"test_mode": false,
 	"android_app_id": "ca-app-pub-6279186647593327~2300822678",
@@ -7,7 +7,9 @@
 	"unit_ids": {
 		"banner": "ca-app-pub-6279186647593327/2085929206",
 		"interstitial": "ca-app-pub-6279186647593327/5833602524",
-		"rewarded": "ca-app-pub-6279186647593327/6763540816"
+		"rewarded": "ca-app-pub-6279186647593327/6763540816",
+		"_app_open_note": "Create an App Open unit in AdMob and paste its id below. While this stays empty, release builds simply never request an App Open ad; debug builds still use Google's test unit.",
+		"app_open": ""
 	},
 	"interstitial": {
 		"min_battles_between": 3,
@@ -15,9 +17,19 @@
 		"skip_first_battles": 3,
 		"skip_boss_victory": true
 	},
+	"app_open": {
+		"enabled": true,
+		"_note": "Shown when the player brings the game back to the foreground, and never on the install session. Menus and the map only, never a battle, story beat or event.",
+		"skip_first_session": true,
+		"min_background_seconds": 45,
+		"min_seconds_between": 900,
+		"cooldown_after_fullscreen_seconds": 120
+	},
 	"rewarded": {
 		"second_wind_hp_percent": 0.5,
-		"second_wind_per_run": 1
+		"second_wind_per_run": 1,
+		"double_crystals_multiplier": 2,
+		"rerolls_per_battle": 1
 	},
 	"banner": {
 		"enabled": true,
