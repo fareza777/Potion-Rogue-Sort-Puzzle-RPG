@@ -86,10 +86,9 @@ func _ready() -> void:
 	mode_help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	mode_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(mode_help)
-	if not BillingService.is_entitled():
-		var remove_ads_offer := RemoveAdsCard.new().configure(narrow)
-		remove_ads_offer.name = "RemoveAdsOffer"
-		root.add_child(remove_ads_offer)
+	# Remove Ads lives in Settings only. Repeating the purchase card here pushed
+	# the realm list below the fold and made the expedition screen read as a
+	# storefront instead of a chooser.
 	if MetaProgression.new().ascension_unlocked():
 		root.add_child(_make_ascension_selector())
 	_area_scroll = ScrollContainer.new(); _area_scroll.name = "ExpeditionScroll"
