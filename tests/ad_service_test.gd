@@ -183,7 +183,9 @@ func _ready() -> void:
 	gate._initialized = true
 	gate._ads_removed = false
 	gate._interstitial_loaded = true
-	gate._battles_completed = 4
+	# The grace period counts lifetime wins, so a restart cannot reset it.
+	SaveSystem.data["stats"] = {"battles_won": 4}
+	gate._battles_completed = 0
 	gate._battles_since_interstitial = 3
 	gate._last_interstitial_ms = Time.get_ticks_msec() - 200_000
 	gate.queue_break_interstitial()
@@ -198,11 +200,24 @@ func _ready() -> void:
 	presenter.interstitial_ready = false
 	gate._interstitial_open = false
 	gate._interstitial_loaded = true
-	gate._battles_completed = 8
+	SaveSystem.data["stats"] = {"battles_won": 8}
 	gate._battles_since_interstitial = 3
 	gate._last_interstitial_ms = Time.get_ticks_msec() - 200_000
 	check(not gate.maybe_show_interstitial(),
 			"a stale loaded flag cannot show an empty interstitial cache")
+	# A fresh launch must not hand a veteran player the newcomer grace period.
+	presenter.interstitial_ready = true
+	gate._interstitial_open = false
+	gate._interstitial_loaded = true
+	gate._battles_completed = 0
+	SaveSystem.data["stats"] = {"battles_won": 2}
+	check(not gate.maybe_show_interstitial(),
+			"a newcomer under the lifetime grace period sees no interstitial")
+	SaveSystem.data["stats"] = {"battles_won": 9}
+	gate._battles_since_interstitial = 3
+	gate._last_interstitial_ms = Time.get_ticks_msec() - 200_000
+	check(gate.maybe_show_interstitial(),
+			"a veteran clears the grace period even right after a restart")
 	gate.queue_free()
 
 	# App Open must stay invisible to a normal player: the gates below are the

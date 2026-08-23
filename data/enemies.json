@@ -17,9 +17,9 @@
 		"shape": "skeleton",
 		"color": "d8d2c0",
 		"hp": 70,
-		"attack": 10,
-		"attack_every": 3,
-		"crit_chance": 0.25,
+		"attack": 8,
+		"attack_every": 4,
+		"crit_chance": 0.15,
 		"signature": {"id":"seal","label":"Bone Seal","every_moves":4,"lock_moves":1},
 		"intent_pool": [{"id": "attack", "weight": 4}, {"id": "guard", "weight": 1}],
 		"crystals": 7

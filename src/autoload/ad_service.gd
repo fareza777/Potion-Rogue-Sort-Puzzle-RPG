@@ -250,6 +250,13 @@ func _app_open_due() -> bool:
 	return since_fullscreen >= float(rules.get("cooldown_after_fullscreen_seconds", 120))
 
 
+## Battles won across the whole install, persisted by SaveSystem, so the
+## interstitial grace period survives app restarts.
+func _lifetime_battles_won() -> int:
+	var stats: Dictionary = SaveSystem.data.get("stats", {})
+	return maxi(int(stats.get("battles_won", 0)), _battles_completed)
+
+
 func _is_app_open_scene(path: String) -> bool:
 	if path.is_empty():
 		return false
@@ -323,6 +330,17 @@ func rewarded_ready() -> bool:
 ## offer permanently, because the screen only tests availability once.
 func rewarded_supported() -> bool:
 	return OS.has_feature("android") and bool(config.get("enabled", true)) 			and not _ads_removed
+
+
+## True when UMP actually has a consent form for this device's region. Outside
+## the EEA, the UK, Switzerland and the covered US states there is nothing to
+## show, and the Settings button has to say so instead of looking broken.
+func privacy_options_available() -> bool:
+	if not is_active() or _plugin == null:
+		return false
+	if not _plugin.has_method("is_consent_form_available"):
+		return false
+	return bool(_plugin.call("is_consent_form_available"))
 
 
 ## Opens the AdMob/UMP privacy options form so players can change or withdraw
@@ -499,7 +517,10 @@ func _try_interstitial() -> bool:
 		_interstitial_loaded = false
 		return false
 	var rules := _section("interstitial")
-	if _battles_completed <= int(rules.get("skip_first_battles", 3)):
+	# The onboarding grace period is a lifetime allowance, not a per-session one.
+	# `_battles_completed` resets on every launch, so a player who plays two or
+	# three battles per sitting would never clear this gate at all.
+	if _lifetime_battles_won() <= int(rules.get("skip_first_battles", 3)):
 		return false
 	if _battles_since_interstitial < int(rules.get("min_battles_between", 3)):
 		return false

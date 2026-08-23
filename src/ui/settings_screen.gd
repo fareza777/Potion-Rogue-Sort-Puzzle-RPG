@@ -39,9 +39,17 @@ func _ready() -> void:
 	ad_privacy_status.name = "AdPrivacyStatus"
 	ad_privacy_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	ad_privacy_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# The button used to look dead outside the EEA and the covered US states:
+	# UMP has no form there, so the tap did nothing and said nothing.
 	ad_privacy.pressed.connect(func() -> void:
-		if not AdService.open_privacy_options():
-			ad_privacy_status.text = "Ad privacy options are available on Android once ads have loaded.")
+		if not AdService.is_active():
+			ad_privacy_status.text = "Ad privacy options appear on Android once ads have loaded."
+		elif AdService.privacy_options_available():
+			ad_privacy_status.text = "Opening ad privacy options…"
+			AdService.open_privacy_options()
+		else:
+			AdService.open_privacy_options()
+			ad_privacy_status.text = "Your region has no ad consent form to change. You can still reset or delete your advertising ID in Android settings.")
 	rows.add_child(ad_privacy)
 	rows.add_child(ad_privacy_status)
 	var rate := UiKit.button("RATE ON GOOGLE PLAY", Vector2(300, 52), Color("f0bd4f"))

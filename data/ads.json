@@ -8,8 +8,8 @@
 		"banner": "ca-app-pub-6279186647593327/2085929206",
 		"interstitial": "ca-app-pub-6279186647593327/5833602524",
 		"rewarded": "ca-app-pub-6279186647593327/6763540816",
-		"_app_open_note": "Create an App Open unit in AdMob and paste its id below. While this stays empty, release builds simply never request an App Open ad; debug builds still use Google's test unit.",
-		"app_open": ""
+		"_app_open_note": "App Open unit created in AdMob for release foreground ads.",
+		"app_open": "ca-app-pub-6279186647593327/1834184740"
 	},
 	"interstitial": {
 		"min_battles_between": 3,
