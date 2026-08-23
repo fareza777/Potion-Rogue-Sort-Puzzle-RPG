@@ -21,7 +21,8 @@ const DEFAULT_CONFIG := {
 	"android_app_id": "",
 	"unit_ids": {"banner": "", "interstitial": "", "rewarded": "", "app_open": ""},
 	"interstitial": {"min_battles_between": 3, "min_seconds_between": 150,
-		"skip_first_battles": 3, "skip_boss_victory": true},
+		"skip_first_battles": 3, "skip_boss_victory": true,
+		"cooldown_after_fullscreen_seconds": 120},
 	"rewarded": {"second_wind_hp_percent": 0.5, "second_wind_per_run": 1,
 		"double_crystals_multiplier": 2, "rerolls_per_battle": 1},
 	"banner": {"enabled": true, "position": "bottom"},
@@ -526,6 +527,15 @@ func _try_interstitial() -> bool:
 		return false
 	var elapsed := (Time.get_ticks_msec() - _last_interstitial_ms) / 1000.0
 	if elapsed < float(rules.get("min_seconds_between", 150)):
+		return false
+	# What actually earns a one-star review is two full-screen ads inside a
+	# minute, not the daily total. App Open already refuses to follow another
+	# full-screen ad; this is the same guard in the other direction, and it also
+	# stops an interstitial landing right after a rewarded ad the player chose
+	# to watch — reroll a reward, pick it, and the map swap would otherwise
+	# present one immediately.
+	var since_fullscreen := (Time.get_ticks_msec() - _last_fullscreen_close_ms) / 1000.0
+	if since_fullscreen < float(rules.get("cooldown_after_fullscreen_seconds", 120)):
 		return false
 	_interstitial_loaded = false
 	_interstitial_open = true

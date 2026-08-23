@@ -15,7 +15,8 @@
 		"min_battles_between": 3,
 		"min_seconds_between": 150,
 		"skip_first_battles": 3,
-		"skip_boss_victory": true
+		"skip_boss_victory": true,
+		"cooldown_after_fullscreen_seconds": 120
 	},
 	"app_open": {
 		"enabled": true,

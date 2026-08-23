@@ -218,6 +218,19 @@ func _ready() -> void:
 	gate._last_interstitial_ms = Time.get_ticks_msec() - 200_000
 	check(gate.maybe_show_interstitial(),
 			"a veteran clears the grace period even right after a restart")
+
+	# Two full-screen ads inside a minute is what earns a one-star review, so
+	# an interstitial must not follow an App Open or a rewarded ad either.
+	gate._interstitial_open = false
+	gate._interstitial_loaded = true
+	gate._battles_since_interstitial = 3
+	gate._last_interstitial_ms = Time.get_ticks_msec() - 200_000
+	gate._last_fullscreen_close_ms = Time.get_ticks_msec()
+	check(not gate.maybe_show_interstitial(),
+			"an interstitial never lands right after another full-screen ad")
+	gate._last_fullscreen_close_ms = Time.get_ticks_msec() - 200_000
+	check(gate.maybe_show_interstitial(),
+			"once the shared cooldown passes the interstitial is allowed again")
 	gate.queue_free()
 
 	# App Open must stay invisible to a normal player: the gates below are the

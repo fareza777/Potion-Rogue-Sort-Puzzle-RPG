@@ -24,7 +24,7 @@ Android plugin remain safe no-ops.
 | Placement | Where | Rules |
 | --- | --- | --- |
 | Banner | Hall, Expedition select, Workshop, History, Codex, Credits | Never in battle, on the map, in events, or over a story beat. Exactly one banner exists per session. |
-| Interstitial | Leaving the reward screen for the map | Capped: skips the first 3 battles, then at most one per 3 battles **and** per 150s. Never after a boss clear. |
+| Interstitial | Leaving the reward screen for the map | Capped: skips the first 3 wins of the install, then at most one per 3 battles **and** per 150s. Never after a boss clear, and never within 2 min of another full-screen ad. |
 | App Open | Returning to the foreground on a menu, the map or kit select | Never on the install session, never on a cold start, never after a glance under 45s, at most one per 15 min, and never within 2 min of another full-screen ad. |
 | Rewarded — Second Wind | Defeat screen | Opt-in. Revive at 50% HP, once per run, offered *before* the run is failed. |
 | Rewarded — Open a realm | Expedition select | Opt-in. Opens only the **next** sealed realm, never further ahead. |
@@ -32,6 +32,11 @@ Android plugin remain safe no-ops.
 | Rewarded — Multiply crystals | Run-end screen | Opt-in, once per run. Only ever adds on top of what was earned. |
 
 All caps live in `data/ads.json` — change them there, not in code.
+
+Full-screen formats share a two-minute cooldown in both directions, so a player
+can never take an App Open and an interstitial back to back, or a rewarded ad
+they chose and then an interstitial they did not. Two ads inside a minute is
+what draws one-star reviews; the daily total matters much less.
 
 ## Realm progression
 
@@ -95,7 +100,7 @@ carries `com.google.android.gms.permission.AD_ID`, which target SDK 33+ needs.
 The AdMob plugin normally merges it in.
 
 ### 3. Version
-`1.7.6` / version code `36`.
+`1.7.7` / version code `37`.
 
 ## Verified on device
 
