@@ -25,17 +25,15 @@ const DEFAULT_CONFIG := {
 		"cooldown_after_fullscreen_seconds": 120},
 	"rewarded": {"second_wind_hp_percent": 0.5, "second_wind_per_run": 1,
 		"double_crystals_multiplier": 2, "rerolls_per_battle": 1},
-	"banner": {"enabled": true, "position": "bottom"},
-	"app_open": {"enabled": true, "skip_first_session": true,
+	"banner": {"enabled": false, "position": "bottom"},
+	"app_open": {"enabled": false, "skip_first_session": true,
 		"min_background_seconds": 45, "min_seconds_between": 900,
 		"cooldown_after_fullscreen_seconds": 120},
 }
 
-## Menus that may carry a banner. Everything else — battle, map, events, story
-## and the tutorial — stays clean, so an ad can never cover the puzzle board.
-const BANNER_SCENES := ["res://scenes/main_menu.tscn", "res://scenes/area_select.tscn",
-	"res://scenes/run_history.tscn", "res://scenes/shop.tscn",
-	"res://scenes/reaction_codex.tscn", "res://scenes/credits.tscn"]
+## Banner ads are retired. Keep the scene policy empty so a stale config or
+## cached native view can never cause a banner to be shown by scene routing.
+const BANNER_SCENES := []
 
 ## Longest a full-screen ad may run before the game stops waiting on it.
 const AD_WATCHDOG_SECONDS := 60.0
@@ -43,16 +41,12 @@ const AD_WATCHDOG_SECONDS := 60.0
 ## Godot's GL thread is not inside onDrawFrame when AdMob takes the activity.
 const FULLSCREEN_SETTLE_SECONDS := 0.15
 const BANNER_RETRY_DELAYS := [5.0, 15.0, 30.0]
-## Viewport pixels reserved under menu content so a bottom banner is not hidden
-## behind the Hall dock or covered by edge-to-edge system chrome.
+## Kept for compatibility with older callers; no layout reserves space now that
+## the native banner format is retired.
 const BANNER_HEIGHT_PX := 100
 
-## Scenes an App Open ad may cover when the player returns. Resuming straight
-## into a battle, an event choice or a story beat is the one moment a
-## full-screen ad genuinely interrupts play, so those are excluded.
-const APP_OPEN_SCENES := BANNER_SCENES + ["res://scenes/map.tscn",
-	"res://scenes/guide.tscn", "res://scenes/settings.tscn",
-	"res://scenes/kit_select.tscn"]
+## App Open ads are retired from the production surface.
+const APP_OPEN_SCENES := []
 
 ## Placement ids the game asks for. Kept as constants so call sites cannot drift.
 const PLACEMENT_SECOND_WIND := "second_wind"
@@ -297,10 +291,16 @@ func maybe_show_interstitial() -> bool:
 ## after the next map scene is live, never from the battle node that is about
 ## to be freed while AdMob tears down the renderer.
 func queue_break_interstitial() -> void:
+	_break_interstitial_pending = false
 	if _boss_just_cleared and bool(_section("interstitial").get("skip_boss_victory", true)):
-		_break_interstitial_pending = false
 		return
-	_break_interstitial_pending = true
+	# Only arm the break when an ad could genuinely run. Arming unconditionally
+	# made every single battle win stop the Android render loop and pause the
+	# tree for a moment on the map, then resume having shown nothing: the caps
+	# hold off the first three wins, but the GL-thread churn ran anyway. That is
+	# the same churn the comments below call out as the SIGSEGV, and it fired
+	# from the very first victory.
+	_break_interstitial_pending = _interstitial_eligible()
 
 
 ## Rewarded ads are always opt-in: only call this from a button the player
@@ -330,7 +330,12 @@ func rewarded_ready() -> bool:
 ## whether it is pressable yet. Without the split, a slow first load hides the
 ## offer permanently, because the screen only tests availability once.
 func rewarded_supported() -> bool:
-	return OS.has_feature("android") and bool(config.get("enabled", true)) 			and not _ads_removed
+	# Deliberately not gated on `_ads_removed`. Remove Ads buys freedom from
+	# ads the player never asked for; rewarded ads are a benefit they opt into,
+	# and Second Wind already stays available to them. Gating this here left
+	# paying players unable to unlock a realm, reroll a reward or multiply
+	# crystals — a worse deal than free players get.
+	return OS.has_feature("android") and bool(config.get("enabled", true))
 
 
 ## True when UMP actually has a consent form for this device's region. Outside
@@ -404,6 +409,11 @@ func _is_break_scene(path: String) -> bool:
 
 func _present_queued_interstitial() -> void:
 	if not is_inside_tree() or get_tree() == null:
+		return
+	# Re-checked here as well: the map may have taken long enough to arrive that
+	# the caps changed their mind, and arming the renderer for nothing is what
+	# crashed the activity.
+	if not _interstitial_eligible():
 		return
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -511,7 +521,10 @@ func _on_consent_form_loaded() -> void:
 
 # --- Interstitial pacing ----------------------------------------------------
 
-func _try_interstitial() -> bool:
+## Every gate an interstitial has to clear, decided without changing anything.
+## Both the queue and the presenter consult this, so they can never disagree —
+## and nothing suspends the renderer for an ad that was never going to run.
+func _interstitial_eligible() -> bool:
 	if _ads_removed or not is_active() or _interstitial_open:
 		return false
 	if not _plugin_has_interstitial():
@@ -535,7 +548,11 @@ func _try_interstitial() -> bool:
 	# to watch — reroll a reward, pick it, and the map swap would otherwise
 	# present one immediately.
 	var since_fullscreen := (Time.get_ticks_msec() - _last_fullscreen_close_ms) / 1000.0
-	if since_fullscreen < float(rules.get("cooldown_after_fullscreen_seconds", 120)):
+	return since_fullscreen >= float(rules.get("cooldown_after_fullscreen_seconds", 120))
+
+
+func _try_interstitial() -> bool:
+	if not _interstitial_eligible():
 		return false
 	_interstitial_loaded = false
 	_interstitial_open = true

@@ -46,7 +46,7 @@ func configure(compact := false) -> RemoveAdsCard:
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	box.add_child(_title)
 	_description = UiKit.label(
-			"Play the whole campaign with no banners and no between-battle ads. Optional rewarded ads always stay your choice.",
+			"Play the whole campaign with no between-battle ads. Optional rewarded ads always stay your choice.",
 			13 if compact else 14, UiKit.COLOR_TEXT)
 	_description.name = "RemoveAdsDescription"
 	_description.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -68,7 +68,7 @@ func configure(compact := false) -> RemoveAdsCard:
 	var buy_ornament := _buy_button.get_node_or_null("CtaOrnament") as TextureRect
 	if buy_ornament != null:
 		buy_ornament.modulate = Color(1.0, 0.92, 0.70, 0.24)
-	_buy_button.tooltip_text = "Switch off banners and between-battle ads permanently through Google Play."
+	_buy_button.tooltip_text = "Switch off between-battle ads permanently through Google Play."
 	_buy_button.pressed.connect(_buy_remove_ads)
 	box.add_child(_buy_button)
 	var actions := HBoxContainer.new()

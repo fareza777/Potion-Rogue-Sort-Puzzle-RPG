@@ -23,9 +23,7 @@ Android plugin remain safe no-ops.
 
 | Placement | Where | Rules |
 | --- | --- | --- |
-| Banner | Hall, Expedition select, Workshop, History, Codex, Credits | Never in battle, on the map, in events, or over a story beat. Exactly one banner exists per session. |
 | Interstitial | Leaving the reward screen for the map | Capped: skips the first 3 wins of the install, then at most one per 3 battles **and** per 150s. Never after a boss clear, and never within 2 min of another full-screen ad. |
-| App Open | Returning to the foreground on a menu, the map or kit select | Never on the install session, never on a cold start, never after a glance under 45s, at most one per 15 min, and never within 2 min of another full-screen ad. |
 | Rewarded — Second Wind | Defeat screen | Opt-in. Revive at 50% HP, once per run, offered *before* the run is failed. |
 | Rewarded — Open a realm | Expedition select | Opt-in. Opens only the **next** sealed realm, never further ahead. |
 | Rewarded — Reroll reward | Upgrade/relic choice | Opt-in. One reshuffle per battle; the roll is a serialized permutation so the new spread is genuinely different. |
@@ -33,10 +31,10 @@ Android plugin remain safe no-ops.
 
 All caps live in `data/ads.json` — change them there, not in code.
 
-Full-screen formats share a two-minute cooldown in both directions, so a player
-can never take an App Open and an interstitial back to back, or a rewarded ad
-they chose and then an interstitial they did not. Two ads inside a minute is
-what draws one-star reviews; the daily total matters much less.
+Full-screen formats share a two-minute cooldown in both directions, so a
+rewarded ad a player chose can never be followed immediately by an
+interstitial they did not. Two ads inside a minute is what draws one-star
+reviews; the daily total matters much less.
 
 ## Realm progression
 
@@ -51,18 +49,18 @@ version 13: they keep every realm they paid for **and** get Remove Ads for free.
 
 ### 1. AdMob console
 
-The Potion Rogue app and its three units are configured as follows:
+The Potion Rogue app and its two remaining production units are configured as
+follows:
 
 | Item | Value |
 | --- | --- |
 | App ID | `ca-app-pub-6279186647593327~2300822678` |
-| Banner | `ca-app-pub-6279186647593327/2085929206` |
 | Interstitial | `ca-app-pub-6279186647593327/5833602524` |
 | Rewarded | `ca-app-pub-6279186647593327/6763540816` |
-| App Open | `ca-app-pub-6279186647593327/1834184740` |
 
-All four units are live and `test_mode` is `false`. The production values are
-in `data/ads.json`. Local/debug runs are forced to
+Banner and App Open are retired and their release unit IDs are intentionally
+empty. The interstitial and rewarded units remain live while `test_mode` is
+`false`. The production values are in `data/ads.json`. Local/debug runs are forced to
 Google's test units by `src/autoload/admob_runtime.gd`; never click live ads
 while testing.
 
@@ -100,21 +98,19 @@ carries `com.google.android.gms.permission.AD_ID`, which target SDK 33+ needs.
 The AdMob plugin normally merges it in.
 
 ### 3. Version
-`1.7.7` / version code `37`.
+`1.7.8` / version code `38`.
 
 ## Verified on device
 
-A debug build (Google test units, Redmi Note 11 / Android 13) confirmed:
-banner loads exactly once per session and never reaches battle, the map, a
-story beat or an event; App Open is skipped on a cold start and presents on a
-genuine resume; rewarded ads present and grant. Interstitials were not observed
-because the lifetime grace period had not been cleared yet.
+A debug build (Google test units, Redmi Note 11 / Android 13) confirmed the
+remaining rewarded and interstitial paths. Banner and App Open are disabled in
+the production policy, and menu layout uses the normal bottom content bound.
 
 ## Verifying without ads
 
-`tests/ad_service_test.tscn` asserts the no-plugin path stays inert and that the
-frequency caps and banner scene list stay sane. Run it with the rest of the
-suite:
+`tests/ad_service_test.tscn` asserts the no-plugin path stays inert, the
+retired formats stay disabled, and the frequency caps remain sane. Run it with
+the rest of the suite:
 
 ```bash
 godot --headless --path . tests/ad_service_test.tscn

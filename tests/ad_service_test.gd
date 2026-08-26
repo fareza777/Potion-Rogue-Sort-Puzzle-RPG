@@ -22,7 +22,7 @@ class FakeAdmob:
 	func hide_banner_ad() -> void:
 		banner_hide_calls += 1
 
-	func remove_banner_ad(ad_id: String) -> void:
+	func remove_banner_ad(ad_id: String = "") -> void:
 		banner_remove_calls.append(ad_id)
 
 	func is_interstitial_ad_loaded() -> bool:
@@ -63,10 +63,15 @@ func _ready() -> void:
 	check(config.get("android_app_id", "") == "ca-app-pub-6279186647593327~2300822678",
 			"release ad configuration uses the Potion Rogue AdMob app id")
 	var unit_ids: Dictionary = config.get("unit_ids", {})
-	check(unit_ids.get("banner", "") == "ca-app-pub-6279186647593327/2085929206"
+	check(unit_ids.get("banner", "") == ""
+			and unit_ids.get("app_open", "") == ""
 			and unit_ids.get("interstitial", "") == "ca-app-pub-6279186647593327/5833602524"
 			and unit_ids.get("rewarded", "") == "ca-app-pub-6279186647593327/6763540816",
-			"release ad configuration uses all three Potion Rogue ad units")
+			"release ad configuration keeps only the interstitial and rewarded units")
+	check(not bool(config.get("banner", {}).get("enabled", true)),
+			"release ad configuration disables banner ads")
+	check(not bool(config.get("app_open", {}).get("enabled", true)),
+			"release ad configuration disables App Open ads")
 	# The vendor Admob._init() builds every AdCache. GDScript does not chain
 	# _init() implicitly, so an override that forgets super() leaves them null
 	# and every ad callback dies before it can emit — ads silently never load.
@@ -103,9 +108,9 @@ func _ready() -> void:
 			"banner layout can ask whether to reserve bottom space")
 	check(not AdService.should_reserve_banner() and AdService.banner_reserve_px() == 0,
 			"desktop/headless never reserves a native banner strip")
-	check(AdService.is_banner_scene("res://scenes/main_menu.tscn")
-			and AdService.is_banner_scene("main_menu.tscn"),
-			"banner scenes match by path or filename")
+	check(not AdService.is_banner_scene("res://scenes/main_menu.tscn")
+			and not AdService.is_banner_scene("main_menu.tscn"),
+			"retired banner scenes never reserve or show a banner")
 	check(not AdService.is_banner_scene("res://scenes/battle.tscn"),
 			"battle is never treated as a banner scene")
 	for scene in AdService.BANNER_SCENES:
@@ -119,6 +124,7 @@ func _ready() -> void:
 	var retry_service = load("res://src/autoload/ad_service.gd").new()
 	add_child(retry_service)
 	await get_tree().process_frame
+	retry_service.config["banner"]["enabled"] = true
 	var fake_admob := FakeAdmob.new()
 	retry_service.add_child(fake_admob)
 	retry_service._plugin = fake_admob
@@ -191,6 +197,33 @@ func _ready() -> void:
 	gate.queue_break_interstitial()
 	check(presenter.interstitial_show_calls == 0,
 			"a queued interstitial does not show from the dying battle scene")
+	check(gate._break_interstitial_pending,
+			"an eligible break is armed for the map")
+
+	# Winning while the caps still hold must not arm anything. Arming anyway
+	# suspended the Android render loop and paused the tree for an ad that was
+	# never going to run, from the very first victory onward.
+	var blocked = load("res://src/autoload/ad_service.gd").new()
+	add_child(blocked)
+	await get_tree().process_frame
+	var idle := FakeAdmob.new()
+	blocked._plugin = idle
+	blocked._initialized = true
+	blocked._ads_removed = false
+	blocked._interstitial_loaded = true
+	SaveSystem.data["stats"] = {"battles_won": 1}
+	blocked._battles_since_interstitial = 1
+	blocked.notify_battle_finished(false)
+	blocked.queue_break_interstitial()
+	check(not blocked._break_interstitial_pending,
+			"a win inside the grace period never arms the full-screen path")
+	blocked._on_scene_changed("res://scenes/map.tscn")
+	for _frame in 4:
+		await get_tree().process_frame
+	check(idle.interstitial_show_calls == 0 and not blocked._render_suspended,
+			"the renderer is never suspended when no interstitial can run")
+	blocked.queue_free()
+	SaveSystem.data["stats"] = {"battles_won": 9}
 	gate._on_scene_changed("res://scenes/map.tscn")
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -233,8 +266,9 @@ func _ready() -> void:
 			"once the shared cooldown passes the interstitial is allowed again")
 	gate.queue_free()
 
-	# App Open must stay invisible to a normal player: the gates below are the
-	# whole reason the format is acceptable at all.
+	# App Open is retired from the release surface. Keep this regression guard
+	# close to the service boundary so a future config change cannot re-enable it
+	# accidentally.
 	var opener = load("res://src/autoload/ad_service.gd").new()
 	add_child(opener)
 	await get_tree().process_frame
@@ -243,36 +277,11 @@ func _ready() -> void:
 	opener._ads_removed = false
 	opener._app_open_loaded = true
 	opener._current_scene_path = "res://scenes/main_menu.tscn"
-	# Headless starts near tick zero, so "120s ago" would go negative and trip
-	# the never-backgrounded guard. Drive the window from config instead.
+	opener.config["app_open"]["enabled"] = false
 	opener.config["app_open"]["min_background_seconds"] = 0
 	opener._backgrounded_at_ms = 1
 	SaveSystem.data["stats"] = {"runs_started": 3}
-	check(opener._app_open_due(), "a returning player on the Hall may see App Open")
-	opener._current_scene_path = "res://scenes/battle.tscn"
-	check(not opener._app_open_due(), "App Open never covers a battle")
-	opener._current_scene_path = "res://scenes/event.tscn"
-	check(not opener._app_open_due(), "App Open never covers an event choice")
-	opener._current_scene_path = "res://scenes/main_menu.tscn"
-	opener.config["app_open"]["min_background_seconds"] = 45
-	opener._backgrounded_at_ms = Time.get_ticks_msec()
-	check(not opener._app_open_due(),
-			"a glance at a notification does not earn an App Open")
-	opener.config["app_open"]["min_background_seconds"] = 0
-	opener._backgrounded_at_ms = 1
-	SaveSystem.data["stats"] = {"runs_started": 0}
-	check(not opener._app_open_due(),
-			"the install session never sees an App Open")
-	SaveSystem.data["stats"] = {"runs_started": 3}
-	opener._last_fullscreen_close_ms = Time.get_ticks_msec()
-	check(not opener._app_open_due(),
-			"returning from another full-screen ad never chains into App Open")
-	opener._last_fullscreen_close_ms = -1_000_000
-	opener._last_app_open_ms = Time.get_ticks_msec()
-	check(not opener._app_open_due(), "App Open respects its own spacing")
-	opener._last_app_open_ms = -1_000_000
-	opener._ads_removed = true
-	check(not opener._app_open_due(), "Remove Ads owners never see App Open")
+	check(not opener._app_open_due(), "App Open stays disabled even when a cached ad exists")
 	opener.queue_free()
 	SaveSystem.data = SaveSystem.DEFAULT_DATA.duplicate(true)
 
@@ -280,7 +289,17 @@ func _ready() -> void:
 	SaveSystem.set_ads_removed(true)
 	BillingService.refresh_entitlement_from_save()
 	check(AdService.ads_removed(),
-			"buying Remove Ads switches the ad surface off everywhere")
+			"buying Remove Ads switches the forced ad surface off")
+	# Remove Ads must not strip the opt-in offers: gating them here left paying
+	# players unable to unlock a realm, reroll a reward or multiply crystals.
+	var paid = load("res://src/autoload/ad_service.gd").new()
+	add_child(paid)
+	await get_tree().process_frame
+	paid._ads_removed = true
+	paid.config["enabled"] = true
+	check(paid.rewarded_supported() == OS.has_feature("android"),
+			"Remove Ads owners keep every opt-in rewarded offer")
+	paid.queue_free()
 
 	var battle_source := FileAccess.get_file_as_string("res://src/ui/battle_screen.gd")
 	check(battle_source.contains("_second_wind_available"),
@@ -303,6 +322,10 @@ func _ready() -> void:
 	check(not log_source.contains("PopupPanel.new()")
 			and not log_source.contains("extends PopupPanel"),
 			"battle history never uses a native PopupPanel window")
+	var ui_kit_source := FileAccess.get_file_as_string("res://src/ui/ui_kit.gd")
+	check(ui_kit_source.contains("static func banner_bottom_pad(base := 24) -> int:\n\t# Banner ads were retired")
+			and ui_kit_source.contains("\treturn base"),
+			"menu layout no longer reserves space for a banner")
 
 	SaveSystem.data = original
 	BillingService.refresh_entitlement_from_save()

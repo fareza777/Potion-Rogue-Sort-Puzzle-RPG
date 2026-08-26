@@ -35,8 +35,8 @@ func _init() -> void:
 	android_real_banner_id = str(unit_ids.get("banner", ""))
 	android_real_interstitial_id = str(unit_ids.get("interstitial", ""))
 	android_real_rewarded_id = str(unit_ids.get("rewarded", ""))
-	# Left empty until an App Open unit exists in AdMob; AdService then simply
-	# never requests one in release, while debug still uses Google's test unit.
+	# App Open is retired from the production surface; the empty release id
+	# prevents the runtime from requesting the format.
 	android_real_app_open_id = str(unit_ids.get("app_open", ""))
 
 	banner_position = LoadAdRequest.AdPosition.BOTTOM
@@ -47,8 +47,8 @@ func _init() -> void:
 	remove_banner_ads_after_scene = false
 	remove_interstitial_ads_after_scene = false
 	remove_rewarded_ads_after_scene = false
-	# AdService decides when an App Open ad is appropriate; the plugin must not
-	# fire one by itself on every resume, including resumes from its own ads.
+	# AdService owns this boundary; the production policy currently retires
+	# App Open and therefore never requests or presents it.
 	# The vendor exposes no remove_app_open_* switches, so AdService reloads the
 	# next App Open itself after each dismissal.
 	auto_show_on_resume = false
