@@ -8,6 +8,14 @@ func _ready() -> void:
 	var settings: Dictionary = SaveSystem.DEFAULT_DATA.settings
 	check(settings.has("text_scale") and settings.has("high_contrast"),
 			"text scale and high contrast persist in save data")
+	# Disabled CTAs carry live status text such as "PREPARING AD…", so they
+	# have to stay readable rather than fade into the plate behind them.
+	var cta := UiKit.cta_bar("PREPARING AD", UiKit.COLOR_GOLD, 52)
+	var disabled_text: Color = cta.get_theme_color("font_disabled_color")
+	var disabled_plate := Color(0.10, 0.07, 0.14)
+	check(UiThemeTokens.contrast_ratio(disabled_text, disabled_plate) >= 4.5,
+			"disabled CTA label stays readable on its own plate")
+	cta.free()
 	var button := UiKit.button("TEST", Vector2(20, 20))
 	check(button.custom_minimum_size.y >= 56 and button.focus_mode == Control.FOCUS_ALL,
 			"primary buttons enforce touch and keyboard minimums")

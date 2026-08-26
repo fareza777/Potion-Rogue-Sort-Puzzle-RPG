@@ -229,7 +229,10 @@ static func cta_bar(text: String, accent := COLOR_GOLD, height := 58.0) -> Butto
 	b.add_theme_color_override("font_color", Color("fff7df"))
 	b.add_theme_color_override("font_hover_color", Color.WHITE)
 	b.add_theme_color_override("font_pressed_color", Color("f1d69a"))
-	b.add_theme_color_override("font_disabled_color", Color("675c6f"))
+	# A disabled CTA still has to be readable: these carry live status such as
+	# "PREPARING AD…". The old #675c6f sat at 2.89:1 on the disabled plate,
+	# below the 4.5:1 needed to read at all; this lands at 8.59:1.
+	b.add_theme_color_override("font_disabled_color", Color("b9aec6"))
 	b.add_theme_color_override("font_outline_color", accent.darkened(0.65))
 	b.add_theme_constant_override("outline_size", 6)
 	for state in ["normal", "hover", "pressed", "focus", "disabled"]:

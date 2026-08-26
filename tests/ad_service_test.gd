@@ -322,9 +322,10 @@ func _ready() -> void:
 	check(not log_source.contains("PopupPanel.new()")
 			and not log_source.contains("extends PopupPanel"),
 			"battle history never uses a native PopupPanel window")
-	var ui_kit_source := FileAccess.get_file_as_string("res://src/ui/ui_kit.gd")
-	check(ui_kit_source.contains("static func banner_bottom_pad(base := 24) -> int:\n\t# Banner ads were retired")
-			and ui_kit_source.contains("\treturn base"),
+	# Asserted by behaviour, not by matching source text: the previous version
+	# compared a literal "\n\t" against the file and broke the moment the line
+	# endings changed, while the code it guarded was still correct.
+	check(UiKit.banner_bottom_pad(24) == 24 and UiKit.banner_bottom_pad(40) == 40,
 			"menu layout no longer reserves space for a banner")
 
 	SaveSystem.data = original
