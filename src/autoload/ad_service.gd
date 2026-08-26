@@ -41,6 +41,10 @@ const AD_WATCHDOG_SECONDS := 60.0
 ## Godot's GL thread is not inside onDrawFrame when AdMob takes the activity.
 const FULLSCREEN_SETTLE_SECONDS := 0.15
 const BANNER_RETRY_DELAYS := [5.0, 15.0, 30.0]
+## Full-screen formats need the same courtesy the banner already had. Without a
+## ladder, one failed fill at startup ended the format for the whole session:
+## the rewarded offer sat on "PREPARING AD…" until the app was backgrounded.
+const FULLSCREEN_RETRY_DELAYS := [5.0, 15.0, 45.0, 120.0]
 ## Kept for compatibility with older callers; no layout reserves space now that
 ## the native banner format is retired.
 const BANNER_HEIGHT_PX := 100
@@ -93,6 +97,8 @@ var _backgrounded_at_ms := 0
 ## Every banner ad id the plugin has handed back, so stale AdViews can be
 ## destroyed instead of lingering behind the newest one.
 var _banner_ad_ids: Array[String] = []
+var _retry_timers: Dictionary = {}
+var _retry_attempts: Dictionary = {}
 var _break_interstitial_pending := false
 var _render_suspended := false
 
@@ -731,6 +737,34 @@ func _sync_banner_for_current_scene() -> void:
 		hide_banner()
 
 
+## Bounded, backing-off retry shared by the full-screen formats. Rewarded ads
+## are never gated on `_ads_removed`: a Remove Ads owner still opts into them.
+func _schedule_ad_retry(kind: String, action: Callable) -> void:
+	var attempt := int(_retry_attempts.get(kind, 0))
+	if not is_active() or attempt >= FULLSCREEN_RETRY_DELAYS.size():
+		return
+	if kind == "interstitial" and _ads_removed:
+		return
+	var timer: Timer = _retry_timers.get(kind)
+	if timer == null:
+		timer = Timer.new()
+		timer.name = "%sRetryTimer" % kind
+		timer.one_shot = true
+		add_child(timer)
+		_retry_timers[kind] = timer
+	if not timer.timeout.is_connected(action):
+		timer.timeout.connect(action)
+	timer.start(float(FULLSCREEN_RETRY_DELAYS[attempt]))
+	_retry_attempts[kind] = attempt + 1
+
+
+func _clear_ad_retry(kind: String) -> void:
+	_retry_attempts[kind] = 0
+	var timer: Timer = _retry_timers.get(kind)
+	if timer != null:
+		timer.stop()
+
+
 func _schedule_banner_retry() -> void:
 	if not _banner_wanted or _ads_removed or not is_active() \
 			or _banner_retry_attempt >= BANNER_RETRY_DELAYS.size():
@@ -766,10 +800,12 @@ func _on_app_open_closed(_a: Variant = null, _b: Variant = null) -> void:
 
 func _on_interstitial_loaded(_a: Variant = null, _b: Variant = null) -> void:
 	_interstitial_loaded = true
+	_clear_ad_retry("interstitial")
 
 
 func _on_interstitial_failed(_a: Variant = null, _b: Variant = null) -> void:
 	_interstitial_loaded = false
+	_schedule_ad_retry("interstitial", _request_interstitial)
 
 
 func _on_interstitial_closed(_a: Variant = null, _b: Variant = null) -> void:
@@ -788,6 +824,7 @@ func _close_interstitial() -> void:
 
 func _on_rewarded_loaded(_a: Variant = null, _b: Variant = null) -> void:
 	_rewarded_loaded = true
+	_clear_ad_retry("rewarded")
 	rewarded_availability_changed.emit(rewarded_ready())
 
 
@@ -795,6 +832,7 @@ func _on_rewarded_failed(_a: Variant = null, _b: Variant = null) -> void:
 	_rewarded_loaded = false
 	rewarded_availability_changed.emit(false)
 	_finish_rewarded()
+	_schedule_ad_retry("rewarded", _request_rewarded)
 
 
 func _on_rewarded_earned(_a: Variant = null, _b: Variant = null) -> void:

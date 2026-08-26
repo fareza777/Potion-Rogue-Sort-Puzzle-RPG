@@ -301,6 +301,34 @@ func _ready() -> void:
 			"Remove Ads owners keep every opt-in rewarded offer")
 	paid.queue_free()
 
+	# A failed fill must not end the format for the session. Only the banner had
+	# a retry ladder, so one bad request left the rewarded offer stuck on
+	# "PREPARING AD…" until the player backgrounded the app.
+	var filler = load("res://src/autoload/ad_service.gd").new()
+	add_child(filler)
+	await get_tree().process_frame
+	var flaky := FakeAdmob.new()
+	filler._plugin = flaky
+	filler._initialized = true
+	filler._ads_removed = false
+	filler._on_rewarded_failed()
+	var rewarded_timer := filler.find_child("rewardedRetryTimer", true, false) as Timer
+	check(rewarded_timer != null and not rewarded_timer.is_stopped(),
+			"a failed rewarded fill schedules a retry")
+	filler._on_interstitial_failed()
+	var inter_timer := filler.find_child("interstitialRetryTimer", true, false) as Timer
+	check(inter_timer != null and not inter_timer.is_stopped(),
+			"a failed interstitial fill schedules a retry")
+	filler._on_rewarded_loaded()
+	check(rewarded_timer.is_stopped() and int(filler._retry_attempts["rewarded"]) == 0,
+			"a successful fill clears the rewarded retry ladder")
+	# The ladder is bounded: it must give up rather than poll AdMob forever.
+	for _attempt in AdService.FULLSCREEN_RETRY_DELAYS.size() + 3:
+		filler._on_rewarded_failed()
+	check(int(filler._retry_attempts["rewarded"]) <= AdService.FULLSCREEN_RETRY_DELAYS.size(),
+			"the rewarded retry ladder is bounded")
+	filler.queue_free()
+
 	var battle_source := FileAccess.get_file_as_string("res://src/ui/battle_screen.gd")
 	check(battle_source.contains("_second_wind_available"),
 			"defeat offers the rewarded revive before failing the run")
@@ -318,6 +346,9 @@ func _ready() -> void:
 			"battle never asks for a banner")
 	check(battle_source.contains("_restore_battle_clock"),
 			"battle restores time scale before leaving the fight")
+	check(battle_source.contains("func _start_next_wave() -> bool:")
+			and battle_source.contains("if not GameState.enemies.has(next_enemy_id):"),
+			"a wave that cannot be staged ends the encounter instead of stalling")
 	var log_source := FileAccess.get_file_as_string("res://src/ui/battle/battle_log.gd")
 	check(not log_source.contains("PopupPanel.new()")
 			and not log_source.contains("extends PopupPanel"),

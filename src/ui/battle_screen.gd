@@ -1166,25 +1166,41 @@ func _on_tube_lock_requested(moves: int) -> void:
 
 # --- Run flow ----------------------------------------------------------------
 
+## Brings in the next wave. Returns false when the relay cannot actually be
+## staged, so the caller falls through to the ordinary victory flow instead of
+## re-enabling the board against an enemy that never arrived — that left the
+## player sorting potions forever with nothing to fight and no way out.
+func _start_next_wave() -> bool:
+	var roster: Array = RunState.ensure_current_encounter_profile().get(
+			"wave_enemy_ids", [])
+	var roster_index := encounter_format.wave - 1
+	var next_enemy_id := str(roster[roster_index]) 			if roster_index >= 0 and roster_index < roster.size() else battle.enemy_id
+	if not GameState.enemies.has(next_enemy_id):
+		push_warning("Wave %d has no usable enemy (%s); ending the encounter."
+				% [encounter_format.wave, next_enemy_id])
+		return false
+	board.enabled = false
+	battle.setup_next_wave(encounter_format.wave, next_enemy_id)
+	if battle.enemy_hp <= 0 or battle.battle_over:
+		push_warning("Wave %d spawned with no fight left; ending the encounter."
+				% encounter_format.wave)
+		return false
+	_configure_wave_enemy(next_enemy_id, encounter_format.wave)
+	_set_message("WAVE CLEARED  •  %s ENTERS" % battle.enemy_name.to_upper(), "enemy")
+	enemy_display.configure_enemy(battle.enemy_id,
+			battle.enemy_shape, battle.enemy_color)
+	enemy_display.play_intro()
+	board.enabled = true
+	_refresh()
+	_checkpoint_encounter()
+	return true
+
+
 func _on_battle_won() -> void:
 	_restore_battle_clock()
 	if tutorial_director != null and tutorial_director.active:
 		tutorial_director.finish()
-	if encounter_format.on_enemy_defeated() == "next_wave":
-		board.enabled = false
-		var roster: Array = RunState.ensure_current_encounter_profile().get(
-				"wave_enemy_ids", [])
-		var roster_index := encounter_format.wave - 1
-		var next_enemy_id := str(roster[roster_index]) \
-				if roster_index >= 0 and roster_index < roster.size() else battle.enemy_id
-		battle.setup_next_wave(encounter_format.wave, next_enemy_id)
-		_configure_wave_enemy(next_enemy_id, encounter_format.wave)
-		_set_message("WAVE CLEARED  •  %s ENTERS" % battle.enemy_name.to_upper())
-		enemy_display.configure_enemy(battle.enemy_id, battle.enemy_shape, battle.enemy_color)
-		enemy_display.play_intro()
-		board.enabled = true
-		_refresh()
-		_checkpoint_encounter()
+	if encounter_format.on_enemy_defeated() == "next_wave" and _start_next_wave():
 		return
 	AudioManager.set_scene_state("victory")
 	objective_controller.on_enemy_defeated()
