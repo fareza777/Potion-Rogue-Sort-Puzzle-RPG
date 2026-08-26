@@ -75,7 +75,7 @@ func pour(from: Vector2, to: Vector2, color: Color, count: int) -> void:
 		var t := float(i) / 16.0
 		arc.add_point(_quadratic(from, control, to, t))
 	_add_effect(arc)
-	var tween := create_tween().set_parallel(true)
+	var tween := arc.create_tween().set_parallel(true)
 	tween.tween_property(arc, "modulate:a", 0.0, 0.24)
 	tween.tween_property(arc, "width", 1.0, 0.24)
 	tween.chain().tween_callback(arc.queue_free)
@@ -113,15 +113,23 @@ func projectile(from: Vector2, to: Vector2, color := Color("ff9b45")) -> void:
 	trail.add_point(from)
 	trail.add_point(from)
 	_add_effect(trail)
-	var tween := create_tween().set_parallel(true)
+	# Bound to the orb, so the pool retiring it also kills this tween instead of
+	# leaving one that still animates a freed node.
+	var tween := orb.create_tween().set_parallel(true)
 	tween.tween_property(orb, "position", to, 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	tween.tween_property(orb, "scale", Vector2(1.25, 1.25), 0.20)
 	tween.tween_method(func(p: Vector2) -> void:
-		trail.set_point_position(1, p), from, to, 0.28)
+		# The trail is pooled separately and can be retired mid-flight; without
+		# this guard its capture arrives as null and the frame step faults.
+		if is_instance_valid(trail):
+			trail.set_point_position(1, p), from, to, 0.28)
 	tween.chain().tween_callback(func() -> void:
 		_burst(to, color, 6 if reduced_effects else 18, 56.0)
-		orb.queue_free()
-		var fade := create_tween()
+		if is_instance_valid(orb):
+			orb.queue_free()
+		if not is_instance_valid(trail):
+			return
+		var fade := trail.create_tween()
 		fade.tween_property(trail, "modulate:a", 0.0, 0.16)
 		fade.tween_callback(trail.queue_free))
 
@@ -150,7 +158,7 @@ func enemy_strike(from: Vector2, to: Vector2) -> void:
 	warning.add_point(from)
 	warning.add_point(to)
 	_add_effect(warning)
-	var flash := create_tween()
+	var flash := warning.create_tween()
 	flash.tween_property(warning, "modulate:a", 0.15, 0.07)
 	flash.tween_property(warning, "modulate:a", 1.0, 0.07)
 	flash.tween_property(warning, "width", 18.0, 0.08)
@@ -214,7 +222,7 @@ func _burst(at: Vector2, color: Color, amount: int, spread: float,
 				else randf_range(0.0, TAU)
 		var distance := randf_range(spread * 0.45, spread)
 		var destination := at + Vector2.from_angle(-angle) * distance
-		var tween := create_tween().set_parallel(true)
+		var tween := particle.create_tween().set_parallel(true)
 		tween.tween_property(particle, "position", destination, randf_range(0.22, 0.42)) \
 				.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		tween.tween_property(particle, "modulate:a", 0.0, 0.32).set_delay(0.06)
@@ -231,7 +239,7 @@ func _ring(at: Vector2, color: Color, radius: float) -> void:
 	for point in _circle_points(radius, 32):
 		ring.add_point(at + point * 0.55)
 	_add_effect(ring)
-	var tween := create_tween().set_parallel(true)
+	var tween := ring.create_tween().set_parallel(true)
 	tween.tween_property(ring, "scale", Vector2(1.8, 1.8), 0.34) \
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.tween_property(ring, "modulate:a", 0.0, 0.34)

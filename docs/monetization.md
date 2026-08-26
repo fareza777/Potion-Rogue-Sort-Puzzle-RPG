@@ -98,7 +98,7 @@ carries `com.google.android.gms.permission.AD_ID`, which target SDK 33+ needs.
 The AdMob plugin normally merges it in.
 
 ### 3. Version
-`1.7.9` / version code `39`.
+`1.7.10` / version code `40`.
 
 ## Verified on device
 
