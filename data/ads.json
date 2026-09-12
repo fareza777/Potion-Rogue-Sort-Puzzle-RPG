@@ -1,11 +1,11 @@
 {
-	"_comment": "Production AdMob configuration for Potion Rogue. Debug Android runs use Google's test units through the Admob runtime node; release exports use these real units. Banner and App Open formats are retired; leave their unit ids empty so release builds cannot request them.",
+	"_comment": "Production AdMob configuration for Potion Rogue. Debug Android runs use Google's test units through the Admob runtime node; release exports use these real units. App Open stays retired; leave its unit id empty so release builds cannot request it.",
 	"enabled": true,
 	"test_mode": false,
 	"android_app_id": "ca-app-pub-6279186647593327~2300822678",
 	"app_ads_txt_url": "https://fareza777.github.io/app-ads.txt",
 	"unit_ids": {
-		"banner": "",
+		"banner": "ca-app-pub-6279186647593327/2085929206",
 		"interstitial": "ca-app-pub-6279186647593327/5833602524",
 		"rewarded": "ca-app-pub-6279186647593327/6763540816",
 		"app_open": ""
@@ -32,7 +32,7 @@
 		"rerolls_per_battle": 1
 	},
 	"banner": {
-		"enabled": false,
+		"enabled": true,
 		"position": "bottom"
 	}
 }

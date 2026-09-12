@@ -47,22 +47,54 @@ static func layout_profile(viewport_size: Vector2) -> Dictionary:
 	}
 
 
+## Edge insets of the Android system chrome, converted from the screen pixels
+## Godot reports into the viewport units every layout here is written in. The
+## window is edge-to-edge, so the status bar and the navigation bar draw over
+## the game and content has to stay clear of both. Immersive builds hide the
+## bars, which reads as zero here — and that zero is exactly what let the
+## banner ad sit on top of the navigation buttons.
+static func system_insets() -> Dictionary:
+	var none := {"left": 0, "top": 0, "right": 0, "bottom": 0}
+	if not OS.has_feature("android"):
+		return none
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null or tree.root == null:
+		return none
+	var window_size := Vector2(DisplayServer.window_get_size())
+	var viewport_size := tree.root.get_visible_rect().size
+	if window_size.x < 1.0 or window_size.y < 1.0 or viewport_size.y < 1.0:
+		return none
+	var scale := window_size.y / viewport_size.y
+	var safe := DisplayServer.get_display_safe_area()
+	return {
+		"left": maxf(safe.position.x, 0.0) / scale,
+		"top": maxf(safe.position.y, 0.0) / scale,
+		"right": maxf(window_size.x - safe.end.x, 0.0) / scale,
+		"bottom": maxf(window_size.y - safe.end.y, 0.0) / scale,
+	}
+
+
 static func safe_margin(parent: Control, horizontal := 24,
 		top := 28, bottom := 24) -> MarginContainer:
+	var insets := system_insets()
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", horizontal)
-	margin.add_theme_constant_override("margin_right", horizontal)
-	margin.add_theme_constant_override("margin_top", top)
-	margin.add_theme_constant_override("margin_bottom", bottom)
+	margin.add_theme_constant_override("margin_left", horizontal + int(insets["left"]))
+	margin.add_theme_constant_override("margin_right", horizontal + int(insets["right"]))
+	margin.add_theme_constant_override("margin_top", top + int(insets["top"]))
+	margin.add_theme_constant_override("margin_bottom", bottom + int(insets["bottom"]))
 	parent.add_child(margin)
 	return margin
 
 
 static func banner_bottom_pad(base := 24) -> int:
-	# Banner ads were retired. Keep this helper so existing menu screens retain
-	# their API, but restore the normal bottom content bound everywhere.
-	return base
+	var extra := 0
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree != null and tree.root != null:
+		var ads := tree.root.get_node_or_null("AdService")
+		if ads != null and ads.has_method("banner_reserve_px"):
+			extra = int(ads.call("banner_reserve_px"))
+	return base + extra
 
 
 static func title_font() -> Font:

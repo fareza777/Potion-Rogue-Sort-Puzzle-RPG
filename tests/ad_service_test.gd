@@ -63,13 +63,13 @@ func _ready() -> void:
 	check(config.get("android_app_id", "") == "ca-app-pub-6279186647593327~2300822678",
 			"release ad configuration uses the Potion Rogue AdMob app id")
 	var unit_ids: Dictionary = config.get("unit_ids", {})
-	check(unit_ids.get("banner", "") == ""
+	check(unit_ids.get("banner", "") == "ca-app-pub-6279186647593327/2085929206"
 			and unit_ids.get("app_open", "") == ""
 			and unit_ids.get("interstitial", "") == "ca-app-pub-6279186647593327/5833602524"
 			and unit_ids.get("rewarded", "") == "ca-app-pub-6279186647593327/6763540816",
-			"release ad configuration keeps only the interstitial and rewarded units")
-	check(not bool(config.get("banner", {}).get("enabled", true)),
-			"release ad configuration disables banner ads")
+			"release ad configuration uses banner, interstitial and rewarded units")
+	check(bool(config.get("banner", {}).get("enabled", false)),
+			"release ad configuration enables banner ads on menus")
 	check(not bool(config.get("app_open", {}).get("enabled", true)),
 			"release ad configuration disables App Open ads")
 	# The vendor Admob._init() builds every AdCache. GDScript does not chain
@@ -108,9 +108,9 @@ func _ready() -> void:
 			"banner layout can ask whether to reserve bottom space")
 	check(not AdService.should_reserve_banner() and AdService.banner_reserve_px() == 0,
 			"desktop/headless never reserves a native banner strip")
-	check(not AdService.is_banner_scene("res://scenes/main_menu.tscn")
-			and not AdService.is_banner_scene("main_menu.tscn"),
-			"retired banner scenes never reserve or show a banner")
+	check(AdService.is_banner_scene("res://scenes/main_menu.tscn")
+			and AdService.is_banner_scene("main_menu.tscn"),
+			"banner scenes match by path or filename")
 	check(not AdService.is_banner_scene("res://scenes/battle.tscn"),
 			"battle is never treated as a banner scene")
 	for scene in AdService.BANNER_SCENES:
@@ -357,7 +357,7 @@ func _ready() -> void:
 	# compared a literal "\n\t" against the file and broke the moment the line
 	# endings changed, while the code it guarded was still correct.
 	check(UiKit.banner_bottom_pad(24) == 24 and UiKit.banner_bottom_pad(40) == 40,
-			"menu layout no longer reserves space for a banner")
+			"desktop/headless menu layout does not reserve a native banner strip")
 
 	SaveSystem.data = original
 	BillingService.refresh_entitlement_from_save()

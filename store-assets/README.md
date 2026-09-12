@@ -1,19 +1,20 @@
 # Potion Rogue Store Assets
 
-The approved Play listing assets use English copy throughout:
+The approved Play listing assets use English copy throughout. The current ASO refresh is the `aso-v2-*.png` set: eight 1080×1920 portrait creatives with real shipped gameplay framed in a consistent dark-indigo/gold presentation.
 
 - `play-store-feature-graphic.png` — 1024×500 Google Play feature graphic.
 - `app-icon-v3-512.png` — 512×512 Google Play icon matching the Android launcher.
-- `screenshots/01-main-menu.png` — branded Hall entrance.
-- `screenshots/02-battle-potion-sigils.png` — live puzzle combat with accessibility sigils.
-- `screenshots/03-campaign-unlock.png` — expedition selector with the US$4.99 Remove Ads offer.
-- `screenshots/04-realm-map.png` — route choice and roguelike risk.
-- `screenshots/05-event-choice.png` — permanent event trade-off.
-- `screenshots/06-brewer-selection.png` — four distinct brewer kits.
-- `screenshots/07-arcane-workshop.png` — permanent upgrade workshop.
-- `screenshots/08-settings-accessibility.png` — Remove Ads purchase, ad privacy controls and accessibility settings.
+- `screenshots/aso-v2-01-sort-potions.png` — main menu and the core potion fantasy.
+- `screenshots/aso-v2-02-tactical-combat.png` — live puzzle combat with readable enemy intent.
+- `screenshots/aso-v2-03-branching-runs.png` — route choice and roguelite risk.
+- `screenshots/aso-v2-04-build-your-brewer.png` — four distinct brewer kits.
+- `screenshots/aso-v2-05-five-realms.png` — campaign areas, bosses and hazards.
+- `screenshots/aso-v2-06-persistent-choices.png` — story choices carrying through a run.
+- `screenshots/aso-v2-07-permanent-upgrades.png` — permanent upgrade workshop.
+- `screenshots/aso-v2-08-remove-ads.png` — Remove Ads purchase and ad/accessibility settings.
 
-- `screenshots/` — truthful 720×1080 captures rendered directly from the Godot scenes.
+- `screenshots/` — truthful captures rendered directly from the Godot scenes; the older raw 720×1080 set remains available for rollback.
+- `tools/build_store_screenshots_v2.py` — reproducible compositor for the current eight-image ASO set.
 - `build_feature_graphic.ps1` — reproducible compositor for the feature graphic.
 - `build_app_icon.ps1` — reproducibly derives the launcher and Play Store icons from the approved v3 master.
 

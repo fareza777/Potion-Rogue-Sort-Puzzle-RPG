@@ -25,15 +25,17 @@ const DEFAULT_CONFIG := {
 		"cooldown_after_fullscreen_seconds": 120},
 	"rewarded": {"second_wind_hp_percent": 0.5, "second_wind_per_run": 1,
 		"double_crystals_multiplier": 2, "rerolls_per_battle": 1},
-	"banner": {"enabled": false, "position": "bottom"},
+	"banner": {"enabled": true, "position": "bottom"},
 	"app_open": {"enabled": false, "skip_first_session": true,
 		"min_background_seconds": 45, "min_seconds_between": 900,
 		"cooldown_after_fullscreen_seconds": 120},
 }
 
-## Banner ads are retired. Keep the scene policy empty so a stale config or
-## cached native view can never cause a banner to be shown by scene routing.
-const BANNER_SCENES := []
+## Menus that may carry a banner. Everything else — battle, map, events, story
+## and the tutorial — stays clean, so an ad can never cover the puzzle board.
+const BANNER_SCENES := ["res://scenes/main_menu.tscn", "res://scenes/area_select.tscn",
+		"res://scenes/run_history.tscn", "res://scenes/shop.tscn",
+		"res://scenes/reaction_codex.tscn", "res://scenes/credits.tscn"]
 
 ## Longest a full-screen ad may run before the game stops waiting on it.
 const AD_WATCHDOG_SECONDS := 60.0
@@ -45,8 +47,9 @@ const BANNER_RETRY_DELAYS := [5.0, 15.0, 30.0]
 ## ladder, one failed fill at startup ended the format for the whole session:
 ## the rewarded offer sat on "PREPARING AD…" until the app was backgrounded.
 const FULLSCREEN_RETRY_DELAYS := [5.0, 15.0, 45.0, 120.0]
-## Kept for compatibility with older callers; no layout reserves space now that
-## the native banner format is retired.
+## Viewport pixels of the banner strip itself, reserved under menu content so a
+## bottom banner is not hidden behind the Hall dock. The system chrome the
+## banner is anchored above is reserved separately by UiKit.safe_margin().
 const BANNER_HEIGHT_PX := 100
 
 ## App Open ads are retired from the production surface.

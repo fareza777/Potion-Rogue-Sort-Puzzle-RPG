@@ -23,6 +23,7 @@ Android plugin remain safe no-ops.
 
 | Placement | Where | Rules |
 | --- | --- | --- |
+| Banner | Hall, Areas, Shop, History, Credits, Codex | Bottom of those menus only, anchored above the system navigation bar. Never battle, map, events, story or the tutorial. |
 | Interstitial | Leaving the reward screen for the map | Capped: skips the first 3 wins of the install, then at most one per 3 battles **and** per 150s. Never after a boss clear, and never within 2 min of another full-screen ad. |
 | Rewarded — Second Wind | Defeat screen | Opt-in. Revive at 50% HP, once per run, offered *before* the run is failed. |
 | Rewarded — Open a realm | Expedition select | Opt-in. Opens only the **next** sealed realm, never further ahead. |
@@ -49,20 +50,20 @@ version 13: they keep every realm they paid for **and** get Remove Ads for free.
 
 ### 1. AdMob console
 
-The Potion Rogue app and its two remaining production units are configured as
+The Potion Rogue app and its production units are configured as
 follows:
 
 | Item | Value |
 | --- | --- |
 | App ID | `ca-app-pub-6279186647593327~2300822678` |
+| Banner | `ca-app-pub-6279186647593327/2085929206` |
 | Interstitial | `ca-app-pub-6279186647593327/5833602524` |
 | Rewarded | `ca-app-pub-6279186647593327/6763540816` |
 
-Banner and App Open are retired and their release unit IDs are intentionally
-empty. The interstitial and rewarded units remain live while `test_mode` is
-`false`. The production values are in `data/ads.json`. Local/debug runs are forced to
-Google's test units by `src/autoload/admob_runtime.gd`; never click live ads
-while testing.
+App Open stays retired and its release unit ID is empty. Banner, interstitial
+and rewarded units are live while `test_mode` is `false`. The production values
+are in `data/ads.json`. Local/debug runs are forced to Google's test units by
+`src/autoload/admob_runtime.gd`; never click live ads while testing.
 
 The publisher file is already live and returns:
 
@@ -98,18 +99,41 @@ carries `com.google.android.gms.permission.AD_ID`, which target SDK 33+ needs.
 The AdMob plugin normally merges it in.
 
 ### 3. Version
-`1.7.10` / version code `40`.
+`1.7.12` / version code `42`.
+
+## Banner safe area
+
+The Android export runs edge-to-edge with `screen/immersive_mode=false`. That
+combination is deliberate: while immersive mode hid the navigation bar, every
+safe-area query in the stack reported a bottom inset of `0`, so the AdMob plugin
+anchored the banner to the physical bottom of the screen — directly underneath
+the back / home / recents buttons, where a swipe up from the bottom edge both
+reveals those buttons and counts as an ad impression.
+
+With the bars visible the plugin's own `anchor_to_safe_area` still reads the
+real inset and lifts the banner above the navigation bar on its own.
+`UiKit.safe_margin()` then reserves the same chrome for the game's own content,
+using `DisplayServer.get_display_safe_area()` converted from screen pixels into
+the viewport units every layout is written in. Reverting to immersive mode puts
+the banner back on top of the navigation buttons.
 
 ## Verified on device
 
 A debug build (Google test units, Redmi Note 11 / Android 13) confirmed the
-remaining rewarded and interstitial paths. Banner and App Open are disabled in
-the production policy, and menu layout uses the normal bottom content bound.
+rewarded, interstitial, and menu-banner paths. App Open stays disabled in the
+production policy. Menu layout reserves bottom space only when a banner can
+actually appear.
+
+The 1.7.12 build was checked on the same device while the fix was in flight.
+The plugin now logs `Anchor to Safe Area: Insets (T, B, L, R) in Pixels: 93,
+130, 0, 0` — against `93, 0, 0, 0` before — and the screenshot shows the
+navigation buttons clear of the banner instead of drawn across its call to
+action.
 
 ## Verifying without ads
 
-`tests/ad_service_test.tscn` asserts the no-plugin path stays inert, the
-retired formats stay disabled, and the frequency caps remain sane. Run it with
+`tests/ad_service_test.tscn` asserts the no-plugin path stays inert, App Open
+stays disabled, banners stay on menus only, and the frequency caps remain sane. Run it with
 the rest of the suite:
 
 ```bash

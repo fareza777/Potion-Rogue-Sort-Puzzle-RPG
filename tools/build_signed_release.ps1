@@ -1,7 +1,7 @@
 param(
     [string]$GodotPath = (Join-Path (Split-Path -Parent $PSScriptRoot) '.tools\Godot_v4.7.1-stable_win64_console.exe'),
     [string]$KeystorePath = (Join-Path (Split-Path -Parent $PSScriptRoot) 'potion-rogue-upload.keystore'),
-    [string]$OutputPath = (Join-Path (Split-Path -Parent $PSScriptRoot) 'builds\PotionRogue-v1.7.10.aab')
+    [string]$OutputPath = (Join-Path (Split-Path -Parent $PSScriptRoot) 'builds\PotionRogue-v1.7.12.aab')
 )
 
 $ErrorActionPreference = 'Stop'

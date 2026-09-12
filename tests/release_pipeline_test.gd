@@ -22,23 +22,26 @@ func _ready() -> void:
 	check(validator.contains("config/version") and validator.contains("version/name"),
 			"release validator checks project/export version agreement")
 	var preset := FileAccess.get_file_as_string("res://export_presets.cfg")
-	check(preset.contains('version/name="1.7.10"') and preset.contains("version/code=40"),
+	check(preset.contains('version/name="1.7.12"') and preset.contains("version/code=42"),
 			"Android package version is bumped")
 	check(preset.contains('name="Android Release"')
-			and preset.contains('export_path="builds/PotionRogue-v1.7.10.aab"')
+			and preset.contains('export_path="builds/PotionRogue-v1.7.12.aab"')
 			and preset.contains('name="Android Debug"')
-			and preset.contains('export_path="builds/PotionRogue-v1.7.10-debug.apk"'),
+			and preset.contains('export_path="builds/PotionRogue-v1.7.12-debug.apk"'),
 			"AAB release and installable debug APK own separate export presets")
 	check(preset.contains("tests/**") and preset.contains("atlas_*.png")
 			and preset.contains("review_shots/**"),
 			"export excludes tests, QA captures, and legacy atlases")
+	check(preset.count("screen/immersive_mode=false") == 2
+			and preset.count("screen/edge_to_edge=true") == 2,
+			"both presets keep the system bars visible so the banner clears the navigation bar")
 	check(FileAccess.file_exists("res://.github/workflows/android-ci.yml"),
 			"CI imports, tests, exports, validates, and uploads Android artifact")
 	var ci := FileAccess.get_file_as_string("res://.github/workflows/android-ci.yml")
-	check(ci.contains("PotionRogue-v1.7.10-debug.apk")
+	check(ci.contains("PotionRogue-v1.7.12-debug.apk")
 			and ci.contains('--export-debug "Android Debug"'),
 			"CI exports the current installable debug APK preset")
-	check(ci.contains("PotionRogue-v1.7.10-sizecheck.aab")
+	check(ci.contains("PotionRogue-v1.7.12-sizecheck.aab")
 			and ci.contains('--export-debug "Android Release"')
 			and ci.contains("-ReleaseArtifactPath"),
 			"CI builds and validates an AAB carrying the real release payload")
