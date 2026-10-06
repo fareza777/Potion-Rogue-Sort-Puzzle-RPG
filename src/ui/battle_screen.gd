@@ -437,12 +437,14 @@ func _on_objective_progress(current: int, target: int) -> void:
 
 
 func _on_tactical_move() -> void:
+	if battle.battle_over:
+		return
 	modifier_controller.after_move()
 	_refresh_tactical_hud()
 
 
 func _on_signature_move() -> void:
-	if tutorial_director != null:
+	if battle.battle_over or tutorial_director != null:
 		return
 	var payload := signature_controller.on_player_move(board)
 	if not bool(payload.get("triggered", false)):
@@ -1197,6 +1199,11 @@ func _start_next_wave() -> bool:
 
 
 func _on_battle_won() -> void:
+	# A lethal potion must finish its reactions and move before a new wave
+	# enters or the run advances. The incoming enemy keeps its full countdown.
+	board.enabled = false
+	if board.resolving_pour:
+		await board.pour_resolved
 	_restore_battle_clock()
 	if tutorial_director != null and tutorial_director.active:
 		tutorial_director.finish()

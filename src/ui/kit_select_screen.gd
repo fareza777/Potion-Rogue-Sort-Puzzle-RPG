@@ -2,16 +2,11 @@ extends Control
 ## Starting archetype selection. A choice is committed only on confirmation.
 
 const KIT_COPY := {
-	"ember_adept": ["EMBER ADEPT", "Fire combos and explosive damage",
-			"FLASH BOIL", "Double the next Fire Potion"],
-	"verdant_warden": ["VERDANT WARDEN", "Healing, shields and purification",
-			"PURIFY", "Cleanse a curse and gain shield"],
-	"void_brewer": ["VOID BREWER", "Poison, wild essence and control",
-			"TRANSMUTE", "Turn one exposed layer into Wild Essence"],
-	"tide_oracle": ["TIDE ORACLE", "Foresight, shields and tempo control",
-			"FORESIGHT", "Reveal all hidden layers and gain shield"],
-	"marrow_alchemist": ["MARROW ALCHEMIST", "Sacrifice health for raw power",
-			"BLOOD PRICE", "Pay 4 HP to deal heavy damage"],
+	"ember_adept": ["EMBER ADEPT", "Fire combos and explosive damage"],
+	"verdant_warden": ["VERDANT WARDEN", "Healing, shields and purification"],
+	"void_brewer": ["VOID BREWER", "Poison, wild essence and control"],
+	"tide_oracle": ["TIDE ORACLE", "Foresight, shields and tempo control"],
+	"marrow_alchemist": ["MARROW ALCHEMIST", "Sacrifice health for raw power"],
 }
 
 
@@ -81,8 +76,15 @@ func _kit_choice(kit_id: String) -> PanelContainer:
 	row.add_child(info)
 	info.add_child(UiKit.title_label(str(copy[0]), 25, _kit_color(kit_id)))
 	info.add_child(UiKit.label(str(copy[1]), 15, UiKit.COLOR_TEXT))
-	info.add_child(UiKit.label("ACTIVE — %s" % str(copy[2]), 14, UiKit.COLOR_GOLD))
-	info.add_child(UiKit.label(str(copy[3]), 13, UiKit.COLOR_TEXT_DIM))
+	var kit: Dictionary = GameState.kits.get(kit_id, {})
+	var active := str(kit.get("active", "active_skill"))
+	info.add_child(UiKit.label("ACTIVE — %s" % active.replace("_", " ").to_upper(),
+			14, UiKit.COLOR_GOLD))
+	var effect := UiKit.label(GuideContent.skill_effect(active), 13, UiKit.COLOR_TEXT_DIM)
+	effect.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	info.add_child(effect)
+	info.add_child(UiKit.label("%d MANA  •  %d-POTION COOLDOWN" % [
+			int(kit.get("cost", 0)), int(kit.get("cooldown", 0))], 12, UiKit.COLOR_TEXT_DIM))
 	var choose := UiKit.ornate_button("SELECT", Vector2(150, 62), _kit_color(kit_id))
 	choose.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	choose.pressed.connect(_begin_run.bind(kit_id))

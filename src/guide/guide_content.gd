@@ -20,9 +20,9 @@ static func sections() -> Array[Dictionary]:
 			"body":"Every completed potion generates Mana. Mana pays for your hero's active skill; its exact cost and cooldown depend on the selected kit. Reactions separately build Ultimate charge. At 100%, the Ultimate button lights up and unleashes the kit's strongest effect.",
 			"cards":kit_cards()},
 		{"id":"battle", "title":"BATTLE", "icon":"SWORD",
-			"body":"Every successful pour spends one move and advances the enemy intent countdown. Read NEXT before pouring. Shield absorbs incoming damage, Armor reduces direct damage, and Poison bypasses Armor. Objectives may reward a different plan than simply rushing damage.",
+			"body":"Every successful pour spends one move and advances the enemy intent countdown. Completed potions and their reactions resolve before the enemy acts, even on the final countdown move. Read NEXT before pouring. Shield absorbs incoming damage, Armor reduces direct damage, and Poison bypasses Armor. Objectives may reward a different plan than simply rushing damage.",
 			"cards":[
-				{"title":"ENEMY INTENT", "copy":"Shows the next action, exact power, and pours remaining. When it reaches zero, the enemy acts.", "accent":"ff9a68"},
+				{"title":"ENEMY INTENT", "copy":"Shows the next action, exact power, and pours remaining. A completed potion and its reaction resolve first; then the enemy acts if the countdown reaches zero and it is still alive.", "accent":"ff9a68"},
 				{"title":"DEFENSE", "copy":"Shield is temporary protection. Armor belongs to the target and reduces direct hits. Poison ignores Armor.", "accent":"69bfff"},
 				{"title":"TURN TOOLS", "copy":"Undo reverses a pour. New Mix replaces the board and consumes one move. Pause saves the exact battle state.", "accent":"f2cc72"},
 			]},

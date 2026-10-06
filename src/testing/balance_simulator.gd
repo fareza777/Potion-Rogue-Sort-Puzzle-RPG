@@ -187,11 +187,11 @@ static func _simulate_encounter_sample(enemy_id: String, area_id: String,
 			completion_at[int(event.get("move", 0))] = str(event.get("color", ""))
 		for board_move in int(board.get("moves", 0)):
 			moves += 1
-			_advance_turn(combat, intent, rng)
-			if int(combat.player_hp) <= 0 or int(combat.enemy_hp) <= 0:
-				break
 			if completion_at.has(board_move + 1):
 				_apply_potion(combat, str(completion_at[board_move + 1]))
+			if int(combat.player_hp) <= 0 or int(combat.enemy_hp) <= 0:
+				break
+			_advance_turn(combat, intent, rng)
 			if int(combat.player_hp) <= 0 or int(combat.enemy_hp) <= 0 or moves >= MAX_ENCOUNTER_MOVES:
 				break
 		board_index += 1

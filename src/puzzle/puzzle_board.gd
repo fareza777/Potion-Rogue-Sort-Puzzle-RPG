@@ -4,6 +4,7 @@ extends Control
 ## undo, board generation and refills. Emits signals consumed by the battle layer.
 
 signal move_made
+signal pour_resolved
 signal tube_completed(color: String)
 signal tube_selected
 signal board_refilled
@@ -22,6 +23,8 @@ const LAYOUT_COLUMNS := 6
 var tubes: Array[PotionTube] = []
 var selected_tube: PotionTube = null
 var enabled := true
+## Victory/wave transitions wait until all effects of the current pour finish.
+var resolving_pour := false
 ## Compact record of the most recent pour, for replay journaling. Storing the
 ## delta instead of the whole board keeps checkpoint writes small.
 var last_pour: Dictionary = {}
@@ -473,11 +476,12 @@ func _try_pour(from_tube: PotionTube, to_tube: PotionTube) -> bool:
 	_undo_stack.append({"from": from_tube, "to": to_tube, "count": count})
 	last_pour = {"from": tubes.find(from_tube), "to": tubes.find(to_tube),
 			"color": poured_color, "count": count}
+	resolving_pour = true
 	_tick_locks()
-	move_made.emit()
 	pour_presented.emit(from_global, to_global, poured_color, count)
 
-	if to_tube.is_complete():
+	var completed := to_tube.is_complete()
+	if completed:
 		_undo_stack.clear()
 		var completed_color := to_tube.top_color()
 		var cursed_count := to_tube.effect_count("cursed")
@@ -486,11 +490,15 @@ func _try_pour(from_tube: PotionTube, to_tube: PotionTube) -> bool:
 			curse_cleansed.emit(cursed_count)
 		else:
 			tube_completed.emit(completed_color)
-		# Completion listeners resolve combat synchronously. Do not generate an
-		# unused puzzle behind a victory overlay; refill only if battle continues.
-		if total_units() == 0 and enabled:
-			generate_board()
-			board_refilled.emit()
+	# Potions and reactions resolve before spending the pour's enemy countdown
+	# step, so healing, shields, poison, lethal damage and delays apply in time.
+	move_made.emit()
+	resolving_pour = false
+	pour_resolved.emit()
+	# Refill only after combat and any wave transition have fully resolved.
+	if completed and total_units() == 0 and enabled:
+		generate_board()
+		board_refilled.emit()
 	return true
 
 

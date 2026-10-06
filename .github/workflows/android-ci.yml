@@ -24,15 +24,15 @@ jobs:
             godot --headless --path . "$scene"
           done
       - name: Export Android debug APK
-        run: godot --headless --path . --export-debug "Android Debug" builds/PotionRogue-v1.7.12-debug.apk
+        run: godot --headless --path . --export-debug "Android Debug" builds/PotionRogue-v1.7.13-debug.apk
       - name: Build release-payload AAB for size validation
-        run: godot --headless --path . --export-debug "Android Release" builds/PotionRogue-v1.7.12-sizecheck.aab
+        run: godot --headless --path . --export-debug "Android Release" builds/PotionRogue-v1.7.13-sizecheck.aab
       - name: Validate release budgets and balance
         shell: pwsh
-        run: ./tools/validate_release.ps1 -ProjectRoot . -ApkPath builds/PotionRogue-v1.7.12-debug.apk -ReleaseArtifactPath builds/PotionRogue-v1.7.12-sizecheck.aab
+        run: ./tools/validate_release.ps1 -ProjectRoot . -ApkPath builds/PotionRogue-v1.7.13-debug.apk -ReleaseArtifactPath builds/PotionRogue-v1.7.13-sizecheck.aab
       - uses: actions/upload-artifact@v4
         with:
-          name: PotionRogue-v1.7.12-android
+          name: PotionRogue-v1.7.13-android
           path: |
-            builds/PotionRogue-v1.7.12-debug.apk
-            builds/PotionRogue-v1.7.12-sizecheck.aab
+            builds/PotionRogue-v1.7.13-debug.apk
+            builds/PotionRogue-v1.7.13-sizecheck.aab

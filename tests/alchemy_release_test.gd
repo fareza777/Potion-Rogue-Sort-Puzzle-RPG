@@ -21,9 +21,9 @@ func _ready() -> void:
 				"reaction frequency is reported")
 	var project := FileAccess.get_file_as_string("res://project.godot")
 	var export := FileAccess.get_file_as_string("res://export_presets.cfg")
-	check(project.contains('config/version="1.7.12"'), "project version is 1.7.12")
-	check(export.contains("version/code=42"), "Android version code is 42")
-	check(export.contains('version/name="1.7.12"'), "Android version name is 1.7.12")
+	check(project.contains('config/version="1.7.13"'), "project version is 1.7.13")
+	check(export.contains("version/code=43"), "Android version code is 43")
+	check(export.contains('version/name="1.7.13"'), "Android version name is 1.7.13")
 	print("---\n%d checks, %d failures" % [checks, failures])
 	get_tree().quit(1 if failures else 0)
 
